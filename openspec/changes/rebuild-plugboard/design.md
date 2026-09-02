@@ -1,0 +1,229 @@
+## Context
+
+See `proposal.md` — Why. The relevant constraints, not the motivation:
+
+**Version skew is permanent and asymmetric.** The operator deploys the proxy; tenants deploy sidecars into their own infrastructure on their own schedule. Production will always run an unbounded spread of sidecar versions against one proxy. This inverts normal prioritisation: a schema field that costs nothing today is unfixable once the first tenant pins a version, while an expensive runtime behaviour can ship in phases behind negotiation.
+
+**The reference system's failures are schema failures.** Seven type and shape choices are ceilings no sidecar work can lift — a seven-verb method allowlist, `map<string,string>` headers in both directions, bodies as JSON strings, whole-response buffering with `chunked := len(chunks) > 1` shipped in one message, exactly one reply per correlation id, one global timeout capped at 300s, and no backpressure at any hop. Full evidence in `docs/`.
+
+**Research basis.** Twelve research agents over nine protocol families plus a runtime assessment; the two load-bearing conclusions were handed to adversarial reviewers. One was upheld with corrections, one was overturned. Both outcomes are recorded below, because the overturn changed the runtime decision.
+
+## Goals / Non-Goals
+
+**Goals:**
+
+- A wire contract whose v1 frame vocabulary and type choices are complete enough that no later protocol on the roadmap requires a new frame type or splits the fleet.
+- One body-transport path, binary-safe, used by every protocol. The reference base64-encodes WebSocket frames correctly and corrupts HTTP bodies; the defect is the absence of a shared abstraction.
+- Deterministic, observable degradation across mixed sidecar versions. A request a sidecar cannot honour is refused with a stated reason, never silently downgraded.
+- Tenant scoping as a property of every projection and every mutation signature, not a convention callers may remember.
+- A conformance suite that is the authority on the contract, replacing "each side tests its own fiction of the other".
+
+**Non-Goals (design-level, beyond the proposal's scope):**
+
+- Not a forward proxy. `CONNECT` is refused, not forwarded — in a multi-tenant edge it is an open-relay and SSRF hole.
+- Not a caching proxy in v1. No response cache, so no cache-key or cache-poisoning surface to reason about.
+- Not a load balancer with health-based ejection in v1. Sidecar selection is registry membership plus liveness, not active probing.
+- No response body transformation in v1 beyond mount-boundary URL rewriting, which is explicitly scoped and owned.
+
+## Decisions
+
+### D1. Three primitives, not twelve protocols
+
+The protocol surface collapses. Nine of the twelve named protocols are one primitive differing only by `Content-Type` and method token.
+
+```
+  PRIMITIVE 1 -- request/response byte stream
+    {opaque method token, raw request target, ORDERED (name,value) header
+     pairs, opaque octet stream that may begin before it ends, optional
+     trailer section, N interim responses then exactly one final response}
+
+    carries: SSE, HLS, LL-HLS, MPEG-DASH, GraphQL-over-HTTP, JSON-RPC-over-HTTP,
+             gRPC-Web, Connect, WebDAV, CalDAV, CardDAV, WHIP/WHEP, Range/206,
+             long-poll, ordinary HTTP
+
+  PRIMITIVE 2 -- bidirectional frame stream
+    carries: WebSocket + everything riding on it (Phoenix Channels, ActionCable,
+             graphql-ws, MQTT-over-WS, SIP-over-WS = WebRTC signalling, LSP).
+    Also supplies cancellation and interim responses to Primitive 1.
+
+  PRIMITIVE 3 -- QUIC streams + unreliable datagrams
+    carries: WebTransport. Exactly one item. Deferred; reserved in the contract.
+```
+
+*Alternative considered:* per-protocol handling, which is what the reference did — `ws_check` exists as a runtime probe standing in for a capability the contract could not express, and the WebSocket path grew its own body encoding. Rejected: it produces one code path per protocol, and the paths diverge.
+
+### D2. The tunnel exchange is frame-shaped
+
+The unit on the wire is a frame carrying a stream id, not a message carrying a whole request or response.
+
+```
+  v1 frame vocabulary -- ALL reserved at v1, even where unimplemented
+
+    REQ_HEAD       method, target, header pairs, capability assertions
+    BODY_DATA      stream id, sequence, opaque octets
+    BODY_END       stream id, optional trailer section
+    INTERIM_RESP   1xx status + header section (no body, no trailers)
+    RESP_HEAD      status, header pairs
+    RESET          stream id, application error code, reason
+    WINDOW_UPDATE  stream id, credit delta
+    DATAGRAM       unreliable class, drop-on-overflow  (v1: reserved, unused)
+```
+
+Every frame header carries a stream id and participates in a credit window, even where v1 grants an effectively infinite window. Reserving a frame type costs nothing; adding one later splits the fleet.
+
+*Alternative considered — and strongly recommended for evaluation during implementation:* adopt `draft-ietf-webtrans-http2` capsule framing verbatim instead of a bespoke vocabulary. Its `WT_STREAM` capsules already provide stream ids, FIN, reset with application error codes, session and per-stream flow control, and a datagram class whose discard-on-overflow semantics are specified (§6.11: *"The data in DATAGRAM capsules is not subject to flow control. The receiver MAY discard this data if it does not have sufficient space to buffer it."*). It is designed for exactly this shape — WebTransport streams and datagrams multiplexed inside one reliable ordered bidirectional stream — and it comes with a standards conformance target, which pairs well with an already-decided conformance suite. It reached WG Last Call on 2026-07-06. The reason it is not yet the decision: no publicly available HTTP/2 WebTransport server library exists in any language, so adopting it means implementing draft-conformant capsule framing by hand. Resolve during `tunnel/wire-contract`.
+
+### D3. Capability negotiation, with refusal rather than degradation
+
+The sidecar declares a capability set at tunnel join: `binary_bodies`, `header_lists`, `response_streaming`, `request_streaming`, `trailers`, `interim_responses`, `cancellation`, `flow_control`, `frame_level_ws`, `datagrams`.
+
+The proxy refuses a request or a mount a connected sidecar cannot back, with an explicit status and reason. This is load-bearing because sidecar selection already round-robins across a mount: without negotiation, two identical requests routed to sidecars of different versions get different fidelity, non-deterministically.
+
+*Alternative considered:* best-effort degradation. Rejected — silent fidelity differences between two requests to the same URL are undebuggable, and "it worked yesterday" is the resulting support load.
+
+### D4. Runtime: Elixir proxy, Go sidecar, Go H3 terminator later
+
+**This reverses an earlier recommendation.** The reversal is recorded because the reasoning matters more than the conclusion.
+
+The earlier recommendation was Rust for the proxy, on the premise that WebTransport requires HTTP/3 termination in the same process as the tunnel, which would remove the BEAM from consideration on capability grounds. Adversarial review overturned it:
+
+| claim | finding |
+|---|---|
+| `tokio-quiche` is the Rust stack for QUIC/H3/WebTransport | Neither `quiche` nor `tokio-quiche` implements WebTransport. `cloudflare/quiche#1114` open since 2021-12-11; Cloudflare, 2025-08-26: *"we can't commit to any timeline or prioritization."* No WebTransport item in either published API. The recommended stack cannot do the thing it was recommended for. |
+| MDN: *"WebTransport exclusively uses HTTP/3 and does not fall back to HTTP/2"* | Sentence does not exist on the page or in `mdn/content` source. Fabricated — and the entire "same process, therefore no BEAM" chain rested on it. |
+| Tokio: *"preemption is out of scope… for the foreseeable future"* | Not on the cited page. The post exists to announce the mitigation (128-operation per-task budget since 0.2.14). Fabricated. |
+| Pingora: 70% less CPU, nginx→Rust | Figures accurate, attribution wrong. Cloudflare credits *"our new architecture which can share connections across all threads"*; the language comparison is against **Lua**. |
+| No Go equivalent | `quic-go` powers **cloudflared** — structurally this exact product — plus `frp`, `reverst`, Caddy, Traefik. |
+
+WebTransport can be front-proxied. The WG chair's answer on `w3c/webtransport#525`: *"reverse proxies that want to support WebTransport will need to implement it… The simplest approach is to implement support for WebTransport over HTTP/2 or HTTP/3 when speaking to the origin."* Chromium's stated motivation for WT-over-H2 is *"a protocol we can use for proxy-to-backend communication"*. Caddy PR #7669 bridges bidi streams, uni streams and datagrams across that boundary today.
+
+**Decisive factor:** once WebTransport stops forcing the runtime, what remains is the work that must actually get finished — a distributed sidecar registry with failover, hot-reloadable routing, per-tenant crash containment, and a live multi-tenant admin console. The reference already has all four working on the BEAM. Rewriting them is weeks of hand-written bulkheads, a gossip or etcd layer, and an admin plane rebuilt as `axum` + templates + htmx.
+
+The performance argument does not survive the request path: at minimum two wide-area round trips per request, one into a network the operator does not control, around per-request compute that is header parse plus prefix match plus byte copy. No verified performance advantage for this shape exists in any of the three runtimes.
+
+**Sidecar: Go.** Static binary, `GOOS`/`GOARCH` cross-compilation, an HTTP and TLS stack that already handles whatever a customer backend does, and — underrated — the language a customer's platform team will read before allowing it into their pods. Drop `gorilla/websocket`: archived, and message-level only where the contract needs frame-level fidelity.
+
+**H3/WebTransport edge: a separate Go terminator, later.** Because it speaks the versioned wire contract, it is a contract speaker that can be written in any language and swapped, not a rewrite of the proxy.
+
+### D5. Proxied traffic terminates before application middleware
+
+A dedicated pipeline at the adapter or endpoint level: no body parsing, no method override, no HEAD folding, no content negotiation, no session, no CSRF. This is not a spec requirement; it is the structural consequence of D1 and the direct cause of the reference's worst defect — `Plug.Parsers` consuming request bodies before the proxy reads them, which breaks GraphQL and JSON-RPC through the endpoint pipeline rather than through anything protocol-specific.
+
+Arbitrary method tokens pass through unmodified. `CONNECT` is refused (D-Non-Goals). `TRACE` is answered by the proxy per the `Max-Forwards` rule or returns 405 — forwarding it lets a caller reflect headers the proxy added, including internal auth.
+
+### D6. Framing authority is per-hop, never relayed
+
+`Content-Length` and `Transfer-Encoding` are per-connection properties. The tunnel carries explicitly framed data and each hop generates its own framing headers. A message arriving with both is rejected at the edge with 400, not reconciled. This is the request-smuggling surface, and the reference relays `Content-Length` verbatim over a body path that changes the byte length.
+
+### D7. Timeout taxonomy replaces the single cap
+
+Six separately configurable timers — tunnel connect, origin connect, time-to-first-byte, idle-between-body-bytes, total, and edge header-read — with per-route classes including an explicit `total = infinite`. SSE and watch APIs get a finite TTFB, a finite idle timeout, and no total. The reference's single `request_timeout_ms`, capped at 300s, encodes the assumption that every request ends soon.
+
+### D8. Tenant scoping in the data model, not in queries
+
+Every projection is tenant-keyed and every context mutation takes the acting principal in its signature. The reference demonstrates both failures: the mount projection runs a global full-table `SELECT` and full-keyspace diff on any tenant's change, and `update_token/2` takes no actor at all, yielding a cross-tenant write.
+
+### D9. Domain ownership verification precedes certificate issuance
+
+A v1 blocker rather than a v2 feature. Layering ACME onto a first-come unverified domain claim escalates a routing bug into obtaining a publicly trusted certificate for a domain the claimant does not own. Ownership proof, then certificate.
+
+### D10. Carry-forward is explicit and cited
+
+Roughly sixty items from the reference are ported deliberately, each with a citation, listed in `docs/`. The load-bearing one: the terminal-mount invariant is enforced by two complementary Postgres triggers taking `FOR UPDATE` on the parent, and that invariant is *what makes* longest-prefix ETS matching correct with no trie, no sort and no tie-break. The coupling is recorded nowhere in the reference and is the single thing a naive rebuild would most likely lose.
+
+Deliberately **not** carried forward: the correlation-id machinery. Keep the idea (one logical exchange, independently multiplexed); delete the implementation — D2's stream ids subsume it, along with its unbounded `waiting_callers` growth and its late-reply mailbox pollution.
+
+## Risks / Trade-offs
+
+**[Bandit implements neither HTTP/3 nor RFC 8441 extended CONNECT]** → The strongest surviving argument against D4, and it bites without WebTransport ever being mentioned: behind an h2-terminating CDN, WebSocket upgrades arrive as extended CONNECT with `:protocol: websocket`, an HTTP/1.1-only upgrade predicate can never be true, and WebSocket fails. HTTP/2 to clients is also where real per-stream flow control lives. *Mitigation:* decide HTTP/2-to-client support explicitly during `proxy/websocket`; if it is in v1, the edge listener is a separate contract-speaking terminator from the start, which is the same mitigation D4 already prescribes for H3.
+
+**[Three moving parts for one developer: Elixir proxy, Go sidecar, eventual Go terminator]** → *Mitigation:* every edge protocol sits behind the versioned contract, so each component is independently replaceable and independently testable against the conformance suite. Do not add the terminator until WebTransport or HTTP/2 forces it.
+
+**[A bespoke frame vocabulary duplicates a standard]** → *Mitigation:* D2's alternative. Evaluate `draft-ietf-webtrans-http2` capsules before freezing v1, and prefer the standard if hand-implementing its framing is tractable.
+
+**[Streaming with real backpressure is the hardest item and gates the most value]** → *Mitigation:* build it first, before breadth. It unblocks SSE, HLS/DASH, gRPC-Web streaming and large transfers simultaneously, and no amount of protocol coverage substitutes for it.
+
+**[Conformance suite becomes happy-path theatre]** → The reference's failure mode exactly: 27k lines of tests that never noticed empty bodies. *Mitigation:* the suite is seeded with adversarial fixtures — a lone `0x80` byte, two `Set-Cookie` lines, both `Content-Length` and `Transfer-Encoding`, `%2F` inside a path segment, a trailing-slash collection URI, a `HEAD` with non-zero `Content-Length`, a fragmented WebSocket message, a response that emits headers then stalls 90 seconds. Fixtures before implementation.
+
+**[Slow test suite reproduces the original root cause]** → The completeness critic's finding: when feedback is slow, an agent or a person writes assertions that are cheap to satisfy rather than assertions that are expensive to satisfy. *Mitigation:* a pure core with a thin database edge, so the suite a contributor runs on save needs no Postgres and no serialisation. Treat suite latency as a correctness control.
+
+**[Test config erases the property under test]** → The reference downgrades Argon2 cost and disables SSRF protection suite-wide. *Mitigation:* production-equivalent security configuration in test; speed comes from architecture, never from disabling the invariant.
+
+## Migration Plan
+
+No migration. The reference is read-only prior art with no users to carry forward. Sequencing instead:
+
+1. **Contract first.** Freeze the v1 frame vocabulary and type choices, generate types, write the adversarial fixture suite. Nothing else starts until the schema is frozen, because the schema is the only irreversible artifact.
+2. **Streaming spine.** Primitive 1 end to end with real backpressure and cancellation, proven by a test that POSTs bytes and asserts the sidecar received *those exact bytes* — the assertion the reference never had.
+3. **Fidelity breadth.** Arbitrary methods, repeated headers, trailers, interim responses, Range. Most of the protocol list falls out here with no protocol-specific code.
+4. **Primitive 2.** WebSocket with a deferred 101 relaying the backend's real handshake response.
+5. **Tenancy and edge.** Tenant-scoped projections, ownership-verified custom domains, certificate lifecycle, observability.
+6. **Deferred, cheap because the primitive exists:** WebTransport via a terminator, HTTP/3 at the edge, multiple tunnel connections per sidecar, transport swap behind an unchanged contract.
+
+### D16 · HTTP/2 to clients is in v1, and the edge listener is a separate component from the start
+
+**Decided.** This closes what was previously an open question, and it is recorded as a decision rather than left implicit because the specs had begun to commit to it by accident: `proxy/websocket` requires recognising an establishment request as extended `CONNECT` naming the stream protocol in a dedicated field, and `tunnel/wire-contract` carries the slot for it. A decision that changes the edge topology should not be made by implication in a spec.
+
+**Why yes.** Behind any HTTP/2-terminating CDN, WebSocket upgrades arrive as extended `CONNECT` with `:protocol: websocket` (RFC 8441). Without support, an HTTP/1.1-only upgrade predicate can never match and WebSocket silently fails — which is precisely the reference's defect. Separately, HTTP/2 is where genuine per-stream flow control lives at the edge; WebSocket has none of its own, so without it the client-facing half of the credit chain the fidelity contract requires has nothing to attach to.
+
+**The consequence, accepted.** Bandit implements neither HTTP/3 nor RFC 8441 extended `CONNECT` (issues #27, #91, #690 open). So the edge listener becomes a **separate contract-speaking component in v1**, not later — the same mitigation D4 already prescribes for HTTP/3, arriving earlier. This is the risk named in Risks / Trade-offs materialising as a scheduled cost rather than a surprise.
+
+**Alternative considered:** HTTP/1.1 only at the edge for v1, with the protocol slot reserved but unused. Rejected: it ships the reference's exact silent-failure mode to anyone who puts a CDN in front, and it leaves the client-side flow-control story unanswered.
+
+### D17 · Five further capabilities are in scope; three are deferred with their dependencies named
+
+**Decided** after two cross-capability reviews found behaviour that every spec assumed another owned. In scope for this change: the sidecar as a deployable program, certificate and private-key custody, the tunnel listener, durable schema migration, and packaging of every deployable. Deferred to a later change: a human-facing control plane, audit retention and erasure, and the origin of per-tenant bound values.
+
+The fifth addition, `operability/packaging`, came from the reconcile over fifteen specs: `sidecar/program` requires the sidecar be a self-contained artifact whose packaged configuration is generated from its own schema and whose provenance is fixed at build time, and nothing stated the equivalent for the proxy or the edge terminator that D16 introduces. The reference's unbootable published image was a **both-sides** failure — the proxy raised on a salt set in no packaging artifact, and the sidecar died on a variable its own image never declared — and `docs/06-carry-forward.md` says explicitly to do this on both sides. Packaging therefore owns the obligations common to every deployable; `sidecar/program` retains only what is specific to running inside a tenant's infrastructure.
+
+Rationale for each in-scope addition, and the dependency each deferral leaves behind, are in `proposal.md` — Capabilities.
+
+Two deferrals carry commitments that must land here even though the capability does not:
+
+- **The control plane's namespace is committed in v1.** `routing/mount-points` reserves an administrative path prefix and `routing/custom-domains` reserves a control-surface hostname. That reservation is correct and is kept, so the later capability cannot be locked out of its own namespace.
+- **Audit retention carries an unresolved conflict that is named now rather than discovered later.** `tenancy/isolation` makes the trail append-only and immutable; `auth/sidecar-credentials` requires audit records to outlive the credentials they describe under a retention policy no capability states. An immutable trail plus any erasure obligation is a direct contradiction requiring a stated resolution — tombstoning, field-level redaction, or a documented refusal. It is recorded as a conflict, not left as an implementation detail.
+
+### D18 · Frame payloads are encoded from a binary interface definition, with generated codecs
+
+**Decided.** The specs already mandate a binary frame header carrying kind, stream identifier and length, so that an unrecognised frame can be skipped without being understood. This decision covers what encodes the *payloads* — the contents of a request head, a response head, and the control frames. Bodies ride as raw octets in body-data frames under any choice.
+
+**Why an interface definition with generated codecs.** Field-number-based backward compatibility is precisely the additive-change discipline the contract demands, and this way it comes *from the encoding* rather than from reviewer vigilance — which is the same substitution of structure for discipline that the whole rebuild rests on. It also yields codecs for any implementation language, which is what makes "a sidecar in any language" a real offer rather than an aspiration, and it is binary-safe by construction, so the reference's replacement-character defect class cannot be written.
+
+**Cost, accepted.** A schema toolchain becomes a build dependency, and frames are not human-readable without a tool. The mitigation is that the conformance work produces an inspector regardless, since `tunnel/conformance` requires published encode-decode vectors and a suite that can report at the octet level.
+
+**Alternatives considered.** JSON payloads inside the binary frames: inspectable with ordinary tools and trivially implementable in any language, but additive compatibility reverts to manual discipline plus a lint, header pairs cost more bytes per frame, and a JSON envelope coercing strings is the exact origin of the reference's worst defect. A hand-rolled compact binary encoding with published vectors: no toolchain dependency and full control, but hand-written codecs per language and the backward-compatibility rules become yours to invent and enforce.
+
+### D19 · The v1 tunnel is a WebSocket over TLS on the standard HTTPS port
+
+**Decided.** The binding constraint is not elegance or overhead — it is that the sidecar runs inside *the tenant's* infrastructure, where egress policy belongs to someone else. A WebSocket over TLS on 443 traverses nearly every corporate egress policy, transparent proxy and inspecting firewall in practice.
+
+**Cost, accepted.** A framing layer that the contract's own frames then sit inside, and no flow control of its own — which is exactly why the contract carries credit windows rather than borrowing the transport's.
+
+**Alternatives considered.** An HTTP/2 stream would reuse the edge listener D16 already requires and traverses egress well, but HTTP/2 has per-stream flow control of its own, so the contract's credit windows would run on top of it — two interacting layers of flow control, a known source of stalls and throughput cliffs that are painful to diagnose. Raw TLS is the simplest and lowest-overhead option with no borrowed framing, but it is the most likely of the three to be blocked or broken by policies that permit only recognisable HTTP traffic.
+
+**D2 still holds.** The framing is transport-independent, and `tunnel/listener` is written to specify the endpoint without choosing the transport. This decision selects the v1 transport; it does not weld the contract to it, and moving to a different transport later remains a change of transport rather than a redesign.
+
+### D20 · The proxy is a multi-node installation in v1
+
+**The vocabulary, first, because the rest of this decision depends on it.** One word names a running proxy process across all sixteen specs: an **instance**, or a *proxy instance* where it must be told apart from a sidecar or from the client-facing terminator, with the **installation** being the whole set of them under one operator's configuration. **Node** is reserved for an entry in the mount-point path hierarchy. `tenancy/isolation` fixes both terms for the whole system, and the rename ran across eight specs.
+
+**Decided**, confirming scope that surfaced late. `tunnel/sidecar-registry` requires that a sidecar connected to one instance serves requests arriving at *any* instance — explicitly without requiring the sidecar to hold a tunnel to every instance — and that the registry converges after a partition with no operator action and no sidecar reconnection. Those requirements were written before anyone asked whether v1 was clustered, and the task audit surfaced them as the single largest piece of unplanned scope in the change. They are kept.
+
+**Why keep it rather than defer.** A tenant's sidecar dials one instance; the client's request arrives wherever the load balancer sends it. Single-instance deferral would mean either pinning every tenant's traffic to the instance their sidecar happens to hold — which makes instance loss a tenant outage and forecloses the horizontal story the positioning rests on — or redirecting clients, which is visible to them and breaks non-idempotent requests. Neither is a smaller v1; both are a different product.
+
+**What it costs.** One multi-instance integration harness, extending the integration harness the streaming spine already needs, before the registry work can be verified. Cross-instance dispatch routing, partition-scoped eligibility, convergence tests, and a rolling-replacement drill.
+
+**The bound-accounting consequence.** With more than one instance, a per-tenant ceiling enforced against locally observed consumption grants a tenant one allowance *per instance*, which would falsify the isolation promise the product is sold on. `tenancy/isolation` already required each dimension be *"one configured value per tenant, accounted once"* — but stated that against multiple *admission surfaces*, not multiple instances. That is now settled explicitly, in both directions: a tenant's total across every instance may not exceed the configured value, **and** the value may not be silently divided into per-instance fractions, so a tenant whose traffic all lands on one instance may consume its whole allowance there.
+
+**Per-instance accounting is a closed exception, not an escape hatch.** The sole ground is a dimension bounded *before the consuming party's identity is established* — because an installation-wide count on every arrival is coordination work an unidentified party could trigger at an instance it never connected to. `tunnel/listener`'s pre-authentication connection bound qualifies and is preserved. Where the exception is claimed, the owning capability must state it and its ground, the per-instance nature must be observable, and it must never be attributed to a tenancy. Convenience, performance, and implementation difficulty are explicitly not grounds; a per-tenant dimension accounted per instance is a conformance failure.
+
+**Partitions get a declared discipline rather than silence.** Exact installation-wide accounting is unattainable while instances cannot reach one another, so the specs state the observable contract instead of a mechanism: exactly one of *refuse* or *admit to a locally-held share* per dimension, declared and retrievable rather than emergent, with overshoot finite and determinable in advance, every unaccounted admission recorded, degraded accounting surfaced as an enumerated condition, and recovery that admits nothing further until the tenant is back under its value. A specification that pretends partitions do not happen is worse than one that states a bounded compromise.
+
+## Open Questions
+
+None outstanding. All four questions previously recorded here are now resolved as decisions: HTTP/2 to clients (D16), the scope of further capabilities (D17), frame payload encoding (D18), and the v1 tunnel transport (D19).
+
+Two items are deliberately left to be settled *inside* implementation rather than before it, because the specs are written to hold either way and neither moves the task breakdown:
+
+- Whether `draft-ietf-webtrans-http2` capsule framing is adopted in place of the bespoke frame vocabulary (D7's alternative). Evaluate before the contract's first version is frozen.
+- Which challenge type is preferred for wildcard hostname verification, where more than one can prove control (`routing/custom-domains` requires that at least one work, not which).
