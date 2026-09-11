@@ -1,0 +1,16 @@
+{
+  "spine": "docs",
+  "conventions": {
+    "_comment": "Two conventions, so the generated table has more than one row and ordering is observable.",
+    "items": {
+      "links-resolve": {
+        "gate": "links",
+        "statement": "Every link resolves, anchors included."
+      },
+      "one-copy": {
+        "gate": "duplication",
+        "statement": "Requirement text has one copy."
+      }
+    }
+  }
+}

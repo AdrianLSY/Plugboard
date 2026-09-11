@@ -1,0 +1,17 @@
+{
+  "trees": {
+    "tree": {
+      "violations": 8,
+      "cases": [
+        "broken-resolver/computed: its resolver could not run (KeyError: 'does_not_exist')",
+        "collapsed: both sides declare the resolver kind 'gate_modules'",
+        "diverging: 'also-present' is held by the computed side and absent from the published one",
+        "diverging: 'stale-entry' is published and the computed side does not hold it",
+        "empty-side/computed: resolved to nothing",
+        "empty-side: 'also-present' is published and the computed side does not hold it",
+        "empty-side: 'present' is published and the computed side does not hold it",
+        "retired correspondence 'undocumented': records no 'closed_by' resolver and reason"
+      ]
+    }
+  }
+}

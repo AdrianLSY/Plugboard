@@ -1,0 +1,15 @@
+{
+  "useMarkdownLinks": true,
+  "newLinkFormat": "relative",
+  "alwaysUpdateLinks": true,
+  "attachmentFolderPath": "./",
+  "showUnsupportedFiles": true,
+  "strictLineBreaks": false,
+  "userIgnoreFilters": [
+    ".claude/",
+    "reference/",
+    "graphify-out/",
+    "ci/broken-inputs/",
+    "node_modules/"
+  ]
+}

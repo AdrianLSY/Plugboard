@@ -1,32 +1,78 @@
 schema: spec-driven
 
-# Project context (optional)
-# This is shown to AI when creating artifacts.
-# Add your tech stack, conventions, style guides, domain knowledge, etc.
-# Example:
-#   context: |
-#     Tech stack: TypeScript, React, Node.js
-#     We use conventional commits
-#     Domain: e-commerce platform
+# Populated by restructure-docs-as-vault task 8.4. Keyed on the single convention
+# enumeration in ci/vault.json -- the same one ci/gen/conventions.py renders for
+# note authors and every gate keys on. A convention added to the gates without
+# reaching BOTH channels fails ci/gates/authoring_channels.py.
+#
+# This file is the PLANNING-ARTIFACT channel. It cannot be the only one: `rules:`
+# below is keyed per openspec artifact, so it cannot express an obligation on a
+# note, and a note author never opens this file. See docs/method/conventions.md.
 
-# Per-artifact rules (optional)
-# Add custom rules for specific artifacts.
-# Example:
-#   rules:
-#     proposal:
-#       - Keep proposals under 500 words
-#       - Always include a "Non-goals" section
-#     tasks:
-#       - Break tasks into chunks of max 2 hours
+context: |
+  Plugboard is dynamic ingress for multi-tenant platforms: a central Elixir proxy, a Go sidecar the
+  tenant runs beside their own backend, and a versioned wire contract between them. No product code
+  exists yet; what exists is the plan. The prior art in reference/ is gitignored, read-only, and does
+  not work -- cite it with a file:line or not at all.
 
-# Per-operation guidance (optional)
-# Add advisory guidance for how apply and archive work should be conducted.
-# This is separate from artifact rules above.
-# Example:
-#   operations:
-#     apply:
-#       guidance:
-#         - Keep test summaries concise
-#     archive:
-#       guidance:
-#         - Summarize the archive outcome before finishing
+  This repository is also an Obsidian vault. docs/ is the spine; docs/start-here.md is the entry
+  point. Read it before authoring anything.
+
+  The governing constraint: version skew is permanent and asymmetric. The operator deploys the proxy;
+  tenants deploy sidecars whenever or never. The wire schema is the only irreversible artifact, so
+  work sorts by REVERSIBILITY rather than by cost.
+
+  Authority precedence, stated once in docs/method/authority-precedence.md: the machine-checked
+  contract, then the specifications, then the decisions in force, then vault notes, then generated
+  indexes. A note never states behaviour a specification owns. Where two disagree, the higher wins.
+
+  Vocabulary is fixed and enforced: an *instance* is one proxy process, an *installation* is all of
+  them under one operator, and *node* means an entry in the mount-point hierarchy -- never a running
+  process. Terms are defined in docs/glossary.md, which also names the ones nothing defines.
+
+  Decisions live in ONE register: openspec/changes/rebuild-plugboard/design.md, holding D1-D10 and
+  D16-D27. D11-D15 are permanently retired and never reused. A change's own design decisions carry a
+  prefix naming the change. Run `make check` before claiming anything is done.
+
+rules:
+  proposal:
+    - State the defect that forces the change now rather than later, with a citation.
+    - Every number in the prose is checkable by a command a reader can run.
+    - Non-goals are refusals with reasons, not omissions.
+  specs:
+    - Requirements are normative; a scenario names an observable outcome, never an implementation.
+    - Where a requirement's scope is not universal, state the scope in the requirement.
+  design:
+    - Record the alternative considered and why it was rejected, not only the conclusion.
+    - A decision reversed once records the reversal; the reasoning matters more than the conclusion.
+    - Number decisions in this change's own namespace, never the installation's D<n> sequence.
+  tasks:
+    - Every task states its own verification, and the verification tests the claim rather than a proxy.
+    - Cite a decision only by an identifier that resolves in the surviving register.
+
+operations:
+  apply:
+    guidance:
+      - Run `make check` after each section; it enumerates every gate and the roots each covered.
+      - A gate lands report-only and becomes blocking at the task that makes the tree satisfy it.
+      - Never weaken a gate, a fixture or ci/vault.json to make a task pass.
+      - When a task needs work beyond its text, surface the added scope rather than absorbing it.
+      - "note convention [capability-note]: Every capability has one concept note under the declared ceiling, linking its spec and its dependencies. (gate: ci/gates/capability_notes.py)"
+      - "note convention [cited-or-unverified]: Every claim carries a citation into a tracked file or an obtainable artifact, or an explicit Unverified marker. (gate: ci/gates/citations.py)"
+      - "note convention [classification]: Every spine or component note declares type, status and authority from the closed enumerations. (gate: ci/gates/frontmatter.py)"
+      - "note convention [currency]: A planned note links the work that builds it, and its marker is retired once its subject exists. (gate: ci/gates/currency.py)"
+      - "note convention [declared-roots]: Every tracked note lives under a declared governed root; an exempt root records what owns its files. (gate: ci/gates/note_roots.py)"
+      - "note convention [entry-routes]: An entry file routes, stays under its ceiling, and names nothing the repository does not contain. (gate: ci/gates/entry_points.py)"
+      - "note convention [generated-indexes]: An index is generated, tracked, and byte-identical to a fresh regeneration. Never hand-edit one. (gate: ci/gates/index_drift.py)"
+      - "note convention [links-resolve]: Every link resolves, anchors included. (gate: ci/gates/links.py)"
+      - "note convention [no-owned-behaviour]: A note never states behaviour a specification owns; no normative modal in the spine. Link the owner. (gate: ci/gates/citations.py)"
+      - "note convention [one-copy]: Requirement text has one copy. Link the specification rather than restating it. (gate: ci/gates/duplication.py)"
+      - "note convention [one-register]: One decision register. A change's own decisions carry a namespace; a retired identifier is never reused. (gate: ci/gates/decision_register.py)"
+      - "note convention [precedence-once]: The authority precedence is stated in exactly one location; every other note links it. (gate: ci/gates/precedence.py)"
+      - "note convention [reachable]: Every note is reachable by links from a declared entry point. (gate: ci/gates/reachability.py)"
+      - "note convention [relative-links]: Relations are relative markdown links. No wikilinks, no transclusion, no absolute paths. (gate: ci/gates/wikilinks.py)"
+      - "note convention [rule-names-gate]: Every rule note names its gate, or `planned`, or `none` (preference, quarantined). (gate: ci/gates/rule_gate_correspondence.py)"
+  archive:
+    guidance:
+      - Archiving moves a change directory; repoint anything citing its paths in the same commit.
+      - The decision register lives in a change artifact, so confirm its citations still resolve.

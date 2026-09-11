@@ -1,8 +1,8 @@
 ## Purpose
 
-Defines the endpoint a sidecar dials to establish a tunnel: the verifiable identity the endpoint presents so a sidecar can decide whether to offer a credential at all, the protection the connection carries before any credential is read, the explicit identification of the framing spoken over it, the namespace the endpoint occupies and its separation from client traffic, the bounds that govern an accept path reachable by anyone who can route to it, and how the endpoint drains, is advertised, and is moved. Everything this capability describes happens before the authenticated identity exists, which is why its bounds and its disclosure rules are stated here rather than inherited from the capabilities that take over afterwards. It also owns the observed source of a connection *at this accept path*, because every pre-authentication bound in the system keys on that source and no capability defines it for a peer that has not authenticated. One concept, two surfaces: the edge-hygiene capability establishes the equivalent value for a client connection and owns the rule for honouring a source conveyed by a trusted intermediary; what is added here is that the same rule governs the accept path and that no authenticated identity is yet available to fall back on.
+Defines the endpoint a sidecar dials to establish a tunnel: the verifiable identity the endpoint presents so a sidecar can decide whether to offer a credential at all, the protection the connection carries before any credential is read, the explicit identification of the framing spoken over it, the namespace the endpoint occupies and its separation from client traffic, the bounds that govern an accept path reachable by anyone who can route to it, and how the endpoint drains, is advertised, and is moved. Everything this capability describes happens before the authenticated identity exists, which is why its bounds and its disclosure rules are stated here rather than inherited from the capabilities that take over afterwards. It also owns the observed source of a connection *at its accept paths*, because every pre-authentication bound in the system keys on that source and no capability defines it for a peer that has not authenticated. There are two such paths: the one a sidecar dials, and the internal one a client-facing terminator dials, which the requirements below add because the wire contract requires such a component to be authenticated and names no endpoint at which that happens. The pre-authentication disciplines are stated once and bind both, accounted and attributed separately. One concept, two surfaces: the edge-hygiene capability establishes the equivalent value for a client connection and owns the rule for honouring a source conveyed by a trusted intermediary; what is added here is that the same rule governs the accept path and that no authenticated identity is yet available to fall back on.
 
-The endpoint is stated without choosing a transport. The framing carried over it is transport-independent by design, the transport for the first release is deliberately undecided, and every requirement here SHALL hold for any transport that can carry an ordered, protected, bidirectional octet stream.
+The endpoint is stated without choosing a transport, and every requirement here SHALL hold for any transport that can carry an ordered, protected, bidirectional octet stream. That generality is deliberate and is not a sign the choice is still open: `design.md` D19 selects the first release's transport — a WebSocket over TLS on the standard HTTPS port, chosen because the sidecar runs inside the tenant's infrastructure where egress policy belongs to someone else. An implementation of this capability for the first release SHALL serve that transport, and SHALL publish the framing identifier the contract assigns it. The requirements below are written against the transport's properties rather than its name so that a later change of transport remains a change of transport rather than a redesign; they are not an invitation to select a different one for the first release.
 
 ## ADDED Requirements
 
@@ -375,7 +375,7 @@ Changing where the listener is exposed SHALL change the contributed entry in the
 
 ### Requirement: The listener is distinct from the administrative and operational surfaces
 
-The endpoint a sidecar dials, the administrative surface an operator or tenant uses, and the liveness, readiness and diagnostic surfaces SHALL be three separately identified surfaces. Each SHALL be reachable at its own identifier, each SHALL be separately observable, and none SHALL accept the establishment attempt or the credential belonging to another.
+The endpoint a sidecar dials, the administrative surface an operator or tenant uses, the liveness, readiness and diagnostic surfaces, and every further accept path this capability defines SHALL be separately identified surfaces. The set is open rather than a fixed count: a surface added by a later requirement joins it without that requirement having to restate this discipline. Each SHALL be reachable at its own identifier, each SHALL be separately observable, and none SHALL accept the establishment attempt or the credential belonging to another.
 
 A credential presented at an administrative or operational surface SHALL authenticate nothing and SHALL establish no tunnel, and the surface SHALL NOT evaluate it as a credential. An establishment attempt directed at either surface SHALL be refused with an enumerated cause distinguishable from an authentication failure.
 
@@ -395,17 +395,215 @@ Where a deployment exposes more than one of these surfaces on one hostname, they
 - **AND** the cause is distinguishable from an authentication failure
 - **AND** no tunnel is established
 
-#### Scenario: The three surfaces are separately observable
+#### Scenario: Every surface is separately observable
 
 - **WHEN** an operator retrieves the surfaces the component exposes
-- **THEN** the listener, the administrative surface, and the operational surfaces are separately identified
+- **THEN** the listener, the administrative surface, the operational surfaces, and every further accept path this capability defines are separately identified
 - **AND** the connections accepted at each are separately countable
+- **AND** adding a surface adds an entry rather than requiring the retrieval to be redefined
 
 #### Scenario: The listener does not answer for another surface
 
 - **WHEN** the administrative surface is unavailable
 - **THEN** the listener does not begin answering requests directed at it
 - **AND** tunnel establishment at the listener is unaffected
+
+### Requirement: A client-facing terminator is admitted on an accept path of its own
+
+Where client protocols are terminated by a component separate from the one holding the origin-facing tunnel, that component asserts to its counterpart the facts the counterpart is forbidden to re-derive: the observed client source, the scheme, the authority established for the connection, the negotiated edge protocol, and the correlation identifier assigned to the exchange. Any party that can reach the path those assertions arrive on can mint them, and asserting the result of an edge-hygiene normalisation is a way of never performing it. That path therefore needs the identity, the protection, the bounds and the refusals this capability states for the endpoint a sidecar dials, and it cannot be that endpoint: the wire contract forbids a client-facing speaker to be reached by the framing served to a dialling sidecar and forbids it to present a sidecar credential.
+
+Where the deployment terminates client protocols in a separate component, the listener SHALL expose a second accept path — the internal accept path — at which a client-facing terminator, as the packaging capability names that component, dials and establishes its contract connection. The path SHALL serve exactly that and no other behaviour, on the terms this capability states for the endpoint a sidecar dials. Where the deployment terminates client protocols in one component, the internal accept path SHALL NOT be exposed on any address, and a configuration exposing it in a deployment that declares no separate terminating component SHALL cause the component to refuse to start with both items named.
+
+The internal accept path SHALL be a separately identified surface, held to the distinctness discipline this capability states for the endpoint a sidecar dials, the administrative surface, and the operational surfaces: reachable at its own identifier, separately observable, and accepting the establishment attempt and the credential of none of the others.
+
+Neither accept path SHALL be reachable through the other. An establishment attempt in a framing one path serves, arriving at the other, SHALL be refused with an enumerated cause distinguishable from an authentication failure, and SHALL cause no credential to be evaluated and no registry entry to be created. The causes SHALL be drawn from the one connection-level vocabulary this capability publishes under the observability capability's registry, and this capability SHALL NOT maintain a second set for this path.
+
+#### Scenario: Neither accept path serves the other's establishment
+
+- **WHEN** a peer offers the framing of the endpoint a sidecar dials at the internal accept path, and another peer offers the framing of the internal accept path at the endpoint a sidecar dials
+- **THEN** both are refused with enumerated causes distinguishable from an authentication failure
+- **AND** no credential is evaluated and no registry entry is created for either
+- **AND** both causes appear in the published connection-level vocabulary
+
+#### Scenario: The internal accept path is identified apart from every other surface
+
+- **WHEN** an operator retrieves the surfaces the component exposes
+- **THEN** the internal accept path is identified separately from the endpoint a sidecar dials, from the administrative surface, and from the operational surfaces
+- **AND** the connections accepted at each are separately countable
+
+#### Scenario: A single-component edge exposes no internal accept path
+
+- **WHEN** a deployment terminates client protocols in one component
+- **THEN** no address accepts a connection at the internal accept path
+- **AND** a configuration exposing it in that deployment refuses the component's start naming both items
+
+#### Scenario: The internal accept path serves nothing else
+
+- **WHEN** a liveness probe, an administrative operation, and an ordinary client request are each directed at the internal accept path
+- **THEN** each is refused with an enumerated cause
+- **AND** none is answered by anything revealing the software, its version, its configuration, or the installation's occupancy
+- **AND** no mount is looked up and no tunnel exchange is generated
+
+### Requirement: The internal accept path's identifier is reserved in the single reserved enumeration
+
+The identifier the internal accept path occupies SHALL be reserved on the terms the namespace requirement of this capability states, which SHALL govern both identifiers rather than be restated for the second: the path prefix contributed to the one reserved-path enumeration the mount-point capability holds, a dedicated hostname contributed to the reserved-hostname set the custom-domain capability holds, the narrowest prefix the endpoint requires, applying at segment boundaries only, and a divergence between what is reserved and what is served resolved as that requirement resolves it. This capability SHALL NOT maintain a second enumeration, a second check, or a second set of reserved names, and reserving one accept path's identifier SHALL NOT reserve the other's siblings.
+
+No client request SHALL reach the internal accept path, whatever its target, its fields, its body, or the mount definitions in force, exactly as this capability requires of the listener's own reserved target: the proxy's own handling of that reserved target on a client-facing surface is a refusal, not an establishment attempt. No value a client supplies SHALL cause a client-facing connection to be treated as a connection at the internal accept path, and no mount definition SHALL deliver a client request to it.
+
+#### Scenario: The internal accept path's identifier appears in the one enumeration
+
+- **WHEN** an operator retrieves the reserved path prefixes in force
+- **THEN** the prefix the internal accept path is exposed at appears among them
+- **AND** it appears in the same enumeration as the prefix the endpoint a sidecar dials occupies
+
+#### Scenario: A tenant cannot claim the internal accept path's hostname
+
+- **WHEN** a tenant claims a hostname dedicated to the internal accept path
+- **THEN** the claim is rejected
+- **AND** a normalised variant of the hostname is equally rejected
+- **AND** the internal accept path continues to be served on it
+
+#### Scenario: No client request reaches the internal accept path
+
+- **WHEN** a client request arrives on a client-facing surface targeting the internal accept path's reserved prefix and carrying a well-formed establishment declaration and a terminator credential
+- **THEN** it is refused by the proxy's own handling
+- **AND** no establishment path is entered and neither the declaration nor the credential is evaluated
+- **AND** the outcome is the same where a mount definition exists whose prefix would match that target
+
+### Requirement: The internal accept path presents the same endpoint identity, and a terminator verifies it
+
+The identity obligations this capability states for the endpoint a sidecar dials SHALL hold unaltered at the internal accept path: presentation during connection setup before any octet a peer sends could carry a credential, on every connection accepted without exception, of the platform's own class, and refusal of the connection rather than service without one where a valid identity cannot be presented. This capability SHALL NOT state a weaker obligation for this path on the ground that both ends of the connection are the operator's own, because a peer that cannot tell the endpoint from whatever else answered presents its credential to whatever answered.
+
+A client-facing terminator SHALL carry, unchanged, the obligation the credential capability places on a dialling sidecar: it SHALL verify the presented identity against the endpoint it was configured to reach before presenting its credential, SHALL refuse to present one where verification fails or where the connection carries no verifiable identity at all, SHALL report that refusal distinguishably from an authentication failure returned by its counterpart, and SHALL refuse to start in a configuration that would present a credential to an endpoint whose identity it does not verify.
+
+#### Scenario: The endpoint identity precedes anything a terminator could send
+
+- **WHEN** a client-facing terminator connects to the internal accept path
+- **THEN** the endpoint's identity is presented before any octet the peer sent is read
+- **AND** a peer that abandons the connection immediately after receiving the identity has sent no credential and no establishment declaration
+
+#### Scenario: A terminator presents no credential to an unverified endpoint
+
+- **WHEN** the identity presented at the internal accept path does not verify against the endpoint the terminator was configured to reach
+- **THEN** no credential is presented and no connection is established
+- **AND** the reported failure is distinguishable from an authentication failure returned by its counterpart
+
+#### Scenario: A terminator configured to verify nothing does not start
+
+- **WHEN** a terminator is configured to accept any endpoint identity at the internal accept path
+- **THEN** it refuses to start
+- **AND** the refusal names that setting
+
+### Requirement: Every accept-path discipline holds at the internal accept path, accounted separately
+
+Every protection and admission discipline this capability states for the endpoint a sidecar dials SHALL hold at the internal accept path: the protection policy together with the floor that cannot be configured away, the explicit identification of the framing at setup, the derivation of the observed source from the connection rather than from anything the peer states, the pre-authentication connection bound and its per-source allowance, the one unauthenticated time budget, the pre-authentication read bound together with its prohibition on retaining what was read, the per-connection memory bound, the total connection bound, the rate limit the credential capability defines, the rules governing what a refusal conveys to an unauthenticated peer, and the attribution of every open connection to a phase drawn from the one published connection-level vocabulary.
+
+Configured values SHALL be settable per accept path and accounting SHALL be separate, so that occupancy at one path neither consumes nor conceals occupancy at the other. Every refusal SHALL name which accept path refused it, and exhausting one path's capacity SHALL NOT exhaust the other's or the client edge's. Connections at the internal accept path SHALL be counted, bounded, and attributed separately from sidecar tunnels and from client connections, as the wire contract requires, and no record SHALL conflate the three.
+
+A refusal at the internal accept path SHALL NOT be resolved by degrading. A terminator refused there SHALL NOT be admitted at the endpoint a sidecar dials or at any client-facing surface, and the client requests it would have terminated SHALL be refused rather than served by a path that omitted the edge obligations, as the edge-hygiene capability requires of an unavailable terminating component.
+
+The configuration items governing this path — the address or addresses it serves, its identity material and that material's coverage of each name, its protection policy, its framing identifiers, its pre-authentication connection bound, its per-source allowance, its unauthenticated time budget, its pre-authentication read bound, its per-connection memory bound, its total connection bound, and the reserved identifier it contributes to the routing enumerations — SHALL be covered by the one startup validation pass this capability's configuration requirement defines, together with the relation that the path is exposed only where a separate terminating component is declared. This capability SHALL NOT validate them in a pass of its own.
+
+#### Scenario: The two accept paths are bounded and accounted separately
+
+- **WHEN** the internal accept path is held at its pre-authentication bound by peers that never authenticate
+- **THEN** a sidecar still establishes a tunnel at the endpoint it dials and client requests to mounts with connected sidecars continue to be served
+- **AND** each refusal names the internal accept path as the path that refused it
+- **AND** the counts of connections, of refusals by cause, and of connections by phase are separately retrievable per accept path
+
+#### Scenario: A refused terminator is not admitted by another route
+
+- **WHEN** the internal accept path is at its total connection bound and a terminator is refused
+- **THEN** it is not admitted at the endpoint a sidecar dials or at any client-facing surface
+- **AND** the client requests it would have terminated are refused rather than reaching a mount by a path that omitted the edge obligations
+
+#### Scenario: Pre-authentication reads at the internal accept path are bounded and not retained
+
+- **WHEN** a peer at the internal accept path sends more octets before authenticating than the configured bound permits
+- **THEN** the connection is ended with the enumerated cause naming the exceeded pre-authentication read bound, distinguishable from an unauthenticated timeout
+- **AND** what it sent is not retained and appears in no record except as bounded, labelled counts
+- **AND** the memory held for that connection does not grow with the volume sent
+
+#### Scenario: The internal accept path's configuration is validated in the one pass
+
+- **WHEN** the internal accept path's pre-authentication connection bound is absent and its identity material covers none of the names it serves
+- **THEN** the component refuses to start naming both items in one pass
+- **AND** no connection was accepted at either accept path at any point
+
+### Requirement: A terminator authenticates with a credential of a class of its own
+
+A client-facing terminator SHALL authenticate at the internal accept path with a credential of a class distinct from a sidecar credential and from the issuing class the credential capability defines, and that class SHALL be distinguishable from both at every point it is handled. Such a credential SHALL name the component it was issued to, SHALL name no tenant and no mount, SHALL confer no admission for a mount, SHALL create no registry entry eligible to serve one, and SHALL contribute nothing to the tenant or mount an exchange is attributed to, which derive solely from the mount matched and from the credential the origin-facing tunnel presented, as the tenancy capability requires of all traffic attribution.
+
+A sidecar credential presented at the internal accept path SHALL authenticate nothing, and a terminator credential presented at the endpoint a sidecar dials SHALL authenticate nothing. Each SHALL produce the same indistinguishable authentication failure the credential capability requires, with no field, description, or difference in elapsed time separating a wrong-class presentation from an unknown one. The class mismatch SHALL be recorded for the operator in the one audit trail, as that capability's trail distinguishes what the presenter cannot.
+
+Issuance, rotation, and revocation of a terminator credential SHALL each require an acting operator principal and SHALL be authorised against that authority rather than against authority over any tenant or mount. No tenant principal SHALL be able to issue, rotate, revoke, or enumerate one, or to observe whether one exists. Rotation SHALL be the one rotation the credential capability defines, and revocation SHALL take effect within the one bound that capability states, across every instance of the installation; this capability SHALL NOT introduce a second rotation rule or a second bound.
+
+#### Scenario: A sidecar credential admits nothing at the internal accept path
+
+- **WHEN** a valid sidecar credential is presented at the internal accept path
+- **THEN** no connection is established and no registry entry is created
+- **AND** the presenter receives the same enumerated error and description as for a credential that does not exist
+- **AND** the operator's record names the class mismatch
+
+#### Scenario: A terminator credential admits nothing at the endpoint a sidecar dials
+
+- **WHEN** a valid terminator credential is presented at the endpoint a sidecar dials
+- **THEN** no tunnel is established and the presenter is admitted for no mount
+- **AND** the presenter receives the same enumerated error and description as for a credential that does not exist
+- **AND** the operator's record names the class mismatch
+
+#### Scenario: The credential names a component, not a tenant or a mount
+
+- **WHEN** an authenticated terminator's credential is retrieved and the exchanges arriving on its connection are attributed
+- **THEN** the credential names the component and names no tenant and no mount
+- **AND** each exchange's tenant and mount derive from the mount matched and from the credential the origin-facing tunnel presented
+
+#### Scenario: Rotation drops no exchange
+
+- **WHEN** a terminator credential is replaced while its connection is continuously carrying exchanges
+- **THEN** either credential authenticates during the changeover
+- **AND** the connection is not dropped and no exchange in flight is failed
+- **AND** no reconnection at the internal accept path was required
+
+#### Scenario: Revocation terminates the connection within the one bound
+
+- **WHEN** a terminator credential is revoked while its connection is carrying exchanges, including where that connection is held at an instance other than the one where the revocation was recorded
+- **THEN** the connection is terminated within the configured revocation bound
+- **AND** exchanges in flight on it are failed explicitly with a stated reason rather than left to time out
+- **AND** the reason the terminator receives identifies the credential as no longer valid
+
+#### Scenario: No tenant principal reaches the class
+
+- **WHEN** a principal with full authority over its own tenant requests to issue, rotate, revoke, or enumerate a terminator credential
+- **THEN** every such request is refused
+- **AND** the response does not indicate whether any terminator credential exists
+
+### Requirement: A terminator's established facts are adopted only after it has authenticated
+
+That a counterpart treats the observed client source, the scheme, the established authority, the negotiated edge protocol, and the correlation identifier as established only where they arrived from a client-facing speaker it authenticated, and refuses the exchange rather than adopting a value that arrived any other way, is the wire contract's. What this capability adds is which authentication that is — the completion of the peer's authentication at the internal accept path, and no earlier point in the connection's progress — and what becomes of an asserted value before it.
+
+An exchange carrying any of those facts, received on a connection that has not completed authentication at the internal accept path, SHALL be refused with a code of the single enumeration the wire contract publishes rather than with a cause of this capability's devising, distinguishable there from an authentication failure, from a malformed exchange, and from every capacity and timeout cause at this accept path. The asserted values SHALL NOT be retained, SHALL NOT become a limiting or accounting key, and SHALL NOT be derived into a measurement label value.
+
+Once a connection is refused, ends, or has its credential revoked, no fact asserted on it SHALL be adopted for any exchange admitted afterwards, and an exchange still in flight on it SHALL be failed explicitly rather than served on the strength of an authentication that has ended.
+
+#### Scenario: Facts asserted before authentication are refused
+
+- **WHEN** a peer at the internal accept path that has not completed authentication sends an exchange carrying an observed client source, an established authority, and a correlation identifier
+- **THEN** the exchange is refused with the contract code for an established fact asserted by an unauthenticated peer
+- **AND** the code is distinguishable from an authentication failure, from a malformed exchange, and from every capacity and timeout cause at this accept path
+- **AND** none of the asserted values is retained, used as a key, or derived into a measurement label value
+
+#### Scenario: Adoption begins only once authentication completes
+
+- **WHEN** one peer asserts the same facts before its authentication completes and again after
+- **THEN** the exchange carrying the earlier assertion is refused and no value from it is adopted for any exchange
+- **AND** the values asserted after authentication are read as established facts
+
+#### Scenario: A terminated connection's assertions are adopted no further
+
+- **WHEN** a terminator's connection is terminated for revocation while exchanges are in flight on it
+- **THEN** no fact it asserted is adopted for any exchange admitted after the termination
+- **AND** the exchanges in flight are failed explicitly rather than served on the strength of the ended authentication
 
 ### Requirement: No client request reaches the listener
 

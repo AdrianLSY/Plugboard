@@ -1,0 +1,13 @@
+{
+  "_comment": "What this gate emits against each tree here. Machine-readable because prose in GATE.md is not a declaration: a stated count nothing checks drifts the moment a case is added, which four of these had done.",
+  "trees": {
+    "tree": {
+      "violations": 3,
+      "cases": [
+        "tunnel/listener: specification exists at openspec/changes/demo/specs/tunnel/listener/spec.md with no concept note at doc",
+        "docs/capabilities/ghost-capability.md: concept note for a capability with no specification",
+        "docs/capabilities/tunnel-wire-contract.md: its specification names dependency `tunnel/listener` but the note does not li"
+      ]
+    }
+  }
+}

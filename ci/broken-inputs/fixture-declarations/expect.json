@@ -1,0 +1,13 @@
+{
+  "trees": {
+    "tree": {
+      "violations": 4,
+      "cases": [
+        "ci/broken-inputs/badflag/GATE.md: demonstrates `--probe`, which the gate accepts, and expect.json declares no invocation",
+        "deadcase/tree: declares a case its gate no longer emits ('docs/vanished.md: a case that died')",
+        "ci/broken-inputs/nodecl/: 1 violating tree(s) and no expect.json",
+        "wrongcount/tree: declares 5 violation(s) and its gate emits 2"
+      ]
+    }
+  }
+}

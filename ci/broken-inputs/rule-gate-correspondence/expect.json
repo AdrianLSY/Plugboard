@@ -1,0 +1,18 @@
+{
+  "_comment": "What this gate emits against each tree here. Machine-readable because prose in GATE.md is not a declaration: a stated count nothing checks drifts the moment a case is added, which four of these had done.",
+  "trees": {
+    "tree": {
+      "violations": 8,
+      "cases": [
+        "ci/gates/dangling.py: names rule note 'docs/method/rules/nowhere.md', which does not exist",
+        "ci/gates/nameless.py: names no rule note",
+        "docs/code/banned-patterns/planned-without-status.md: declares a planned gate but is not marked status: planned",
+        "docs/code/banned-patterns/planned-without-status.md: declares a planned gate and links no work that builds it",
+        "docs/code/rules/preferences/gated-in-quarantine.md: names a gate but sits in the quarantine, which is for unenforced pre",
+        "docs/method/rules/claims-absent-gate.md: claims gate 'ci/gates/does_not_exist.py', which the repository does not run",
+        "docs/method/rules/no-marker.md: names neither a gate nor the no-gate marker",
+        "docs/method/rules/ungated-outside-quarantine.md: carries no gate but sits among the gated rules"
+      ]
+    }
+  }
+}

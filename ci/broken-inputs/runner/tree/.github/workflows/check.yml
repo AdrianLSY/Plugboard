@@ -1,0 +1,12 @@
+name: check
+
+on:
+  push:
+    branches:
+      - main
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - run: make check
+        continue-on-error: true

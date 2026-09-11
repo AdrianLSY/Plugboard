@@ -1,0 +1,38 @@
+# The runner ci/vault.json's `runner` key declares.
+#
+# Until this file existed, twenty-one gates were declared blocking in
+# ci/vault.json and nothing blocked: they ran when a person chose to type a
+# command. That is not a hypothetical gap. A rename sat half-staged in the index
+# for hours with one gate crashing on a path `git ls-files` reported as tracked,
+# and it survived a completion report and a session boundary, because the only
+# thing that would have caught it was a command somebody had to remember.
+#
+# No path filter and no branch filter: a filter is how a change that touches only
+# excluded paths skips every gate. No continue-on-error: a non-zero exit that
+# does not fail the job is a gate that cannot refuse. `ci/gates/runner.py` checks
+# all three against the declaration, so this comment is not the enforcement.
+name: check
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history. ci/vault.json pins out_of_scope.baseline_ref to a
+          # commit, so the byte-unchanged assertion over the sixteen
+          # specifications needs that commit reachable; a shallow clone fails on
+          # a missing ref rather than on a modified specification.
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # The aggregating target. It enumerates every gate it ran, so the inventory
+      # is a build output rather than a prose count.
+      - run: make check

@@ -1,0 +1,14 @@
+{
+  "_comment": "What this gate emits against each tree here. Machine-readable because prose in GATE.md is not a declaration: a stated count nothing checks drifts the moment a case is added, which four of these had done.",
+  "trees": {
+    "tree": {
+      "violations": 4,
+      "cases": [
+        "docs/planned-no-work.md: marked planned and links no work that builds it",
+        "docs/planned-subject-exists.md: still marked planned, but its subject 'docs/method' now exists",
+        "docs/planned-task-done.md: still marked planned and names 'demo task 1.1', which is complete in demo",
+        "docs/superseded-no-replacement.md: marked superseded and names no replacement"
+      ]
+    }
+  }
+}

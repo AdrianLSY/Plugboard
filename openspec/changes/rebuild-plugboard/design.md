@@ -160,6 +160,16 @@ No migration. The reference is read-only prior art with no users to carry forwar
 5. **Tenancy and edge.** Tenant-scoped projections, ownership-verified custom domains, certificate lifecycle, observability.
 6. **Deferred, cheap because the primitive exists:** WebTransport via a terminator, HTTP/3 at the edge, multiple tunnel connections per sidecar, transport swap behind an unchanged contract.
 
+### The cost of this ordering, stated rather than discovered
+
+Sorting by reversibility puts the irreversible work first, and the price is that end-to-end signal arrives late. In `tasks.md` as it stands, 260 of 717 tasks land before the streaming spine begins (section 26), 396 before a response body first reaches a client (task 38.6), and 430 before the spine closes (section 43). More than half the plan is spent before the architecture is known to carry real traffic, and contract v1 is frozen and published (section 17) before any of it.
+
+That is accepted, not overlooked, because the alternative is worse: a walking skeleton built before the schema is frozen would either freeze the schema by accident or be thrown away, and the schema is the one artifact no later work can correct. But it sits in direct tension with the Risks entry above — *when feedback is slow, an agent or a person writes assertions that are cheap to satisfy* — so the ordering carries three obligations rather than a hope:
+
+- **The two exact-bytes gates are the milestones that matter**, and they are scheduled, not aspirational: task 36.5 turns the request-direction POST assertion green and task 38.6 the response-direction one. Their red baselines are committed from task 4.3 onward, so the gap is visible in CI from the first week rather than being discovered at section 38.
+- **Nothing in sections 5 to 25 may be justified by "the spine will need it".** Each is gated by its own conformance fixtures against a stub, not by a downstream consumer that does not exist yet.
+- **If either exact-bytes gate has not turned green by the end of section 38, the ordering has failed and the remaining sequence is re-planned** — the plan is wrong before the code is, and that is the cheaper thing to discover.
+
 ### D16 · HTTP/2 to clients is in v1, and the edge listener is a separate component from the start
 
 **Decided.** This closes what was previously an open question, and it is recorded as a decision rather than left implicit because the specs had begun to commit to it by accident: `proxy/websocket` requires recognising an establishment request as extended `CONNECT` naming the stream protocol in a dedicated field, and `tunnel/wire-contract` carries the slot for it. A decision that changes the edge topology should not be made by implication in a spec.
@@ -174,7 +184,7 @@ No migration. The reference is read-only prior art with no users to carry forwar
 
 **Decided** after two cross-capability reviews found behaviour that every spec assumed another owned. In scope for this change: the sidecar as a deployable program, certificate and private-key custody, the tunnel listener, durable schema migration, and packaging of every deployable. Deferred to a later change: a human-facing control plane, audit retention and erasure, and the origin of per-tenant bound values.
 
-The fifth addition, `operability/packaging`, came from the reconcile over fifteen specs: `sidecar/program` requires the sidecar be a self-contained artifact whose packaged configuration is generated from its own schema and whose provenance is fixed at build time, and nothing stated the equivalent for the proxy or the edge terminator that D16 introduces. The reference's unbootable published image was a **both-sides** failure — the proxy raised on a salt set in no packaging artifact, and the sidecar died on a variable its own image never declared — and `docs/06-carry-forward.md` says explicitly to do this on both sides. Packaging therefore owns the obligations common to every deployable; `sidecar/program` retains only what is specific to running inside a tenant's infrastructure.
+The fifth addition, `operability/packaging`, came from the reconcile over fifteen specs: `sidecar/program` requires the sidecar be a self-contained artifact whose packaged configuration is generated from its own schema and whose provenance is fixed at build time, and nothing stated the equivalent for the proxy or the edge terminator that D16 introduces. The reference's unbootable published image was a **both-sides** failure — the proxy raised on a salt set in no packaging artifact, and the sidecar died on a variable its own image never declared — and `docs/history/carry-forward.md` says explicitly to do this on both sides. Packaging therefore owns the obligations common to every deployable; `sidecar/program` retains only what is specific to running inside a tenant's infrastructure.
 
 Rationale for each in-scope addition, and the dependency each deferral leaves behind, are in `proposal.md` — Capabilities.
 
@@ -203,7 +213,7 @@ Two deferrals carry commitments that must land here even though the capability d
 
 **D2 still holds.** The framing is transport-independent, and `tunnel/listener` is written to specify the endpoint without choosing the transport. This decision selects the v1 transport; it does not weld the contract to it, and moving to a different transport later remains a change of transport rather than a redesign.
 
-### D20 · The proxy is a multi-node installation in v1
+### D20 · The proxy is a multi-instance installation in v1
 
 **The vocabulary, first, because the rest of this decision depends on it.** One word names a running proxy process across all sixteen specs: an **instance**, or a *proxy instance* where it must be told apart from a sidecar or from the client-facing terminator, with the **installation** being the whole set of them under one operator's configuration. **Node** is reserved for an entry in the mount-point path hierarchy. `tenancy/isolation` fixes both terms for the whole system, and the rename ran across eight specs.
 
@@ -219,11 +229,79 @@ Two deferrals carry commitments that must land here even though the capability d
 
 **Partitions get a declared discipline rather than silence.** Exact installation-wide accounting is unattainable while instances cannot reach one another, so the specs state the observable contract instead of a mechanism: exactly one of *refuse* or *admit to a locally-held share* per dimension, declared and retrievable rather than emergent, with overshoot finite and determinable in advance, every unaccounted admission recorded, degraded accounting surfaced as an enumerated condition, and recovery that admits nothing further until the tenant is back under its value. A specification that pretends partitions do not happen is worse than one that states a bounded compromise.
 
+### D21 · Rebuild from scratch; the reference is prior art only
+
+**Decided.** The reference does not work: `POST` bodies arrive empty, binary payloads are corrupted, neither container boots. Its defects are ceilings frozen into the wire schema, not accumulated bugs.
+
+*Alternative considered:* restructure the existing code, keeping the 20,810 lines of Elixir tests as an executable specification. **Rejected** once the audit showed the suite is bimodal — the asynchronous and distributed half is worthless or actively self-defeating, and the synchronous half is enumerated as carry-forward instead. The tests are a *citation list*, not a foundation.
+
+### D22 · One repository
+
+**Decided.** Replaces two git submodules whose sync workflow auto-committed unreviewed pointer updates to the parent's `main` on every push to the sidecar's `main`.
+
+**Explicitly not a solution to the contract problem.** A monorepo makes the *repository* consistent and does nothing for production, where sidecar versions spread without bound. It is actively dangerous if it lulls anyone into assuming the two halves agree — which is why it is recorded next to D24 rather than as a mitigation of it.
+
+*Alternative considered:* keep the submodules and gate the pointer-update workflow on human approval. Rejected: it preserves a two-repository release surface for a contract whose whole point is that both halves are generated from one schema.
+
+### D23 · Contract-first, with a conformance suite
+
+**Decided.** A versioned schema is the root artifact; types are generated for every implementation; an executable conformance suite is the authority on the contract.
+
+**Why it is mandatory rather than nice:** the reference asserts its wire contract twice, independently, against two different fictions. `Phoenix.ChannelTest` replaces the serializer with a no-op — provably, `telephone_channel_test.exs:101` asserts an *atom* key that cannot survive JSON — and the Go tests marshal a struct whose tags production never uses. `proxy_res` has zero key-level assertions on either side.
+
+*Alternatives considered:* (a) a shared schema with codegen but no conformance suite — kills type drift but leaves the two-fictions gap; (b) hand-written types plus one docker-compose end-to-end test — cheapest, but drift prevention depends on discipline rather than tooling. Both rejected because version skew is permanent (D24) and discipline does not survive it.
+
+**Secondary benefit:** it makes "a sidecar in any language" real, which is the best-scoped, highest-status contribution an outside contributor can make.
+
+### D24 · Version skew is the governing constraint
+
+**Decided as a framing, not a feature.** The operator deploys the proxy; tenants deploy sidecars on their own schedule or never. Three consequences flow from this and recur throughout every other decision:
+
+- The wire schema is the only irreversible artifact, so work sorts by *reversibility*, not by cost.
+- Capability negotiation is mandatory (D3), because sidecar selection round-robins across mixed versions.
+- Anything requiring the sidecar to change is expensive forever.
+
+*Alternative considered:* treat skew as a migration problem with a supported-version window and a forced-upgrade path. Rejected: there is no mechanism to force a tenant to upgrade software running in their own infrastructure, so a version window would be a policy the system cannot enforce.
+
+### D25 · Positioning: multi-tenant platform ingress
+
+**Decided by the owner**, against a recommendation for self-hosted dev tunnels.
+
+*The recommendation was* dev tunnels as the front door — demoable in thirty seconds, proven demand, and contributors can use it themselves, which is the strongest predictor of whether anyone contributes. Multi-tenant routing, autoscaling and NAT traversal would then be extensions rather than competing pitches.
+
+**The owner chose multi-tenant ingress.** It is the more impressive systems claim and it is where the architecture already leans. The cost, priced explicitly:
+
+| becomes foundational | where the reference fails it |
+|---|---|
+| tenant-scoped projections | `mount_store.ex:402` — global full-table `SELECT` plus full-keyspace ETS diff on any tenant's change |
+| authorization as a signature, not a habit | `telephone_tokens.ex:353` — `update_token/2` takes no actor; cross-tenant write |
+| per-tenant blast radius and an audit trail | one bounded queue in the whole system; no backpressure, no logs, no per-tenant metrics, no audit log |
+
+Dev tunnels would have let all three be deferred. Multi-tenant ingress does not: a prospect's first question is what stops tenant A affecting tenant B, and the answer has to be architectural. This is why D8 is a data-model decision rather than a later feature.
+
+### D26 · WebTransport is designed for, not shipped
+
+**Decided.** The stated need is the capability being reachable rather than present — future-proofing, not scope.
+
+**What that buys and costs.** Reserving the `DATAGRAM` frame type and stream-oriented framing costs essentially nothing. The expensive part — extended `CONNECT` plus capsule framing at the edge — has **zero reuse** for SSE, streaming or WebDAV, whereas the tunnel work WebTransport motivates (incremental emission, binary frames, per-stream interleaving, flow control) is *already mandatory* for SSE and large downloads. So the tunnel work sequences first; it pays for itself either way.
+
+**The trap this avoids.** Building v1 on TCP "with a swappable transport layer" would reproduce the reference exactly: TCP gives one ordered stream, so you invent correlation ids, a pending map, one reply per request, and no backpressure — because that is what TCP forces. Swapping to QUIC later then means deleting the core of the tunnel. Define the primitive first (independent streams plus datagrams) and implement any TCP transport as an emulation of it. Not the reverse.
+
+*Alternative considered:* ship WebTransport in v1 behind the same contract. Rejected under D19 — the v1 transport is a WebSocket over TLS on 443 for egress reasons, and an HTTP/3 terminator is a separate contract speaker added when WebTransport forces it.
+
+### D27 · Observability before the hot path
+
+**Decided.** A metric sink and a structured logger are chosen in week one, with a telemetry-attach test as the gate.
+
+The reference emits 75 telemetry events, attaches zero handlers, and contains one `"Logger."` occurrence in 14,600 lines — inside a doc comment claiming errors are logged. **Five of seven auditors cited that telemetry as evidence of good instrumentation**, which is the finding that makes this a decision rather than a task: emission is visible in review and attachment is not, so the gate has to assert the handler, not the event.
+
+*Alternative considered:* instrument after the streaming spine works, when the signals worth emitting are known. Rejected: the hot path is where retrofitting is most invasive, and the reference demonstrates that "we will attach handlers later" is indistinguishable from never.
+
 ## Open Questions
 
 None outstanding. All four questions previously recorded here are now resolved as decisions: HTTP/2 to clients (D16), the scope of further capabilities (D17), frame payload encoding (D18), and the v1 tunnel transport (D19).
 
 Two items are deliberately left to be settled *inside* implementation rather than before it, because the specs are written to hold either way and neither moves the task breakdown:
 
-- Whether `draft-ietf-webtrans-http2` capsule framing is adopted in place of the bespoke frame vocabulary (D7's alternative). Evaluate before the contract's first version is frozen.
+- Whether `draft-ietf-webtrans-http2` capsule framing is adopted in place of the bespoke frame vocabulary (D2's alternative). Evaluate before the contract's first version is frozen.
 - Which challenge type is preferred for wildcard hostname verification, where more than one can prove control (`routing/custom-domains` requires that at least one work, not which).

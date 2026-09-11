@@ -1,0 +1,13 @@
+{
+  "_comment": "What this gate emits against each tree here. Machine-readable because prose in GATE.md is not a declaration: a stated count nothing checks drifts the moment a case is added, which four of these had done.",
+  "trees": {
+    "tree": {
+      "violations": 3,
+      "cases": [
+        "ci/gen/stowaway.py: a tool under ci/gen/ that ci/vault.json's generators declaration does not name",
+        "ci/gen/indexes.py: output differs from the pinned expectation ci/generator-inputs/indexes/expected/docs/index.md",
+        "ci/gen/rule_index.py: does not state the class of wrongness its violating input does not reach"
+      ]
+    }
+  }
+}

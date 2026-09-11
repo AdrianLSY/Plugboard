@@ -1,0 +1,21 @@
+{
+  "_comment": "What this gate emits against each tree here. Machine-readable because prose in GATE.md is not a declaration: a stated count nothing checks drifts the moment a case is added, which four of these had done.",
+  "trees": {
+    "tree": {
+      "violations": 2,
+      "cases": [
+        "openspec/changes/rebuild-plugboard/specs/never-existed: declared out of scope by restructure-docs-as-vault but matches n",
+        "the declared out-of-scope set covers 1 'spec.md' file(s) at filesystem, expected 16 under 'openspec/changes/rebuild-plug"
+      ]
+    }
+  },
+  "invocations": [
+    {
+      "_why": "GATE.md has instructed since it was written that meta treat --self-test as this gate's second violating input, and nothing ever performed it. The byte-modification and committed-edit cases need git history that no static tree can carry, so the flag IS the fixture for them.",
+      "args": [
+        "--self-test"
+      ],
+      "exit": 0
+    }
+  ]
+}

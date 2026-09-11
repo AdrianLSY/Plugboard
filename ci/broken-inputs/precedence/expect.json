@@ -1,0 +1,11 @@
+{
+  "_comment": "What this gate emits against each tree here. Machine-readable because prose in GATE.md is not a declaration: a stated count nothing checks drifts the moment a case is added, which four of these had done.",
+  "trees": {
+    "tree": {
+      "violations": 1,
+      "cases": [
+        "docs/restates-precedence.md: carries the authority-precedence marker 'AUTHORITY PRECEDENCE"
+      ]
+    }
+  }
+}

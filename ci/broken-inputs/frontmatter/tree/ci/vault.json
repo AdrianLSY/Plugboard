@@ -1,0 +1,175 @@
+{
+  "_comment": [
+    "FIXTURE MANIFEST -- ci/broken-inputs/frontmatter/tree is a miniature vault, and",
+    "this is its declared location. Copied from ci/vault.json with ONE deliberate",
+    "defect: note_classes is populated, and two of its classes leave a required",
+    "field with no value the enumeration holds.",
+    "This file exists because the note-class completeness obligation of task 1.6 has",
+    "its subject IN the manifest, not in the tree. A violating input for it can only",
+    "be a violating manifest; without one the check would ship untested. The real",
+    "ci/vault.json keeps note_classes empty until task 3.0, which is what proves the",
+    "same check passes vacuously on an empty table."
+  ],
+  "spine": "docs",
+  "note_roots": {
+    "_comment": "GOVERNED. Tracked markdown here is a note. Which obligations apply is stated per-scope below.",
+    "directories": [
+      "docs",
+      "openspec",
+      "ci",
+      "contract",
+      "proxy",
+      "sidecar",
+      "terminator",
+      "conformance"
+    ],
+    "root_files": [
+      "README.md",
+      "CLAUDE.md",
+      "AGENTS.md",
+      "CONTRIBUTING.md"
+    ],
+    "planned_directories": [
+      "contract",
+      "proxy",
+      "sidecar",
+      "terminator",
+      "conformance"
+    ]
+  },
+  "exempt_roots": {
+    "_comment": [
+      "EXEMPT. Tracked markdown here is not a note and carries no obligation of this",
+      "capability. Each entry states what owns the files instead. This list is the",
+      "declaration the spec requires; it is NOT a scanner convenience, and every gate",
+      "reports it as excluded coverage on every run."
+    ],
+    ".claude": "Agent-harness files whose frontmatter keys and file layout are owned by the Claude Code loader and by vendored upstream skills. This repository does not author their format and cannot impose a classification on it.",
+    "reference": "Read-only prior art, untracked by design (.gitignore). Cited by file:line only; obtaining instructions and pinned revisions live in the spine.",
+    "graphify-out": "Generated code map. Layer 5 of the precedence order; regenerated from the AST, never hand-edited, and not part of the hand-written vault.",
+    "node_modules": "Third-party dependency trees.",
+    ".git": "Version-control internals."
+  },
+  "scan_excludes": {
+    "_comment": [
+      "Paths excluded from a gate's traversal for a reason OTHER than root exemption.",
+      "Deliberately separate from exempt_roots: these are test inputs, not policy.",
+      "Anything here that is not also justified below fails the undeclared-exclusion check."
+    ],
+    "ci/broken-inputs": "Deliberately violating inputs. Each gate is proven to FAIL on these, so they must not be scanned as part of the real tree."
+  },
+  "entry_points": {
+    "_comment": "Reachability is measured from these. docs/knowledge-base -- 'Every note is reachable from an entry point'.",
+    "declared": [
+      "docs/start-here.md",
+      "CLAUDE.md",
+      "AGENTS.md"
+    ],
+    "planned": [
+      "docs/start-here.md",
+      "AGENTS.md"
+    ]
+  },
+  "out_of_scope": {
+    "_comment": [
+      "Paths this change declares out of its own scope, asserted byte-unchanged by",
+      "ci/gates/out_of_scope.py. docs/knowledge-base -- 'An artifact declared out of",
+      "scope stays byte-unchanged'. The reason these are listed rather than trusted:",
+      "/opsx:update reconciles neighbouring artifacts in ANY direction over",
+      "glob-expanded spec paths, and forbids only their creation, never their revision."
+    ],
+    "paths": [
+      "openspec/changes/rebuild-plugboard/specs"
+    ],
+    "declared_by": "restructure-docs-as-vault",
+    "baseline_ref": "HEAD"
+  },
+  "classification": {
+    "_comment": [
+      "Closed value sets read by ci/gates/frontmatter.py. The note-class -> value",
+      "assignment table is populated by task 3.0, before any note is written or moved.",
+      "Scope: the spine and the per-component roots. The planning directories are",
+      "excluded -- an external tool authors and validates their format."
+    ],
+    "governed_scopes": [
+      "spine",
+      "components"
+    ],
+    "excluded_scopes": [
+      "planning"
+    ],
+    "planning_directories": [
+      "openspec"
+    ],
+    "required_fields": [
+      "type",
+      "status",
+      "authority"
+    ],
+    "enumerations": {
+      "type": [
+        "moc",
+        "essay",
+        "concept",
+        "capability",
+        "decision",
+        "glossary",
+        "rule",
+        "banned-pattern",
+        "procedure",
+        "guide",
+        "index",
+        "entry"
+      ],
+      "status": [
+        "current",
+        "planned",
+        "superseded"
+      ],
+      "authority": [
+        "none",
+        "rationale",
+        "decision",
+        "normative"
+      ]
+    },
+    "spine_forbidden_authority": [
+      "normative"
+    ],
+    "note_classes": {
+      "_comment": "Populated here on purpose. See the defects below.",
+      "orientation-essay": {
+        "type": "essay",
+        "status": "current",
+        "authority": "rationale"
+      },
+      "banned-pattern-note": {
+        "type": "banned-pattern",
+        "status": "current"
+      },
+      "generated-index": {
+        "type": "index",
+        "status": "current",
+        "authority": "generated"
+      }
+    }
+  },
+  "reader_config": {
+    "_comment": [
+      "Vault reader settings that change how links resolve and how notes are classified",
+      "are tracked; per-person workspace state and caches are not. docs/knowledge-base --",
+      "'The repository is one vault with one spine'."
+    ],
+    "tracked": [
+      ".obsidian/app.json",
+      ".obsidian/core-plugins.json"
+    ],
+    "untracked": [
+      ".obsidian/workspace.json",
+      ".obsidian/workspace-mobile.json",
+      ".obsidian/cache",
+      ".obsidian/graph.json",
+      ".obsidian/hotkeys.json"
+    ]
+  }
+}

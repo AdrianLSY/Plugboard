@@ -1,0 +1,20 @@
+{
+  "_comment": "What this gate emits against each tree here. Machine-readable because prose in GATE.md is not a declaration: a stated count nothing checks drifts the moment a case is added, which four of these had done.",
+  "trees": {
+    "tree": {
+      "violations": 10,
+      "cases": [
+        "docs/malformed-unterminated.md:8: malformed frontmatter",
+        "docs/malformed.md:3: malformed frontmatter",
+        "docs/no-frontmatter.md:1: no frontmatter block",
+        "docs/one-field-missing.md:1: missing required field(s): authority (required: authority, status, type)",
+        "docs/spine-normative.md:4: field 'authority' value 'normative' is forbidden in the spine 'docs'",
+        "docs/unread-field.md:5: field 'tags' is read by no gate and no index generator",
+        "proxy/two-fields-missing.md:1: missing required field(s): authority, status (required: authority, status, type)",
+        "proxy/value-outside-enumeration.md:2: field 'type' value 'ruleset' is outside its enumeration",
+        "ci/vault.json:146: note class 'banned-pattern-note' has no assigned value for field(s): authority (absent)",
+        "ci/vault.json:150: note class 'generated-index' has no assigned value for field(s): authority (value 'generated' is outs"
+      ]
+    }
+  }
+}

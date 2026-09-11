@@ -1,0 +1,846 @@
+{
+  "_comment": [
+    "The single retrievable location every vault gate and index generator reads.",
+    "docs/knowledge-base -- 'The repository is one vault with one spine' requires the",
+    "declared set to be closed and to name each root governed or exempt, with a reason.",
+    "A gate must never decide its own subject: if a directory is neither governed nor",
+    "exempt here, the gate fails rather than skipping it."
+  ],
+  "spine": "docs",
+  "note_roots": {
+    "_comment": "GOVERNED. Tracked markdown here is a note. Which obligations apply is stated per-scope below.",
+    "directories": [
+      "docs",
+      "openspec",
+      "ci",
+      "contract",
+      "proxy",
+      "sidecar",
+      "terminator",
+      "conformance"
+    ],
+    "root_files": [
+      "README.md",
+      "CLAUDE.md",
+      "AGENTS.md",
+      "CONTRIBUTING.md"
+    ],
+    "planned_directories": [
+      "contract",
+      "proxy",
+      "sidecar",
+      "terminator",
+      "conformance"
+    ]
+  },
+  "exempt_roots": {
+    "_comment": [
+      "EXEMPT. Tracked markdown here is not a note and carries no obligation of this",
+      "capability. Each entry states what owns the files instead. This list is the",
+      "declaration the spec requires; it is NOT a scanner convenience, and every gate",
+      "reports it as excluded coverage on every run."
+    ],
+    ".claude": "Agent-harness files whose frontmatter keys and file layout are owned by the Claude Code loader and by vendored upstream skills. This repository does not author their format and cannot impose a classification on it.",
+    "reference": "Read-only prior art, untracked by design (.gitignore). Cited by file:line only; obtaining instructions and pinned revisions live in the spine.",
+    "graphify-out": "Generated code map. Layer 5 of the precedence order; regenerated from the AST, never hand-edited, and not part of the hand-written vault.",
+    "node_modules": "Third-party dependency trees.",
+    ".git": "Version-control internals."
+  },
+  "scan_excludes": {
+    "_comment": [
+      "Paths excluded from a gate's traversal for a reason OTHER than root exemption.",
+      "Deliberately separate from exempt_roots: these are test inputs, not policy.",
+      "Anything here that is not also justified below fails the undeclared-exclusion check."
+    ],
+    "ci/broken-inputs": "Deliberately violating inputs. Each gate is proven to FAIL on these, so they must not be scanned as part of the real tree.",
+    "ci/generator-inputs": "Generator violating inputs and their pinned expected outputs. Deliberately partial trees and deliberately stale expectations, held so a generator is checked against something other than its own re-run; not part of the vault."
+  },
+  "entry_points": {
+    "_comment": "Reachability is measured from these. docs/knowledge-base -- 'Every note is reachable from an entry point'.",
+    "declared": [
+      "docs/start-here.md",
+      "CLAUDE.md",
+      "AGENTS.md"
+    ],
+    "planned": [
+      "docs/start-here.md",
+      "AGENTS.md"
+    ]
+  },
+  "out_of_scope": {
+    "_comment": [
+      "Paths this change declares out of its own scope, asserted byte-unchanged by",
+      "ci/gates/out_of_scope.py. docs/knowledge-base -- 'An artifact declared out of",
+      "scope stays byte-unchanged'. The reason these are listed rather than trusted:",
+      "/opsx:update reconciles neighbouring artifacts in ANY direction over",
+      "glob-expanded spec paths, and forbids only their creation, never their revision."
+    ],
+    "paths": [
+      "openspec/changes/rebuild-plugboard/specs"
+    ],
+    "declared_by": [
+      "restructure-docs-as-vault",
+      "harden-vault-harness"
+    ],
+    "baseline_ref": "26d2927",
+    "_baseline_comment": "A FIXED commit, not a moving ref. This read 'HEAD', which the gate resolves per run, so the byte-unchanged assertion four tasks across two changes depend on caught an uncommitted edit and passed a committed one -- proven by appending a sentence to a frozen spec in a copied tree, which failed before the commit and passed after it. RE-BASELINED from fb24a9f to 26d2927: the sixteen specifications were legitimately revised by spec/expectations-terminator-dispatch, which adds fourteen requirements and fifty-three scenarios on expectations, a client-facing terminator accept path and cross-instance dispatch. That revision is not this declaration's subject; the two documentation changes are. So the baseline moves to the commit holding the revision, and the assertion continues to mean exactly what it meant: the documentation work has not touched these files. Moving it was a deliberate act, which is the whole point of pinning -- a moving ref would have let the revision through unnoticed and told nobody.",
+    "_expiry_comment": "A declaration cannot outlive its reason. This set exists because the two changes named in declared_by must not edit those specifications; it does NOT mean the specifications are frozen forever, and with a pinned baseline it would read that way. So the gate fails once every declaring change has been archived, demanding the declaration be removed rather than quietly asserting a freeze nobody decided on. A LEGITIMATE revision -- there is one in flight on the branch spec/expectations-terminator-dispatch, 14 requirements and 53 scenarios -- requires re-baselining or retiring this declaration, which is a deliberate visible act rather than a silent pass. That is the whole point of pinning: changing these files takes a decision, not an oversight."
+  },
+  "classification": {
+    "_comment": [
+      "Closed value sets read by ci/gates/frontmatter.py. The note-class -> value",
+      "assignment table is populated by task 3.0, before any note is written or moved.",
+      "Scope: the spine and the per-component roots. The planning directories are",
+      "excluded -- an external tool authors and validates their format."
+    ],
+    "governed_scopes": [
+      "spine",
+      "components"
+    ],
+    "excluded_scopes": [
+      "planning"
+    ],
+    "planning_directories": [
+      "openspec"
+    ],
+    "planning_artifacts": {
+      "_comment": [
+        "Which files under a planning directory are reachability subjects. A",
+        "planning artifact is a file an AUTHOR writes -- a proposal, a spec, a",
+        "design, a task list. Metadata the planning tool manages for itself is",
+        "not a subject: requiring a note to link to .openspec.yaml would be a",
+        "gate demanding prose about a tool's bookkeeping. Declared here rather",
+        "than inferred by the gate, because a gate that decides for itself which",
+        "files it will not look at is the defect the root set exists to remove."
+      ],
+      "suffixes": [
+        ".md"
+      ],
+      "tool_metadata": [
+        ".openspec.yaml",
+        "config.yaml",
+        "config.yml"
+      ]
+    },
+    "required_fields": [
+      "type",
+      "status",
+      "authority"
+    ],
+    "enumerations": {
+      "type": [
+        "moc",
+        "essay",
+        "concept",
+        "capability",
+        "decision",
+        "glossary",
+        "rule",
+        "banned-pattern",
+        "procedure",
+        "guide",
+        "index",
+        "entry"
+      ],
+      "status": [
+        "current",
+        "planned",
+        "superseded"
+      ],
+      "authority": [
+        "none",
+        "rationale",
+        "decision",
+        "normative"
+      ]
+    },
+    "spine_forbidden_authority": [
+      "normative"
+    ],
+    "note_classes": {
+      "_comment": [
+        "Every note class this change creates, with the type and authority that",
+        "class carries. `status` is per-note, not per-class -- a note is current,",
+        "planned or superseded according to whether its subject exists -- so each",
+        "class declares the value a note of that class takes WHEN WRITTEN; the",
+        "currency gate is what moves it afterwards, and a stale marker fails.",
+        "A class present here with a missing field fails the frontmatter gate:",
+        "which authority a glossary carries versus a decision note was a design",
+        "decision the plan had left to nobody."
+      ],
+      "moc": {
+        "type": "moc",
+        "authority": "none",
+        "status": "current",
+        "description": "A map of content: start-here and any hand-written wayfinding note. Carries no claim of its own."
+      },
+      "essay": {
+        "type": "essay",
+        "authority": "rationale",
+        "status": "current",
+        "description": "Long-form argument -- the orientation prose the numbered essays become. Records why, never what."
+      },
+      "concept": {
+        "type": "concept",
+        "authority": "rationale",
+        "status": "planned",
+        "description": "One domain concept explained for orientation. Links to the specification that owns its behaviour."
+      },
+      "capability": {
+        "type": "capability",
+        "authority": "rationale",
+        "status": "planned",
+        "description": "The concept note for one capability. Links to its specification, its dependencies and the decisions that shaped it; restates no requirement."
+      },
+      "decision": {
+        "type": "decision",
+        "authority": "decision",
+        "status": "current",
+        "description": "One decision in force, linking into its entry in the declared register rather than restating it."
+      },
+      "glossary": {
+        "type": "glossary",
+        "authority": "rationale",
+        "status": "current",
+        "description": "Domain vocabulary. Rationale rather than normative: the specifications fix the terms, this collects them."
+      },
+      "rule": {
+        "type": "rule",
+        "authority": "rationale",
+        "status": "planned",
+        "description": "One named obligation on how code is written or placed, naming its gate or carrying the no-gate marker."
+      },
+      "banned-pattern": {
+        "type": "banned-pattern",
+        "authority": "rationale",
+        "status": "planned",
+        "description": "One prohibited construct with its own anchor, naming the defect it prevents and citing it."
+      },
+      "procedure": {
+        "type": "procedure",
+        "authority": "rationale",
+        "status": "planned",
+        "description": "An ordered task-shaped procedure -- adding a feature, fixing a bug -- naming its own verification."
+      },
+      "guide": {
+        "type": "guide",
+        "authority": "rationale",
+        "status": "planned",
+        "description": "Practitioner guidance that is neither one rule nor one concept: language conventions, component boundaries."
+      },
+      "index": {
+        "type": "index",
+        "authority": "none",
+        "status": "current",
+        "description": "Generated by a tool, byte-identical to a fresh regeneration, never hand-edited."
+      },
+      "entry": {
+        "type": "entry",
+        "authority": "none",
+        "status": "current",
+        "description": "A router an agent or a person reads first. Held to a size ceiling and to the absent-artifact rule rather than to classification."
+      }
+    }
+  },
+  "decision_register": {
+    "_comment": [
+      "docs/knowledge-base -- 'There is exactly one decision register'. A register",
+      "assigns identifiers in the installation's unnamespaced D<n> sequence and",
+      "holds those decisions as being in force. There is one, named here, so the",
+      "gate has a declared subject instead of a path convention.",
+      "A change's own design rationale may record decisions under a namespace;",
+      "a namespaced set is NOT a register. This change's own ten decisions were",
+      "D1-D10, colliding one-for-one with the register's -- the defect the change",
+      "calls BREAKING, committed in the act of fixing it. They are now RDV1-RDV10."
+    ],
+    "register": "openspec/changes/rebuild-plugboard/design.md",
+    "assigned": [
+      "D1",
+      "D2",
+      "D3",
+      "D4",
+      "D5",
+      "D6",
+      "D7",
+      "D8",
+      "D9",
+      "D10",
+      "D16",
+      "D17",
+      "D18",
+      "D19",
+      "D20",
+      "D21",
+      "D22",
+      "D23",
+      "D24",
+      "D25",
+      "D26",
+      "D27"
+    ],
+    "retired": {
+      "_comment": [
+        "Permanently unassigned. The surviving register jumped D10 -> D16, and the",
+        "superseded register filled D11-D15 with five decisions of its own. Reusing",
+        "a number would make a citation written today ambiguous against any",
+        "citation written against the old register, including archived ones -- so",
+        "the numbers are retired rather than recycled, and each records what it",
+        "used to denote and where that decision lives now."
+      ],
+      "D11": "was 'Proxied traffic terminates before application middleware' in docs/05-decision-log.md; now D5",
+      "D12": "was 'Framing authority is per-hop, never relayed' in docs/05-decision-log.md; now D6",
+      "D13": "was 'Tenant scoping in the data model' in docs/05-decision-log.md; now D8",
+      "D14": "was 'Domain ownership verification precedes certificate issuance' in docs/05-decision-log.md; now D9",
+      "D15": "was 'Observability before the hot path' in docs/05-decision-log.md; now D27"
+    },
+    "per_change_namespaces": {
+      "_comment": "A change's own decisions carry a prefix naming the change.",
+      "restructure-docs-as-vault": "RDV"
+    },
+    "collision_table": "docs/decisions/superseded-register.md",
+    "citation_scopes": {
+      "_comment": [
+        "Paths whose notes are ABOUT the register rather than being one. A heading",
+        "here may name an identifier ONLY if the register already holds it, and",
+        "only in a file that links to the register -- so the note is a pointer,",
+        "not a restatement.",
+        "This exists because a decision note's natural title is '# D1 - Title',",
+        "which a heading-means-assignment heuristic reads as opening a second",
+        "register. Both looser fixes were rejected: allowing any already-assigned",
+        "identifier in any heading would let a second register REDEFINE D1 while",
+        "D1 exists, which is the exact collision the requirement prevents; and",
+        "retitling the notes to dodge the regex would bend the vault to the gate.",
+        "An unassigned identifier, a retired one, or a file with no link to the",
+        "register still fails here."
+      ],
+      "paths": [
+        "docs/decisions"
+      ]
+    },
+    "superseded_registers": {
+      "_comment": [
+        "Every identifier a superseded register used, what it denoted there, and",
+        "what it denotes now -- so a citation written against the old register",
+        "resolves rather than being guessed at. `now` is either an identifier in",
+        "the surviving register or the literal 'retired'.",
+        "A register may not be removed while it holds a decision recorded nowhere",
+        "else, and this table is what makes that check an enumeration rather than",
+        "an inspection."
+      ],
+      "docs/05-decision-log.md": {
+        "D1": {
+          "denoted": "Rebuild from scratch, reference as prior art only",
+          "now": "D21",
+          "unique": true
+        },
+        "D2": {
+          "denoted": "One repository",
+          "now": "D22",
+          "unique": true
+        },
+        "D3": {
+          "denoted": "Contract-first, with a conformance suite",
+          "now": "D23",
+          "unique": true
+        },
+        "D4": {
+          "denoted": "Version skew is the governing constraint",
+          "now": "D24",
+          "unique": true
+        },
+        "D5": {
+          "denoted": "Positioning: multi-tenant platform ingress",
+          "now": "D25",
+          "unique": true
+        },
+        "D6": {
+          "denoted": "Three primitives, not per-protocol handling",
+          "now": "D1",
+          "unique": false
+        },
+        "D7": {
+          "denoted": "The tunnel exchange is frame-shaped",
+          "now": "D2",
+          "unique": false
+        },
+        "D8": {
+          "denoted": "Capability negotiation with refusal, not degradation",
+          "now": "D3",
+          "unique": false
+        },
+        "D9": {
+          "denoted": "Runtime (REVERSED once)",
+          "now": "D4",
+          "unique": false
+        },
+        "D10": {
+          "denoted": "WebTransport designed-for, not shipped",
+          "now": "D26",
+          "unique": true
+        },
+        "D11": {
+          "denoted": "Proxied traffic terminates before application middleware",
+          "now": "D5",
+          "unique": false
+        },
+        "D12": {
+          "denoted": "Framing authority is per-hop, never relayed",
+          "now": "D6",
+          "unique": false
+        },
+        "D13": {
+          "denoted": "Tenant scoping in the data model",
+          "now": "D8",
+          "unique": false
+        },
+        "D14": {
+          "denoted": "Domain ownership verification precedes certificate issuance",
+          "now": "D9",
+          "unique": false
+        },
+        "D15": {
+          "denoted": "Observability before the hot path",
+          "now": "D27",
+          "unique": true
+        }
+      }
+    },
+    "prefix": "D",
+    "_prefix_comment": "The letter the installation's unnamespaced sequence uses. Declared rather than hardcoded in ci/gates/decision_register.py, because a gate never decides its own scope and the rule the vault states is that an identifier belongs to a declared register -- not that the letter D is special. Generalising the requirement to an arbitrary identifier family was drafted, prototyped, and cut: 483 findings and zero true positives, because a tokenizer loose enough to see a new family also sees SHA, IPv and PBKDF. This is the part of it worth having."
+  },
+  "cited_artifacts": {
+    "_comment": [
+      "Artifacts cited by file:line that are NOT tracked in this repository. Each",
+      "must name the note stating how to obtain it and the revision the citations",
+      "were taken against, so a citation into it is checkable by someone other",
+      "than its author. docs/knowledge-base -- 'A cited artifact is obtainable'.",
+      "Of 294 citations on the current tree, 9 are written prefixed into reference/",
+      "and 227 are unqualified and attributed to it: 236 in all, checkable by",
+      "nobody but their author until the revisions above are reachable. Reproduce",
+      "with `python3 ci/gates/citations.py`, which prints the breakdown on every",
+      "run. This read '139 citations' when the declaration was written -- the",
+      "figure for the pre-restructure tree at fb24a9f, never recomputed, and a",
+      "number in prose that no command reproduced."
+    ],
+    "reference": {
+      "obtaining_note": "docs/history/obtaining-the-reference.md",
+      "revisions": {
+        "reference/Plugboard": "6756a07",
+        "reference/Telephone": "9ccba86"
+      }
+    },
+    "_unqualified": "A citation with no directory component -- `mount_store.ex:402` -- is resolved first by basename against the tracked set, and otherwise attributed to 'prior_art_default' below. Stated because it is a real weakening: an unqualified citation is less checkable than a prefixed one. 227 of the 294 citations on the current tree are written that way, printed on every run by ci/gates/citations.py; this read 'roughly seventy' and was never recomputed.",
+    "prior_art_default": "reference"
+  },
+  "normative_modals": {
+    "_comment": [
+      "Words that make a sentence an obligation. A spine note may not state",
+      "behaviour a specification owns, so these are refused in the spine outside a",
+      "quote, a code span or a fenced block. This is the DECIDABLE half of the",
+      "citation requirement -- see ci/gates/citations.py for what it does not decide."
+    ],
+    "words": [
+      "SHALL",
+      "SHALL NOT",
+      "MUST",
+      "MUST NOT",
+      "REQUIRED",
+      "SHOULD NOT"
+    ]
+  },
+  "gate_policy": {
+    "_comment": [
+      "Which gates block, and which task flips each remaining one. A gate that",
+      "cannot pass on the tree it governs is not a gate, so a gate lands in",
+      "report-only and becomes blocking at the task that makes the tree satisfy",
+      "it. This is the record tasks.md 1.11 requires; the gate ROSTER is not",
+      "here -- it is discovered from ci/gates/*.py against ci/broken-inputs/*,",
+      "because a declared roster is a second encoding of what the tree states."
+    ],
+    "phase": "complete",
+    "blocking": [
+      "authoring-channels",
+      "capability-notes",
+      "citations",
+      "component-boundaries",
+      "correspondences",
+      "coverage",
+      "currency",
+      "decision-register",
+      "duplication",
+      "entry-points",
+      "fixture-declarations",
+      "frontmatter",
+      "generators",
+      "index-drift",
+      "language-coverage",
+      "links",
+      "meta",
+      "note-roots",
+      "out-of-scope",
+      "owned-behaviour",
+      "precedence",
+      "reachability",
+      "reader-config",
+      "rule-gate-correspondence",
+      "runner",
+      "wikilinks"
+    ],
+    "report_only_until": {},
+    "whole_tree_gates": {
+      "_comment": [
+        "Gates whose subject is a WHOLE-TREE property rather than a per-file one.",
+        "A minimal violating input necessarily fails every one of these -- it has no",
+        "entry point, no generated index, no reader config, no conventions note -- so",
+        "they are excluded from the fixture-isolation check in ci/gates/meta.py.",
+        "Running that check over all twenty gates produced 165 failures, none of them",
+        "a defect: satisfying it literally would mean building twenty complete valid",
+        "vaults, one per fixture. The isolation property that MATTERS is still",
+        "checked: a fixture must not trip another PER-FILE gate, and every fixture",
+        "must fail its own gate by its own logic (the neuter test).",
+        "The runner, correspondences and generators gates are added by harden-vault-harness: no fixture tree holds a workflow file, a rule index, a gate roster or a ci/gen tool, so each would otherwise fail on all 21 trees through the isolation check. The count is three, not the two that change's task 1.4 estimated; measured at task 4.",
+        "coverage is added for the same reason: its subject is the gate roster, so it invokes every gate-shaped module it finds. Two fixtures carry stray .py files under ci/gates for their own cases -- rule-gate-correspondence needs a gate naming no rule note, language-coverage needs Python present -- and neither is a gate roster. Running the isolation check over them reported two failures, neither a defect.",
+        "fixture-declarations is added for the same reason: its subject is the whole violating-input set, so a minimal tree carrying one fixture of its own is not that set."
+      ],
+      "gates": [
+        "reachability",
+        "index-drift",
+        "reader-config",
+        "entry-points",
+        "authoring-channels",
+        "precedence",
+        "note-roots",
+        "decision-register",
+        "out-of-scope",
+        "capability-notes",
+        "language-coverage",
+        "component-boundaries",
+        "rule-gate-correspondence",
+        "currency",
+        "citations",
+        "runner",
+        "correspondences",
+        "generators",
+        "coverage",
+        "fixture-declarations"
+      ]
+    },
+    "declared_vacuity": {
+      "_comment": [
+        "A gate whose subject set is legitimately empty on the tracked tree, with",
+        "the reason and the work that ends it. An UNdeclared empty subject set",
+        "fails; a declared one passes and states both on every run; and once the",
+        "named work is complete while the set is still empty, the build fails, so a",
+        "declaration cannot outlive its reason. Previously this reason lived in",
+        "ci/gates/component_boundaries.py's docstring, where nothing could read it."
+      ],
+      "component-boundaries": {
+        "reason": "No component directory exists yet, so the keyed set is empty and every case the gate checks is vacuously satisfied. Writing five boundary notes now would describe absent directories, which the currency rule refuses.",
+        "ends_with": "openspec/changes/rebuild-plugboard/tasks.md task 1.1",
+        "ends_when": "any path in code_standards.components.candidates is a directory"
+      }
+    }
+  },
+  "reader_config": {
+    "_comment": [
+      "Vault reader settings that change how links resolve and how notes are classified",
+      "are tracked; per-person workspace state and caches are not. docs/knowledge-base --",
+      "'The repository is one vault with one spine'."
+    ],
+    "tracked": [
+      ".obsidian/app.json",
+      ".obsidian/core-plugins.json"
+    ],
+    "untracked": [
+      ".obsidian/workspace.json",
+      ".obsidian/workspace-mobile.json",
+      ".obsidian/cache",
+      ".obsidian/graph.json",
+      ".obsidian/hotkeys.json"
+    ]
+  },
+  "capability_notes": {
+    "_comment": [
+      "Where a capability's concept note lives, and how its filename derives from",
+      "its identifier. docs/knowledge-base -- 'Each capability has a concept note'.",
+      "The correspondence is gated in the direction that can drift: a dependency",
+      "named inside a specification with no matching link in the concept note fails.",
+      "RDV5 deliberately builds the graph in the vault rather than by editing the",
+      "eighty backticked cross-references inside the specifications themselves."
+    ],
+    "dir": "docs/capabilities",
+    "spec_glob": "openspec/changes/*/specs/*/*/spec.md",
+    "filename": "<domain>-<capability>.md",
+    "ceiling_lines": 80,
+    "_ceiling_comment": "Declared empirically from the first four notes written, per task 5.1: they came in at 61/66/67/73 lines and the widest capability in the remaining twelve (operability/packaging, nine dependency edges) reached 78. 80 fits every note with headroom and without inviting essays. A note over it is a finding."
+  },
+  "code_standards": {
+    "_comment": [
+      "docs/code-standards. Rule notes live under these directories; the quarantine",
+      "holds the unenforced ones so a preference is distinguishable from an",
+      "obligation without reading either note. The organising line is inherited:",
+      "'a rule with no gate is a wish' -- so the guide is arranged by enforcement",
+      "rather than by topic, and the correspondence is checked BOTH ways."
+    ],
+    "rule_dirs": [
+      "docs/method/rules",
+      "docs/code/rules",
+      "docs/code/banned-patterns"
+    ],
+    "quarantine_dir": "docs/code/rules/preferences",
+    "components": {
+      "_comment": [
+        "Components whose boundary must be stated. Keyed on the set that EXISTS: no",
+        "note is written for a component that does not yet exist, so this list is",
+        "empty until rebuild-plugboard task 1.1 creates the directory shape. The",
+        "boundary gate therefore passes vacuously today and starts failing the",
+        "moment a component appears without its boundary note -- which is the point."
+      ],
+      "candidates": [
+        "contract",
+        "proxy",
+        "sidecar",
+        "terminator",
+        "conformance"
+      ],
+      "boundary_dir": "docs/code/boundaries"
+    },
+    "languages": {
+      "_comment": [
+        "Keyed on the languages that hold tracked source. Today that is Python only",
+        "-- the 21 gate modules, the shared library and the three generators: 26 tracked .py files outside the fixtures (`git ls-files 'ci/*.py' | grep -vc broken-inputs`). This read 'the sixteen gate modules and the index generator' until it was recomputed. Elixir and Go arrive",
+        "with their source; writing their conventions now would fail this gate's own",
+        "'conventions for an absent language are refused' case, and the proposal's",
+        "promise of them is therefore scoped to when their source lands.",
+        "Fixture files under ci/broken-inputs are test inputs, not source."
+      ],
+      "note_dir": "docs/code/languages",
+      "source_globs": {
+        "python": [
+          "ci/**/*.py"
+        ]
+      },
+      "exclude": [
+        "ci/broken-inputs"
+      ]
+    },
+    "_gate_states": "A rule note's Gate line is one of three: a runnable `ci/gates/<name>.py`; `none` (preference, quarantined, never a blocking objection); or `planned` (an obligation whose gate is not built yet, which must also be marked status: planned and link the work that builds it). The third state exists because the banned patterns are obligations today and their gates arrive with rebuild-plugboard task 3.7 -- filing them as `none` would record an obligation as taste, and claiming a gate would name one that does not run."
+  },
+  "generated_files": {
+    "_comment": [
+      "Generated files outside the per-directory index scheme, each with the tool",
+      "that produces it. ci/gates/index_drift.py runs each tool in check mode, so a",
+      "second generator cannot quietly become the one nothing verifies.",
+      "docs/rule-index.md carries every rule's enforcement status and the",
+      "proportion carrying no gate -- both properties of a table, so the table is",
+      "generated rather than maintained: a hand-written index of enforcement status",
+      "is a second encoding of what the notes say, and the two drift in the",
+      "direction that flatters the guide."
+    ],
+    "docs/rule-index.md": "ci/gen/rule_index.py",
+    "docs/method/conventions.md": "ci/gen/conventions.py"
+  },
+  "precedence": {
+    "_comment": [
+      "The authority precedence, stated in exactly one location. The gate looks for",
+      "an exact marker line rather than for ordered layer names: 'contract',",
+      "'specifications' and 'decisions' are ordinary words in this vocabulary, so a",
+      "name-based check reported almost every capability note as a restatement.",
+      "A note DEFERRING to its owner ('the specification wins where we disagree') is",
+      "required of every spine note and is not a restatement."
+    ],
+    "canonical_note": "docs/method/authority-precedence.md",
+    "marker": "AUTHORITY PRECEDENCE -- stated here and nowhere else",
+    "layers": [
+      "contract",
+      "specifications",
+      "decisions in force",
+      "spine notes",
+      "generated"
+    ]
+  },
+  "entry_files": {
+    "_comment": [
+      "The routers an agent or a person reads first. The ceiling is the one the",
+      "plan already set for them (rebuild-plugboard task 1.3): 4 KB. CLAUDE.md was",
+      "4,865 bytes against it, roughly a kilobyte of which described a graphify",
+      "knowledge graph that has never been generated in this repository -- so the",
+      "absent-artifact check and the ceiling close on the same content."
+    ],
+    "files": [
+      "CLAUDE.md",
+      "AGENTS.md"
+    ],
+    "ceiling_bytes": 4096,
+    "invariant_markers": [
+      "version skew",
+      "refuse, never degrade",
+      "contract first",
+      "tenant scoping"
+    ]
+  },
+  "conventions": {
+    "_comment": [
+      "THE single enumeration both authoring channels and the gates key on.",
+      "RDV10: no one channel reaches both authors. openspec/config.yaml's `rules:`",
+      "block is keyed per openspec artifact, so it cannot express an obligation on",
+      "a note; and a note author never reads it. So there are two channels, and a",
+      "convention added to the gates without reaching BOTH fails.",
+      "Each id maps to the gate that enforces it, so the keying is checkable rather",
+      "than a promise."
+    ],
+    "items": {
+      "relative-links": {
+        "gate": "wikilinks",
+        "statement": "Relations are relative markdown links. No wikilinks, no transclusion, no absolute paths."
+      },
+      "classification": {
+        "gate": "frontmatter",
+        "statement": "Every spine or component note declares type, status and authority from the closed enumerations."
+      },
+      "links-resolve": {
+        "gate": "links",
+        "statement": "Every link resolves, anchors included."
+      },
+      "reachable": {
+        "gate": "reachability",
+        "statement": "Every note is reachable by links from a declared entry point."
+      },
+      "no-owned-behaviour": {
+        "gate": "citations",
+        "statement": "A note never states behaviour a specification owns; no normative modal in the spine. Link the owner."
+      },
+      "cited-or-unverified": {
+        "gate": "citations",
+        "statement": "Every claim carries a citation into a tracked file or an obtainable artifact, or an explicit Unverified marker."
+      },
+      "one-register": {
+        "gate": "decision_register",
+        "statement": "One decision register. A change's own decisions carry a namespace; a retired identifier is never reused."
+      },
+      "currency": {
+        "gate": "currency",
+        "statement": "A planned note links the work that builds it, and its marker is retired once its subject exists."
+      },
+      "precedence-once": {
+        "gate": "precedence",
+        "statement": "The authority precedence is stated in exactly one location; every other note links it."
+      },
+      "one-copy": {
+        "gate": "duplication",
+        "statement": "Requirement text has one copy. Link the specification rather than restating it."
+      },
+      "generated-indexes": {
+        "gate": "index_drift",
+        "statement": "An index is generated, tracked, and byte-identical to a fresh regeneration. Never hand-edit one."
+      },
+      "rule-names-gate": {
+        "gate": "rule_gate_correspondence",
+        "statement": "Every rule note names its gate, or `planned`, or `none` (preference, quarantined)."
+      },
+      "capability-note": {
+        "gate": "capability_notes",
+        "statement": "Every capability has one concept note under the declared ceiling, linking its spec and its dependencies."
+      },
+      "entry-routes": {
+        "gate": "entry_points",
+        "statement": "An entry file routes, stays under its ceiling, and names nothing the repository does not contain."
+      },
+      "declared-roots": {
+        "gate": "note_roots",
+        "statement": "Every tracked note lives under a declared governed root; an exempt root records what owns its files."
+      }
+    }
+  },
+  "runner": {
+    "_comment": [
+      "The runner configuration the gates require. Declared rather than hardcoded",
+      "because a gate never decides its own scope (ci/gates/_common.py). The",
+      "PROVIDER is not a spec-level commitment: harden-vault-harness HVH2 keys the",
+      "requirement on this path, so switching forge edits this value and the file",
+      "it names, and changes no requirement. The file is inert on a repository",
+      "with no configured remote, which is the state today."
+    ],
+    "path": ".github/workflows/check.yml",
+    "aggregating_target": "make check",
+    "required_triggers": [
+      "push",
+      "pull_request"
+    ],
+    "forbidden_clauses": {
+      "_comment": "Each maps a configuration key to the refusal it would defeat.",
+      "paths": "a path filter lets a change touching only unlisted paths skip every gate",
+      "paths-ignore": "the same filter, inverted",
+      "branches": "a branch filter lets work on an unlisted branch skip every gate",
+      "branches-ignore": "the same filter, inverted",
+      "continue-on-error": "a non-zero exit that does not fail the job is a gate that cannot refuse"
+    }
+  },
+  "generators": {
+    "_comment": [
+      "Every tool that produces a tracked artifact, with the violating input and",
+      "the pinned expected output that hold it to an oracle it cannot move.",
+      "Keyed on the TOOL, because ci/gen/indexes.py produces thirteen artifacts",
+      "under the per-directory index scheme and cannot be keyed on one of them --",
+      "it is the generator that generated_files below does not name, and that is",
+      "the defect this declaration closes. Fixtures live OUTSIDE ci/broken-inputs",
+      "(harden-vault-harness HVH5): ci/gates/meta.py maps a gate module to a",
+      "fixture directory there, and a generator fixture has no gate module."
+    ],
+    "dir": "ci/gen",
+    "fixture_dir": "ci/generator-inputs",
+    "tools": {
+      "ci/gen/indexes.py": {
+        "input": "ci/generator-inputs/indexes/tree",
+        "expected": "ci/generator-inputs/indexes/expected"
+      },
+      "ci/gen/rule_index.py": {
+        "input": "ci/generator-inputs/rule-index/tree",
+        "expected": "ci/generator-inputs/rule-index/expected"
+      },
+      "ci/gen/conventions.py": {
+        "input": "ci/generator-inputs/conventions/tree",
+        "expected": "ci/generator-inputs/conventions/expected"
+      }
+    }
+  },
+  "correspondences": {
+    "_comment": [
+      "Sets that two encodings resolve independently. Declared rather than",
+      "discovered: the trigger first drafted -- 'published in a tracked artifact a",
+      "reader is routed to' -- narrowed nothing, because an in-force requirement",
+      "already makes 156 of 159 tracked subjects reachable from an entry point.",
+      "A side names a RESOLVER KIND the gate knows how to run and compares",
+      "MEMBERS, never a cardinal: an artifact stating a count without naming its",
+      "members is not a side, because a count cannot say which member diverged."
+    ],
+    "declared": {
+      "blocking-classification": {
+        "subject": "which gates the build treats as blocking",
+        "computed": {
+          "kind": "gate_modules",
+          "members": "gate ids derived from the modules under ci/gates that the runner invokes"
+        },
+        "published": {
+          "kind": "manifest_list",
+          "path": "gate_policy.blocking",
+          "members": "gate ids this manifest classifies as blocking"
+        }
+      }
+    },
+    "retired": {
+      "_comment": [
+        "A correspondence closed by collapsing both sides onto ONE resolver is",
+        "retired here with that resolver recorded, rather than deleted -- so that",
+        "re-opening the divergence requires undoing a named decision instead of",
+        "quietly adding a second encoding back."
+      ],
+      "rule-set": {
+        "subject": "every rule note, against the rows the rule index publishes",
+        "divergence": "docs/rule-index.md published 42 rules / 20 gated while ci/gates/rule_gate_correspondence.py counted 43 / 21 over the same set; the missing member was docs/method/authority-precedence.md, a gated rule absent from the index CLAUDE.md routes readers to",
+        "closed_by": "_common.rule_notes",
+        "reason": "Both sides now call the one resolver in ci/gates/_common.py -- the gate and ci/gen/rule_index.py import it rather than each walking the tree -- so the two cannot diverge by construction and there is no longer a pair to reconcile."
+      }
+    }
+  }
+}

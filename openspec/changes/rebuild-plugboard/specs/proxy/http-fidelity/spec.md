@@ -416,6 +416,108 @@ Where such a request is abandoned by the client before the backend answers, the 
 - **THEN** the exchange is ended
 - **AND** the cause names the total bound rather than the time-to-first-byte bound
 
+### Requirement: A stated expectation is answered by the backend, not by the edge
+
+The wire contract already permits a request head to cross the tunnel before any of its body octets exist, and fixes what the two ends do on the stream once a counterpart confirms or rejects an expectation. This capability governs the client edge around it: which party decides, what the client observes, and what is refused when no party can decide. Where a client states an expectation that the backend confirm its willingness to receive the body, the proxy SHALL dispatch the request head before reading any body octet from the client, and SHALL leave the decision to the backend: the interim confirmation or the final response the client observes SHALL be the one the backend produced, and the proxy SHALL NOT generate a confirmation of its own on any party's behalf. Dispatching the head first SHALL NOT defer or exempt a check that precedes dispatch — the header-section bounds, admission, and a declared body length already exceeding the request-body bound are decided at the edge as those requirements state, before any head is dispatched.
+
+A recognised expectation is an ordinary end-to-end field. The proxy SHALL carry it among the request's field pairs with its value unaltered and SHALL NOT consume it at the edge; whether a field is removed as connection-scoped is the closed enumeration edge hygiene owns, and this capability SHALL NOT maintain a second one. The proxy SHALL NOT place an expectation on an exchange whose client stated none, including over a client protocol that defines no such mechanism, and the absence of a construct that protocol does not define SHALL NOT be treated as a fault.
+
+Interim responses are an optional capability of the wire contract. Where a client states the expectation and no eligible sidecar for the matched mount, anywhere in the installation, declared interim responses, the proxy SHALL refuse the request before dispatching it, naming interim responses as the capability no eligible sidecar declared; it SHALL NOT dispatch the request and rely on the client abandoning the wait. That refusal SHALL be decided on the expectation the client stated and not on whether the client goes on to wait, so that the outcome does not vary with client timing.
+
+An expectation whose value the proxy does not recognise SHALL likewise be refused before dispatch, with the expectation-failed status and with an enumerated cause distinct from the undeclared-capability refusal and from every other cause this capability defines. It SHALL NOT be forwarded to a sidecar, and the request SHALL NOT be served as though the expectation had not been stated.
+
+Where a client states the expectation and begins sending its body without waiting, the exchange SHALL proceed: the octets SHALL be forwarded as they arrive, SHALL NOT be discarded, and SHALL NOT be withheld pending a confirmation that may never come; the unsolicited body SHALL NOT be treated as a violation of the expectation or as a reason to fail the exchange. A confirmation the backend produces afterwards SHALL still reach the client, and no octet already forwarded SHALL be sent a second time.
+
+#### Scenario: The confirmation the client receives is the backend's
+
+- **WHEN** a client states the continue expectation on a mount whose eligible sidecar declared interim responses
+- **THEN** the request head reaches the backend before any body octet does
+- **AND** the client observes no confirmation before the backend produces one
+- **AND** the interim response the client receives is the one the backend produced
+
+#### Scenario: The expectation reaches the origin unaltered
+
+- **WHEN** a request stating a recognised expectation is dispatched
+- **THEN** the origin receives that expectation among the request's field pairs with its value unaltered
+- **AND** a request whose client stated none reaches the origin carrying none
+- **AND** a request arriving over a client protocol that defines no expectation mechanism likewise carries none, and is not refused for the absence of the construct
+
+#### Scenario: Dispatching the head first exempts no edge check
+
+- **WHEN** a client states the expectation on a request declaring a body length larger than the route's request-body bound
+- **THEN** the request is refused before any head is dispatched
+- **AND** no exchange is created toward any sidecar
+- **AND** the cause names the body-size bound rather than the expectation
+
+#### Scenario: An expectation no sidecar declared is refused before dispatch
+
+- **WHEN** a client states the expectation for a mount for which no eligible sidecar in the installation declared interim responses
+- **THEN** the request is refused
+- **AND** the refusal names interim responses as the capability no eligible sidecar declared
+- **AND** no exchange is created toward any sidecar
+- **AND** a client that states the same expectation and begins sending its body immediately receives the same refusal
+
+#### Scenario: An unrecognised expectation is refused, not relayed
+
+- **WHEN** a client states an expectation whose value the proxy does not recognise
+- **THEN** the request is refused with the expectation-failed status
+- **AND** the recorded cause differs from the one recorded when no eligible sidecar declared interim responses
+- **AND** no exchange is created toward any sidecar
+- **AND** the request is not served as though the expectation had not been stated
+
+#### Scenario: A client that does not wait is served
+
+- **WHEN** a client states the expectation and begins sending its body without waiting for a confirmation
+- **THEN** the origin receives the complete body
+- **AND** no octet is discarded and none is withheld awaiting a confirmation
+- **AND** the exchange is not failed on account of the client not having waited
+- **AND** a confirmation produced afterwards still reaches the client, and no octet is sent a second time
+
+### Requirement: A pending expectation transfers no body octets and is not a commit
+
+Where the backend answers the expectation with a final response instead of a confirmation, the client SHALL observe the status and the fields the origin produced, and the proxy SHALL NOT substitute a response of its own. Where the client was still waiting, no request body octet SHALL have reached the origin: a rejection SHALL NOT be preceded by a transfer of the body it declines.
+
+The proxy SHALL deliver that response to the client in full before ending the client's connection on account of it. Where the client's negotiated protocol delimits messages such that the unsent remainder of the request body would have to be consumed before that connection could carry another message, the proxy SHALL close the connection rather than read the remainder in order to keep it reusable, and SHALL NOT forward the remainder to a sidecar or to a backend.
+
+While neither a confirmation nor a final response has arrived, the interval is governed by the time-to-first-byte bound of the route's timeout class. The taxonomy of bounds this capability defines SHALL NOT be extended with one peculiar to expectations, and receipt of the confirmation SHALL NOT satisfy the time-to-first-byte bound, as the requirement on that bound already states. A client withholding its body while awaiting the confirmation SHALL NOT be recorded as a stalled request body: the idle-between-octets bound in the request direction begins at the first body octet.
+
+A confirmation is an interim response and not a response head, so its delivery to the client SHALL NOT be the commit point. An exchange failing after a confirmation has reached the client but before any part of a response head has SHALL be answered with a proxy-generated error response carrying the enumerated cause, rather than truncated; where the failure is the time-to-first-byte bound elapsing with neither answer, that cause SHALL name that bound.
+
+#### Scenario: A rejection transfers no body octets
+
+- **WHEN** a client states the expectation for a body within the route's request-body bound and waits
+- **AND** the backend answers with a final rejection instead of a confirmation
+- **THEN** the client receives that status and its fields as the origin produced them
+- **AND** the origin observed no request body octet
+- **AND** no proxy-generated response is substituted for the backend's
+
+#### Scenario: The unsent remainder is not read to keep the connection
+
+- **WHEN** a rejection is delivered while the client's request body remains unsent, over a client protocol whose message boundaries depend on that body being consumed
+- **THEN** the client receives that response in full
+- **AND** the connection is then closed rather than reused for a further message
+- **AND** the unsent octets reach no sidecar and no backend
+
+#### Scenario: Waiting is not a stalled request body
+
+- **WHEN** a client withholds its request body awaiting the confirmation for longer than the idle-between-octets bound
+- **THEN** the exchange is not ended on account of that bound
+- **AND** it is ended only if the time-to-first-byte bound elapses
+
+#### Scenario: Neither answer within the bound
+
+- **WHEN** a backend produces neither a confirmation nor a final response
+- **THEN** the exchange is not ended before the time-to-first-byte bound of the route's timeout class elapses
+- **AND** it is ended when that bound elapses, with the recorded cause naming that bound
+- **AND** the client receives a proxy-generated error response rather than a truncated one
+
+#### Scenario: A delivered confirmation is not a commit
+
+- **WHEN** a backend's confirmation has been delivered to the client and the exchange then fails before any part of a response head has been delivered
+- **THEN** the client receives a proxy-generated error response
+- **AND** the response is not truncated after the confirmation
+- **AND** the record states that the failure occurred before commit
+
 ### Requirement: Range and partial-content exchanges are carried unaltered
 
 The proxy SHALL carry range requests, conditional-range requests, and their responses without alteration. It SHALL NOT add, remove, narrow, widen, coalesce, or reorder requested ranges, and SHALL NOT change the status the origin chose between a complete and a partial response.

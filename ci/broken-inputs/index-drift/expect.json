@@ -1,0 +1,14 @@
+{
+  "_comment": "What this gate emits against each tree here. Machine-readable because prose in GATE.md is not a declaration: a stated count nothing checks drifts the moment a case is added, which four of these had done.",
+  "trees": {
+    "tree": {
+      "violations": 4,
+      "cases": [
+        "docs/gone/index.md:16: drifted from its source notes",
+        "docs/how/index.md:7: drifted from its source notes",
+        "docs/how/index.md: missing its generated-by declaration",
+        "docs/index.md:16: drifted from its source notes"
+      ]
+    }
+  }
+}

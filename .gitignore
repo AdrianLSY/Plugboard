@@ -1,1 +1,9 @@
 reference/
+__pycache__/
+*.pyc
+.scratch/
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+.obsidian/cache/
+.obsidian/graph.json
+.obsidian/hotkeys.json

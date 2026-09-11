@@ -1,0 +1,52 @@
+{
+  "_comment": [
+    "Fixture manifest for ci/gates/out_of_scope.py. A violation of the",
+    "byte-unchanged requirement is a property of the DECLARATION plus history,",
+    "never of a file's bytes, so the violating input is this declaration: it",
+    "names a prefix that matches nothing, and its set covers one of",
+    "rebuild-plugboard's sixteen specification files instead of all sixteen --",
+    "the proxy/http-fidelity file below sits outside the declaration entirely."
+  ],
+
+  "spine": "docs",
+
+  "note_roots": {
+    "directories": ["docs", "openspec", "ci"],
+    "root_files": ["README.md", "CLAUDE.md", "AGENTS.md", "CONTRIBUTING.md"],
+    "planned_directories": []
+  },
+
+  "exempt_roots": {
+    ".git": "Version-control internals."
+  },
+
+  "scan_excludes": {},
+
+  "entry_points": {
+    "declared": ["docs/start-here.md"],
+    "planned": []
+  },
+
+  "out_of_scope": {
+    "paths": [
+      "openspec/changes/rebuild-plugboard/specs/tunnel",
+      "openspec/changes/rebuild-plugboard/specs/never-existed"
+    ],
+    "declared_by": "restructure-docs-as-vault",
+    "baseline_ref": "HEAD"
+  },
+
+  "classification": {
+    "governed_scopes": ["spine", "components"],
+    "excluded_scopes": ["planning"],
+    "planning_directories": ["openspec"],
+    "required_fields": ["type", "status", "authority"],
+    "enumerations": {
+      "type": ["moc"],
+      "status": ["current"],
+      "authority": ["none"]
+    },
+    "spine_forbidden_authority": ["normative"],
+    "note_classes": {}
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "spine": "docs",
+  "code_standards": {
+    "rule_dirs": [
+      "docs/rules"
+    ],
+    "quarantine_dir": "docs/rules/preferences"
+  }
+}

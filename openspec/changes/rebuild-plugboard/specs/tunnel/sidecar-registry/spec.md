@@ -496,6 +496,170 @@ Adding or removing a proxy instance SHALL NOT require sidecars to reconnect in o
 - **THEN** entries whose tunnels it held become ineligible everywhere within a configured bound
 - **AND** entries held by surviving instances remain eligible
 
+### Requirement: Cross-instance dispatch crosses a surface of its own
+
+A sidecar connected to one instance serves requests arriving at any instance, so an exchange admitted at one instance may have to be served over a tunnel held by another. This capability calls that crossing the **dispatch hop**, names the *admitting instance* as the one at which the exchange arrived and which selected the entry, and the *holding instance* as the one holding that entry's tunnel. The wire contract names no instance and is deliberately blind to the hop, so the conduct of its two ends is owned here.
+
+The dispatch hop SHALL exist only between instances of one installation, and SHALL be a surface of the instance in its own right, joining the open set of separately identified surfaces the listener capability governs — distinct from every client-facing surface, from the listener endpoint a sidecar dials, from the internal accept path a client-facing terminator dials, and from the administrative and operational surfaces, reachable at its own identifier, separately identified and separately observable on that capability's terms. It SHALL carry dispatched exchanges and nothing else. A client request SHALL never be delivered to it, whatever its target, its fields, its body, or the mount definitions in force; a tunnel establishment SHALL never be admitted on it; and nothing arriving on it SHALL be admitted as client traffic or directed at the listener. Where its identifier falls within a namespace one of the routing capabilities' reserved enumerations governs, it SHALL be contributed to that single enumeration rather than protected by a check maintained here.
+
+An exchange arriving on the hop SHALL be served over an entry the receiving instance itself holds, and SHALL NOT be dispatched onward, so an exchange crosses at most one hop however many instances the installation has. One arriving for an entry the receiving instance does not hold SHALL be refused with an enumerated reason rather than forwarded, and the admitting instance SHALL treat that refusal as the selected entry having become ineligible before delivery.
+
+Nothing conveyed to a client or to a sidecar SHALL name the hop, name an instance participating in it, or state that an exchange crossed it. The wire contract requires this of the wire; this capability requires it of the client's side as well.
+
+#### Scenario: No client request reaches the dispatch hop
+
+- **WHEN** a client request arrives on a client-facing surface targeting the identifier on which the dispatch hop is exposed
+- **THEN** it is not delivered to the hop
+- **AND** no mount is looked up and no exchange is dispatched on the strength of it
+- **AND** a mount definition whose prefix would match that identifier does not change the outcome
+
+#### Scenario: The hop's identifier appears in the one reserved enumeration
+
+- **WHEN** an operator retrieves the reserved identifiers in force
+- **THEN** the identifier on which the dispatch hop is exposed appears among them
+- **AND** no second enumeration of reserved identifiers exists to be retrieved
+- **AND** a tenant claiming that identifier is rejected
+
+#### Scenario: An exchange crosses at most one hop
+
+- **WHEN** an exchange arrives on the hop naming an entry the receiving instance does not hold
+- **THEN** it is refused with an enumerated reason
+- **AND** it is not dispatched to a third instance
+- **AND** the admitting instance treats it as the selected entry having become ineligible before delivery
+
+#### Scenario: Nothing outside the installation learns of the hop
+
+- **WHEN** every signal, field, and reason a client and a sidecar receive for an exchange dispatched across the hop is enumerated
+- **THEN** none names the hop, names an instance participating in it, or states that the exchange crossed it
+- **AND** the same enumeration taken for an exchange admitted at the holding instance differs in none of them
+
+### Requirement: The dispatch hop is mutually authenticated and protected before an exchange crosses
+
+Each end SHALL authenticate the other as an instance of the same installation before any octet of an exchange crosses, and the authentication SHALL be mutual: an admitting instance SHALL NOT dispatch to a peer it has not authenticated, and a holding instance SHALL NOT act on an exchange offered by one. A peer that does not authenticate SHALL be refused with an enumerated reason, distinguishable from a peer that authenticated and was then refused at a bound, and no octet it sends SHALL be parsed, retained, forwarded, or acted on beyond what is required to refuse it. Connections on the hop that have not yet authenticated SHALL be bounded in number and in the time each may remain unauthenticated, and one exceeding either bound SHALL be refused with an enumerated reason naming it; both are bounds on what the instance itself holds rather than per-tenant dimensions.
+
+The instance identity attributed to a peer SHALL be derived from what it authenticated as. A value the peer supplies in any message SHALL NOT establish, alter, or override it, SHALL NOT cause an entry or an exchange to be attributed to another instance, and SHALL NOT be recorded as that peer's identity. No sidecar credential and no tenant-held material SHALL authenticate a peer on this hop, and the hop's own material SHALL NOT authenticate a tunnel.
+
+The hop SHALL be confidential and integrity-protected before any octet of an exchange crosses, on the terms the listener capability states for its own connections: no in-band promotion of an unprotected connection to a protected one, and no configuration admitting an unprotected hop on any address, a loopback or private-network address included. The material underlying this authentication and protection is material of the installation and SHALL be a class of the inventory the key-custody capability maintains, held, distributed, replaced and destroyed on that capability's terms; this capability SHALL NOT hold a second inventory or a second rotation path. The reasons on which the hop refuses a peer describe a connection rather than an exchange, and are therefore a connection-level vocabulary in the sense the observability capability fixes: published, stably identified, and separately countable, rather than mapped to an exchange outcome.
+
+#### Scenario: Neither credential opens the other's surface
+
+- **WHEN** a party holding a valid sidecar credential presents it to the dispatch hop, and separately the hop's own material is presented at the listener
+- **THEN** the first is refused with the enumerated reason for a peer that did not authenticate as an instance
+- **AND** the second establishes no tunnel
+- **AND** neither value becomes an instance identity and no entry is created
+
+#### Scenario: An unauthenticated peer is refused before any exchange octet is handled
+
+- **WHEN** a peer that cannot authenticate as an instance of the installation offers an exchange and immediately sends body octets
+- **THEN** it is refused with an enumerated reason
+- **AND** no octet of the exchange is forwarded to any tunnel
+- **AND** the memory held for that peer does not grow with the volume it sent
+- **AND** a peer that neither authenticates nor disconnects is refused once the bound on unauthenticated time elapses
+
+#### Scenario: A claimed instance identity is not adopted
+
+- **WHEN** an authenticated peer supplies in its messages an instance identity other than the one it authenticated as
+- **THEN** the supplied value is ignored
+- **AND** the records for the exchange name the authenticated identity
+- **AND** no entry and no exchange is attributed to the instance the value named
+
+#### Scenario: An unprotected hop cannot be configured
+
+- **WHEN** a deployment is configured to carry dispatch between instances without confidentiality and integrity protection, on a private address
+- **THEN** the component refuses to start
+- **AND** the refusal names that setting
+
+### Requirement: A dispatched exchange draws its credit from the tunnel that will carry it
+
+The credit chain of an exchange runs client, proxy, sidecar, backend, and dispatching it splices a further hop into the middle of that chain. The hop SHALL participate in the one chain and SHALL NOT introduce a second, independently declared window beside it: in each direction the instance forwarding octets SHALL hold credit granted by the next hop for every octet it emits, and SHALL NOT grant credit it does not itself hold. In particular the admitting instance SHALL NOT grant the client-facing side of an exchange more credit than it holds toward the holding instance for that exchange, and the holding instance SHALL NOT grant the admitting instance more than the per-stream and whole-tunnel credit in force on the tunnel permits it to place. A slow client SHALL therefore slow the backend exactly as it does when the instance that admitted the exchange is the one holding the tunnel.
+
+Octets buffered for one exchange at the admitting instance, and at the holding instance, SHALL each stay within a configured bound, and reaching it SHALL NOT be answered by buffering further or by enlarging the bound. Octets emitted beyond the credit in force SHALL fail that exchange with an enumerated reason attributable to the instance that emitted them, and SHALL NOT be buffered or delivered; a peer overrunning its credit more often than a configured rate SHALL have its hop failed rather than have each overrun absorbed one exchange at a time. Octets so held SHALL be counted against the dimension for octets buffered on the tenant's behalf, as the tenancy capability requires of octets occupying the system's own memory at the hop that holds them, and this capability SHALL NOT introduce a second per-tenant dimension for them.
+
+#### Scenario: A slow client throttles the backend across the hop
+
+- **WHEN** a client reads a large response slowly and the exchange serving it was dispatched across the hop
+- **THEN** the rate at which credit is granted toward the sidecar falls to the rate the client consumes
+- **AND** the sidecar's rate of reading from the backend falls with it
+- **AND** the octets buffered for that exchange at the admitting instance and at the holding instance each stay within the configured per-exchange bound
+
+#### Scenario: The hop grants no credit the tunnel has not granted
+
+- **WHEN** the per-stream credit in force on the tunnel for a dispatched exchange is exhausted while the hop between the two instances is otherwise idle
+- **THEN** no further body octet for that exchange crosses the hop
+- **AND** the client-facing side of that exchange is granted no further credit
+- **AND** the idleness of the hop admits no octet the tunnel's credit does not
+
+#### Scenario: Excess octets fail the exchange rather than accumulating
+
+- **WHEN** one instance emits body octets for an exchange beyond the credit granted for it
+- **THEN** that exchange fails with an enumerated reason attributable to the instance that emitted them
+- **AND** the excess is neither buffered nor delivered
+- **AND** other exchanges between the same pair of instances continue, until that instance's overruns exceed the configured rate and the hop to it is failed
+
+### Requirement: The dispatch hop is bounded per ordered pair of instances
+
+The dispatch hop SHALL be bounded, per ordered pair of instances, in the number of concurrent exchanges it carries and in the aggregate octets buffered for them. Both are bounds on what an instance itself holds rather than per-tenant dimensions: they SHALL NOT be entries in the closed enumeration of per-tenant bound dimensions the tenancy capability owns, reaching one SHALL NOT be recorded as a per-tenant bound refusal, and each bound and its current consumption SHALL be retrievable per instance and per ordered pair alongside the registry's other configured bounds.
+
+While a pair stands at either bound, the entries held by the far instance are entries the near instance cannot deliver to, and selection SHALL exclude them as the selection requirement above already requires of such an entry. A dispatch SHALL NOT be queued behind the bound and SHALL NOT be admitted to a share taken from an exchange already in flight. Where no other eligible entry is deliverable, the exchange SHALL be refused with the reachability reason that requirement fixes, and the reason recorded SHALL distinguish a pair at its bound from a peer that cannot be reached at all, from no eligible entry existing for the mount, and from a per-tenant bound. Confining it to that reason is what keeps the divergence a pair bound can produce between two instances within the one divergence the selection requirement permits.
+
+Whether an instance accepts newly dispatched exchanges at all SHALL follow the withdrawal lifecycle this capability states below rather than a lifecycle of the hop's own.
+
+#### Scenario: A pair at its bound refuses rather than queues
+
+- **WHEN** the exchanges in flight between one ordered pair of instances stand at the configured bound and a further exchange is matched to a mount whose entries include ones held by the far instance
+- **THEN** the far instance's entries are not selected
+- **AND** another eligible entry is selected if one is deliverable, and otherwise the exchange is refused with the reachability reason recorded as a pair at its bound
+- **AND** no exchange already in flight is displaced and none is queued behind the bound
+
+#### Scenario: The pair bounds are observable and are not tenant bounds
+
+- **WHEN** an operator retrieves the bounds in force
+- **THEN** the concurrent-exchange bound and the aggregate buffered-octet bound are reported for each ordered pair of instances with their current consumption
+- **AND** they are identified as bounds on what an instance holds rather than entries of the per-tenant enumeration
+- **AND** a refusal at either is not counted as a per-tenant bound refusal
+
+### Requirement: A dispatched exchange is indistinguishable from one admitted at the holding instance
+
+Except where this capability states otherwise, an exchange crossing the hop SHALL be indistinguishable to the client and to the sidecar from one admitted at the holding instance. The hop SHALL NOT convert one contract primitive into another, SHALL NOT alter what the exchange carries, and SHALL NOT be a place where an ending is invented: a cancellation from either end SHALL cross and take effect at the far end, so a client that disconnects still cancels the backend request and a sidecar's reset still reaches the client, and an enumerated reason raised at either end SHALL reach the other unchanged rather than being replaced by a reason of the hop's own.
+
+#### Scenario: Cancellation survives the hop
+
+- **WHEN** a client disconnects while a response dispatched across the hop is being transferred
+- **THEN** the sidecar receives a reset and cancels its backend request
+- **AND** the backend stops producing for that request
+
+#### Scenario: A reason raised at one end is not replaced by the hop
+
+- **WHEN** a sidecar reports a backend failure for an exchange dispatched across the hop
+- **THEN** the client observes that backend-failure reason
+- **AND** it is not recorded as a failure of the hop
+
+#### Scenario: A dispatched exchange matches a locally admitted one
+
+- **WHEN** one exchange is dispatched across the hop and an identical one is admitted at the instance holding the tunnel
+- **THEN** the two responses are identical in field order, field repetitions, and body octets
+- **AND** the two differ in no property the client or the sidecar can observe
+- **AND** the instances that took part differ only in what the operator's records name
+
+### Requirement: A failure of the dispatch hop is its own reason
+
+A failure of the hop itself SHALL carry an enumerated reason of its own, appearing in the one published registry of enumerated causes the observability capability maintains and mapping to exactly one outcome value, distinct from no eligible entry existing for the mount, from eligible entries existing but none being reachable from the selecting instance, from the loss of the instance holding the tunnel, from a backend failure the sidecar reported, from sidecar unavailability on a departure, from a client cancellation, and from every inactivity and duration bound. It SHALL be attributable to the ordered pair of instances, naming both.
+
+Where the failure occurs after the response head has reached the client, the response SHALL be terminated as incomplete rather than ended normally. The holding instance SHALL end the exchange toward the sidecar with a code of the contract's own enumeration, and SHALL NOT convey the hop's failure, or the existence of another instance, to the sidecar.
+
+#### Scenario: A hop failure is its own reason, attributable to both instances
+
+- **WHEN** the dispatch hop between two instances fails while an exchange is in flight over it and both instances remain alive
+- **THEN** the exchange fails with an enumerated reason distinct from no eligible entry existing, from eligible entries existing but unreachable, from the loss of the instance holding the tunnel, from a backend failure, and from a sidecar departure
+- **AND** the record names both instances
+- **AND** the sidecar observes an ending carrying a code of the contract's enumeration and nothing naming another instance
+
+#### Scenario: A hop failure mid-body is not reported as success
+
+- **WHEN** the hop fails after the response head has already reached the client
+- **THEN** the response is terminated as incomplete
+- **AND** the client is not led to believe the body ended normally
+
 ### Requirement: The registry converges after a partition without intervention
 
 While proxy instances are partitioned, an instance SHALL serve requests only from entries it can reach, and SHALL report no sidecar available rather than selecting an entry on the far side of the partition. When the partition heals, the registry SHALL converge, without operator action and within a bounded time, to exactly the set of entries whose tunnels are still established.

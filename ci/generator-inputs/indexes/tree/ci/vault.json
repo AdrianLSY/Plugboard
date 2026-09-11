@@ -1,0 +1,21 @@
+{
+  "spine": "docs",
+  "note_roots": {
+    "directories": [
+      "docs"
+    ],
+    "root_files": []
+  },
+  "exempt_roots": {},
+  "scan_excludes": {},
+  "entry_points": {
+    "declared": []
+  },
+  "classification": {
+    "planning_directories": [],
+    "governed_scopes": [
+      "spine"
+    ]
+  },
+  "generated_files": {}
+}

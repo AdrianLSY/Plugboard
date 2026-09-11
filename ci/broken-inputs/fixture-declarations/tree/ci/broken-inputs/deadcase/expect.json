@@ -1,0 +1,10 @@
+{
+  "trees": {
+    "tree": {
+      "violations": 2,
+      "cases": [
+        "docs/vanished.md: a case that died"
+      ]
+    }
+  }
+}

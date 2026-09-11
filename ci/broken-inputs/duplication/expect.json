@@ -1,0 +1,13 @@
+{
+  "_comment": "What this gate emits against each tree here. Machine-readable because prose in GATE.md is not a declaration: a stated count nothing checks drifts the moment a case is added, which four of these had done.",
+  "trees": {
+    "tree": {
+      "violations": 3,
+      "cases": [
+        "docs/method/quoting.md:15: block is a copy of openspec/changes/add-widget-mount/specs/widget-mount/spec.md:20",
+        "docs/concepts/widget-mount.md:13: block is a copy of openspec/changes/add-widget-mount/specs/widget-mount/spec.md:10",
+        "docs/concepts/refusal-shape.md:13: block is a copy of openspec/changes/add-widget-mount/specs/widget-mount/spec.md:15"
+      ]
+    }
+  }
+}

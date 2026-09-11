@@ -1,84 +1,64 @@
 # CLAUDE.md
 
-## State of the repository
+A router. Everything below is one hop away; nothing here is the source of truth.
 
-No source yet, no commits. What exists is the plan: `docs/` (rationale, invariants) and
-`openspec/changes/rebuild-plugboard/` — `proposal.md`, `design.md`, 16 specs, a 709-item `tasks.md` at
-0 done. `reference/` is the previous attempt: gitignored, read-only prior art that **does not work**.
-Cite it only with a `file:line`, never as a source of truth for behaviour.
+**Read [`docs/start-here.md`](docs/start-here.md) first, every time.** It carries the five governing
+facts, the reading order, and a routing table for what to read per task.
 
-Planned layout (task 1.1): `contract/` · `proxy/` (Elixir) · `sidecar/` · `terminator/` (Go) ·
-`conformance/` · `docs/`. One repo, no submodules — a CI guard enforces that.
+## State
+
+No product code. What exists is the plan: the vault under [`docs/`](docs/index.md) and
+[`openspec/`](openspec/changes/rebuild-plugboard/tasks.md) — 709 tasks at 0 done. The prior art is
+gitignored and **does not work**; cite it with a `file:line` or not at all, and see
+[obtaining it](docs/history/obtaining-the-reference.md) before trying to check one.
 
 ## Commands
 
-Only OpenSpec commands exist today; `make` targets and test tiers arrive with tasks 1.7 and 2.x.
-
 ```bash
+make check                                    # every vault gate; the one command CI runs
 openspec list                                 # task progress
-openspec show rebuild-plugboard               # the artifacts
 openspec validate rebuild-plugboard --strict  # gate for any openspec/ commit
 ```
 
-Work tasks with `/opsx:apply`, revise the plan with `/opsx:update`; never hand-edit checkboxes
-while a skill owns them.
+Work tasks with `/opsx:apply`, revise the plan with `/opsx:update`; never hand-edit checkboxes while
+a skill owns them.
 
-## What to read, in order
+## The invariants
 
-`docs/README.md` (the five governing facts, first every time) → `docs/02-architecture.md` →
-`design.md` (D1–D20 in force) → `docs/06-carry-forward.md` (before rewriting what the reference
-got right) → `docs/07-methodology.md` (before any PR or test). `docs/05-decision-log.md` overlaps
-`design.md` and its "Open questions" table is stale — D16–D20 resolved all four. Where they disagree,
-`design.md` wins; the contract beats `docs/`.
-
-## Invariants behind every change
-
-- **Version skew is permanent and asymmetric.** You deploy the proxy; tenants deploy sidecars whenever
-  or never. The wire schema is the only irreversible artifact — sort work by *reversibility*, not cost.
-  Contract changes are additive by default; breaking needs a version bump plus a capability flag.
-- **Contract first.** Schema freeze → streaming spine → breadth (`design.md` — Migration Plan). The
-  conformance suite — adversarial fixtures written *before* the code they gate — is the authority.
-- **Three primitives, not twelve protocols.** No protocol-specific code for anything differing only by
-  `Content-Type` and method token.
-- **Refuse, never degrade.** A request a sidecar's declared capabilities cannot back is refused with a
-  stated reason.
+- **Version skew is permanent and asymmetric.** You deploy the proxy; tenants deploy sidecars
+  whenever or never. The wire schema is the only irreversible artifact — sort by *reversibility*, not
+  cost. → [version skew](docs/why/version-skew.md)
+- **Contract first.** Schema freeze → streaming spine → breadth. The conformance suite — adversarial
+  fixtures written *before* the code they gate — is the authority.
+- **Three primitives, not twelve protocols.** → [three primitives](docs/how/three-primitives.md)
+- **Refuse, never degrade.** A request a sidecar's declared capabilities cannot back is refused with
+  a stated reason.
 - **Tenant scoping is a key and a signature, not a habit.** Every projection tenant-keyed; every
   mutation takes the acting principal.
-- **Vocabulary (D20):** *instance* = one proxy process; *installation* = all of them under one
-  operator; *node* = an entry in the mount-point hierarchy.
 
-## Banned patterns — review blockers, CI-checked (task 3.7)
+Vocabulary is fixed: *instance* = one proxy process, *installation* = all of them, *node* = an entry
+in the mount hierarchy. → [glossary](docs/glossary.md)
 
-- Headers as a map: `map[string]string`, `Map.new`, `Enum.into(…, %{})` over header fields.
-  `Set-Cookie` is the canary (`docs/04-protocol-fidelity.md`, `docs/06-carry-forward.md`).
-- Bodies as JSON strings, or any UTF-8 coercion of a body. One binary-safe body path serves both
-  primitives; a second is a blocker.
-- `io.ReadAll` on a proxied body, or any accumulation before emitting.
-- Method allowlists or rewriting; relaying `Content-Length`/`Transfer-Encoding`; letting application
-  middleware (parsers, method override, HEAD folding, `:accepts`, session, CSRF) touch proxied traffic.
-- `inspect/1` on a wire payload — wire errors are typed codes.
-- Any unbounded queue, buffer or accumulator: each needs a bound and an overflow behaviour.
-- A test helper that repairs the state it waits on; a test that accommodates a defect instead of
-  exposing it; a security property disabled in test config; uncertainty markers or bare `@tag :skip`.
+## Banned patterns
 
-## Conventions
+Eight of them, each its own note with the defect it prevents and its citation →
+[banned patterns](docs/code/banned-patterns/). The canary is headers as a map: `map[string]string`,
+`Map.new`, `Enum.into(…, %{})` over header fields, with `Set-Cookie` as the case that proves it.
+Every rule in this repository, with whether a check actually enforces it →
+[rule index](docs/rule-index.md).
 
-- Every behavioural claim in prose carries a `file:line` citation or a test name; docs bump in the
-  same PR, or the body says `docs: n/a` with a reason.
-- Keep this file and `AGENTS.md` (unwritten) under 4 KB, pointed at `docs/` — task 1.3 checks it.
-- graphify (once code exists): prefer `graphify query` to grep.
+## Authority
 
-## Agent skills
+[Precedence is stated once](docs/method/authority-precedence.md): contract, then specifications, then
+[decisions in force](docs/decisions/in-force.md), then vault notes, then generated indexes. A note
+never states behaviour a specification owns. Where two disagree, the higher one is right.
 
-Issues: local markdown in `.scratch/`; triage labels: defaults; domain: single-context.
-See `docs/agents/`.
+## Before writing a note
 
-## graphify
+[Conventions for authoring a note](docs/method/conventions.md) — fifteen of them, each with the gate
+that enforces it. A first draft that violates one fails the build rather than a review.
 
-This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
+## Before a PR, a test, or a doc bump
 
-Rules:
-- For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
-- If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
-- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
-- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
+[reviewing](docs/code/reviewing.md) · [testing](docs/code/testing.md) ·
+[documentation rules](docs/method/documentation-rules.md)

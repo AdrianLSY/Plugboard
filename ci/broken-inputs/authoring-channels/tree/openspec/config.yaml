@@ -1,0 +1,9 @@
+schema: spec-driven
+context: |
+  fine
+operations:
+  apply:
+    guidance:
+      - a guidance entry
+      - conventions follow:
+    - relative-links: dedented out of the sequence
