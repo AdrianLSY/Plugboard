@@ -107,6 +107,9 @@ drifting toward unenforced opinion shows up as a number rather than as somebody 
 defines, which is the more useful half. [The full index](index.md) lists every note in the vault by
 directory; it is generated, so it cannot fall behind the tree.
 
+[The repository README](../README.md) is the front door for someone arriving from outside the vault.
+It routes here, and it is held to the same link and reachability gates as any note.
+
 ## If you are an agent
 
 Read [`CLAUDE.md`](../CLAUDE.md) first — it is a router, not content. Then, by task:
