@@ -27,8 +27,8 @@ Four cases, all four failing:
 
 Three triggers were drafted and measured before this one. "Published in a
 tracked artifact a reader is routed to" produced 361 findings with a single true
-positive, because an in-force requirement already makes 156 of 159 tracked
-subjects reachable from an entry point -- so the trigger narrowed nothing. A pair
+positive, because an in-force requirement already makes very nearly every
+tracked subject reachable from an entry point -- so the trigger narrowed nothing. A pair
 of encodings is a fact about how this repository was built. A person knows it; a
 regex cannot recover it. So it is declared, and the declaration names which
 resolver each side uses.

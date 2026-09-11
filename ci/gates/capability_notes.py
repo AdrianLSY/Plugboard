@@ -18,7 +18,7 @@ Enforces docs/knowledge-base -- "Each capability has a concept note":
 The obvious move is to turn those eighty backticked strings into links inside
 the specifications, putting the graph in the authoritative files. RDV5 defers
 that: the specifications are the one artifact whose format an external tool
-validates, and 709 tasks depend on them. Building the graph one layer out gets
+validates, and the whole plan depends on them (RDV5, written when it held 709 tasks). Building the graph one layer out gets
 the whole navigational payoff -- "what depends on `tunnel/listener`" is answered
 by that note's inbound links -- at no risk to those sixteen files.
 

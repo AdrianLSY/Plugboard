@@ -162,7 +162,7 @@ No migration. The reference is read-only prior art with no users to carry forwar
 
 ### The cost of this ordering, stated rather than discovered
 
-Sorting by reversibility puts the irreversible work first, and the price is that end-to-end signal arrives late. In `tasks.md` as it stands, 260 of 717 tasks land before the streaming spine begins (section 26), 396 before a response body first reaches a client (task 38.6), and 430 before the spine closes (section 43). More than half the plan is spent before the architecture is known to carry real traffic, and contract v1 is frozen and published (section 17) before any of it.
+Sorting by reversibility puts the irreversible work first, and the price is that end-to-end signal arrives late. In `tasks.md` as it stood on 2026-09-11, 260 of 717 tasks land before the streaming spine begins (section 26), 396 before a response body first reaches a client (task 38.6), and 430 before the spine closes (section 43). More than half the plan is spent before the architecture is known to carry real traffic, and contract v1 is frozen and published (section 17) before any of it.
 
 That is accepted, not overlooked, because the alternative is worse: a walking skeleton built before the schema is frozen would either freeze the schema by accident or be thrown away, and the schema is the one artifact no later work can correct. But it sits in direct tension with the Risks entry above — *when feedback is slow, an agent or a person writes assertions that are cheap to satisfy* — so the ordering carries three obligations rather than a hope:
 

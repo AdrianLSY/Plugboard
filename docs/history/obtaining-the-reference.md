@@ -115,7 +115,9 @@ Two things, in this order:
 
 1. **Record the fetch step in this repository** — the two clone sources, or an archive location, or
    a vendored bundle — verified reachable from a machine with no existing checkout. Then this note
-   becomes `status: current` and stops being the weakest link in 139 citations.
+   becomes `status: current` and stops being the weakest link in every citation that
+   resolves into the prior art -- 227 of them today, a figure
+   `python3 ci/gates/citations.py` prints on each run.
 2. **Sample and confirm**, per task 4.2 of
    [the change that created this note](../../openspec/changes/restructure-docs-as-vault/tasks.md):
    ten citations resolving to the cited lines at the pinned revisions, from a clean environment.

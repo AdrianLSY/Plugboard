@@ -16,7 +16,7 @@ whole change rests on could not reach the author it most needed to reach.
 
 So: the planning-artifact channel is `openspec/config.yaml` (including its
 `operations:` block, which governs the apply and archive loops that will touch
-this vault hundreds of times across 709 tasks), and the note-authoring channel is
+this vault once per task across the whole plan), and the note-authoring channel is
 a generated note the entry files link as their first hop.
 
 ## The failure this gate actually caught

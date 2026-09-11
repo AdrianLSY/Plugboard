@@ -8,7 +8,7 @@ facts, the reading order, and a routing table for what to read per task.
 ## State
 
 No product code. What exists is the plan: the vault under [`docs/`](docs/index.md) and
-[`openspec/`](openspec/changes/rebuild-plugboard/tasks.md) — 717 tasks at 0 done. The prior art is
+[`openspec/`](openspec/changes/rebuild-plugboard/tasks.md) — not started; `openspec list` has the count. The prior art is
 gitignored and **does not work**; cite it with a `file:line` or not at all, and see
 [obtaining it](docs/history/obtaining-the-reference.md) before trying to check one.
 

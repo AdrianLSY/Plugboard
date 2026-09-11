@@ -29,7 +29,8 @@ Five cases, all five failing:
 
 ## The unit is the tree, not the directory
 
-21 trees live under 20 directories -- reachability carries two -- and ci/gates/
+More trees live under ci/broken-inputs than directories -- reachability carries
+two scenarios -- and ci/gates/
 meta.py already iterates `tree*`. A declaration keyed on the directory cannot
 state what each scenario emits.
 

@@ -608,7 +608,7 @@
     "languages": {
       "_comment": [
         "Keyed on the languages that hold tracked source. Today that is Python only",
-        "-- the 21 gate modules, the shared library and the three generators: 26 tracked .py files outside the fixtures (`git ls-files 'ci/*.py' | grep -vc broken-inputs`). This read 'the sixteen gate modules and the index generator' until it was recomputed. Elixir and Go arrive",
+        "-- every gate module, the shared library and the generators, all tracked .py outside the fixtures (`git ls-files 'ci/*.py' | grep -vc broken-inputs`). This read 'the sixteen gate modules and the index generator', then '21 gate modules ... 26 tracked .py' after a recount that went stale within hours because gates were added the same day. The command is the figure; the prose no longer states one. Elixir and Go arrive",
         "with their source; writing their conventions now would fail this gate's own",
         "'conventions for an absent language are refused' case, and the proposal's",
         "promise of them is therefore scoped to when their source lands.",
@@ -809,7 +809,7 @@
       "Sets that two encodings resolve independently. Declared rather than",
       "discovered: the trigger first drafted -- 'published in a tracked artifact a",
       "reader is routed to' -- narrowed nothing, because an in-force requirement",
-      "already makes 156 of 159 tracked subjects reachable from an entry point.",
+      "already makes very nearly every tracked subject reachable from an entry point.",
       "A side names a RESOLVER KIND the gate knows how to run and compares",
       "MEMBERS, never a cardinal: an artifact stating a count without naming its",
       "members is not a side, because a count cannot say which member diverged."
