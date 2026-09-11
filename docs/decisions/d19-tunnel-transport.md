@@ -22,6 +22,6 @@ change of transport, not a redesign.
 
 - **Full entry, with rationale and alternatives:** [register D19](../../openspec/changes/rebuild-plugboard/design.md#d19--the-v1-tunnel-is-a-websocket-over-tls-on-the-standard-https-port)
 - **Shapes:** [tunnel/listener](../../openspec/changes/rebuild-plugboard/specs/tunnel/listener/spec.md), [tunnel/wire-contract](../../openspec/changes/rebuild-plugboard/specs/tunnel/wire-contract/spec.md), [sidecar/program](../../openspec/changes/rebuild-plugboard/specs/sidecar/program/spec.md)
-- **Rule notes citing it:** created by [section 6 of this change](../../openspec/changes/restructure-docs-as-vault/tasks.md)
+- **Rule notes citing it:** created by [section 6 of this change](../../openspec/changes/archive/2026-09-12-restructure-docs-as-vault/tasks.md)
 
 > The register wins where this note and it disagree.

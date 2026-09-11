@@ -24,6 +24,6 @@ resolved through the [collision table](superseded-register.md).
 
 - **Full entry, with rationale and alternatives:** [register D24](../../openspec/changes/rebuild-plugboard/design.md#d24--version-skew-is-the-governing-constraint)
 - **Shapes:** [tunnel/wire-contract](../../openspec/changes/rebuild-plugboard/specs/tunnel/wire-contract/spec.md), [tunnel/sidecar-registry](../../openspec/changes/rebuild-plugboard/specs/tunnel/sidecar-registry/spec.md), [tunnel/conformance](../../openspec/changes/rebuild-plugboard/specs/tunnel/conformance/spec.md)
-- **Rule notes citing it:** created by [section 6 of this change](../../openspec/changes/restructure-docs-as-vault/tasks.md)
+- **Rule notes citing it:** created by [section 6 of this change](../../openspec/changes/archive/2026-09-12-restructure-docs-as-vault/tasks.md)
 
 > The register wins where this note and it disagree.

@@ -25,6 +25,6 @@ say so and say why.
 
 - **Full entry, with rationale and alternatives:** [register D20](../../openspec/changes/rebuild-plugboard/design.md#d20--the-proxy-is-a-multi-instance-installation-in-v1)
 - **Shapes:** [tunnel/sidecar-registry](../../openspec/changes/rebuild-plugboard/specs/tunnel/sidecar-registry/spec.md), [tenancy/isolation](../../openspec/changes/rebuild-plugboard/specs/tenancy/isolation/spec.md), [tunnel/listener](../../openspec/changes/rebuild-plugboard/specs/tunnel/listener/spec.md)
-- **Rule notes citing it:** created by [section 6 of this change](../../openspec/changes/restructure-docs-as-vault/tasks.md)
+- **Rule notes citing it:** created by [section 6 of this change](../../openspec/changes/archive/2026-09-12-restructure-docs-as-vault/tasks.md)
 
 > The register wins where this note and it disagree.

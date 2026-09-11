@@ -32,7 +32,7 @@ thing to know before reopening anything.
 | `D17` | Five further capabilities are in scope; three are deferred with their dependencies named | [note](d17-capability-scope.md) |
 | `D18` | Frame payloads are encoded from a binary interface definition, with generated codecs | [note](d18-frame-payload-encoding.md) |
 | `D19` | The v1 tunnel is a WebSocket over TLS on the standard HTTPS port | [note](d19-tunnel-transport.md) |
-| `D20` | The proxy is a multi-node installation in v1 | [note](d20-multi-instance.md) |
+| `D20` | The proxy is a multi-instance installation in v1 | [note](d20-multi-instance.md) |
 | `D21` | Rebuild from scratch; the reference is prior art only | [note](d21-rebuild-from-scratch.md) |
 | `D22` | One repository | [note](d22-one-repository.md) |
 | `D23` | Contract-first, with a conformance suite | [note](d23-contract-first.md) |

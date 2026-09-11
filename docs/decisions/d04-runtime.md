@@ -24,6 +24,6 @@ appears — which is why the client-facing terminator may be a separate, swappab
 
 - **Full entry, with rationale and alternatives:** [register D4](../../openspec/changes/rebuild-plugboard/design.md#d4-runtime-elixir-proxy-go-sidecar-go-h3-terminator-later)
 - **Shapes:** [sidecar/program](../../openspec/changes/rebuild-plugboard/specs/sidecar/program/spec.md), [proxy/websocket](../../openspec/changes/rebuild-plugboard/specs/proxy/websocket/spec.md), [operability/packaging](../../openspec/changes/rebuild-plugboard/specs/operability/packaging/spec.md)
-- **Rule notes citing it:** created by [section 6 of this change](../../openspec/changes/restructure-docs-as-vault/tasks.md)
+- **Rule notes citing it:** created by [section 6 of this change](../../openspec/changes/archive/2026-09-12-restructure-docs-as-vault/tasks.md)
 
 > The register wins where this note and it disagree.

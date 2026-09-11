@@ -127,10 +127,10 @@ Another demanded a value six gates have no way to supply. A sixth requirement wa
 483 findings yielded zero true positives and a measured regression against the rule already in force.
 
 None of that was visible by reading. All of it was visible in ten minutes of running.
-[The gate-harness design](../../openspec/changes/harden-vault-harness/design.md) records each
+[The gate-harness design](../../openspec/changes/archive/2026-09-12-harden-vault-harness/design.md) records each
 reversal with the measurement that forced it, which is the part worth imitating: a decision reversed
 on evidence is more useful to the next reader than a decision that was right first time. Its
-[task list](../../openspec/changes/harden-vault-harness/tasks.md) then orders the work so that every
+[task list](../../openspec/changes/archive/2026-09-12-harden-vault-harness/tasks.md) then orders the work so that every
 declaration lands before the gate that reads it and the runner lands last — a check introduced
 against a red tree teaches everyone to ignore it.
 

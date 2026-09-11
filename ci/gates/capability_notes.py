@@ -10,12 +10,12 @@ Enforces docs/knowledge-base -- "Each capability has a concept note":
 
   2. **Dependency correspondence.** Every capability a specification names in
      backticks is a dependency, and the concept note must link to that
-     capability's own note. There are eighty such references across ten
+     capability's own note. There are 82 such references across eleven
      specifications, and each one is a real edge in the dependency graph.
 
 ## Why the graph lives here and not in the specifications
 
-The obvious move is to turn those eighty backticked strings into links inside
+The obvious move is to turn those 82 backticked strings into links inside
 the specifications, putting the graph in the authoritative files. RDV5 defers
 that: the specifications are the one artifact whose format an external tool
 validates, and the whole plan depends on them (RDV5, written when it held 709 tasks). Building the graph one layer out gets

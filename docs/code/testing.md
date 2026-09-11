@@ -53,7 +53,7 @@ for the answer is mutation thinking, above.
 Four shapes are review blockers, and `CLAUDE.md` lists them as such. Each is now its own rule note
 with its own stable anchor, its own cited defect and its own enforcement status, so that a reviewer
 raising one cites a rule rather than a paragraph — the split
-[task 6.12](../../openspec/changes/restructure-docs-as-vault/tasks.md) called for, and a move rather
+[task 6.12](../../openspec/changes/archive/2026-09-12-restructure-docs-as-vault/tasks.md) called for, and a move rather
 than a rewrite. Each note cites the observed failure it came from, which is also in
 [the finding table](../method/harness.md#the-finding-to-constraint-table).
 

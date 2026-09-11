@@ -23,6 +23,6 @@ generating both sides. This was `D2` in the register since removed, so check the
 
 - **Full entry, with rationale and alternatives:** [register D22](../../openspec/changes/rebuild-plugboard/design.md#d22--one-repository)
 - **Shapes:** [operability/packaging](../../openspec/changes/rebuild-plugboard/specs/operability/packaging/spec.md), [tunnel/wire-contract](../../openspec/changes/rebuild-plugboard/specs/tunnel/wire-contract/spec.md)
-- **Rule notes citing it:** created by [section 6 of this change](../../openspec/changes/restructure-docs-as-vault/tasks.md)
+- **Rule notes citing it:** created by [section 6 of this change](../../openspec/changes/archive/2026-09-12-restructure-docs-as-vault/tasks.md)
 
 > The register wins where this note and it disagree.

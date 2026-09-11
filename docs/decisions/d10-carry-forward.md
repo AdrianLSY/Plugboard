@@ -22,6 +22,6 @@ removed, `D10` denoted the WebTransport decision, which now sits at `D26` — se
 
 - **Full entry, with rationale and alternatives:** [register D10](../../openspec/changes/rebuild-plugboard/design.md#d10-carry-forward-is-explicit-and-cited)
 - **Shapes:** [routing/mount-points](../../openspec/changes/rebuild-plugboard/specs/routing/mount-points/spec.md), [tunnel/wire-contract](../../openspec/changes/rebuild-plugboard/specs/tunnel/wire-contract/spec.md)
-- **Rule notes citing it:** created by [section 6 of this change](../../openspec/changes/restructure-docs-as-vault/tasks.md)
+- **Rule notes citing it:** created by [section 6 of this change](../../openspec/changes/archive/2026-09-12-restructure-docs-as-vault/tasks.md)
 
 > The register wins where this note and it disagree.

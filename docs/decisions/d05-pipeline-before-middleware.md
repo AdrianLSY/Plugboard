@@ -22,6 +22,6 @@ consolidated; that number is retired.
 
 - **Full entry, with rationale and alternatives:** [register D5](../../openspec/changes/rebuild-plugboard/design.md#d5-proxied-traffic-terminates-before-application-middleware)
 - **Shapes:** [proxy/edge-hygiene](../../openspec/changes/rebuild-plugboard/specs/proxy/edge-hygiene/spec.md), [proxy/http-fidelity](../../openspec/changes/rebuild-plugboard/specs/proxy/http-fidelity/spec.md)
-- **Rule notes citing it:** created by [section 6 of this change](../../openspec/changes/restructure-docs-as-vault/tasks.md)
+- **Rule notes citing it:** created by [section 6 of this change](../../openspec/changes/archive/2026-09-12-restructure-docs-as-vault/tasks.md)
 
 > The register wins where this note and it disagree.

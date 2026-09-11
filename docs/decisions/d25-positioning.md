@@ -21,6 +21,6 @@ priced here, deliberately, and re-opening the isolation work means re-opening th
 
 - **Full entry, with rationale and alternatives:** [register D25](../../openspec/changes/rebuild-plugboard/design.md#d25--positioning-multi-tenant-platform-ingress)
 - **Shapes:** [tenancy/isolation](../../openspec/changes/rebuild-plugboard/specs/tenancy/isolation/spec.md), [routing/mount-points](../../openspec/changes/rebuild-plugboard/specs/routing/mount-points/spec.md), [auth/sidecar-credentials](../../openspec/changes/rebuild-plugboard/specs/auth/sidecar-credentials/spec.md), [operability/observability](../../openspec/changes/rebuild-plugboard/specs/operability/observability/spec.md)
-- **Rule notes citing it:** created by [section 6 of this change](../../openspec/changes/restructure-docs-as-vault/tasks.md)
+- **Rule notes citing it:** created by [section 6 of this change](../../openspec/changes/archive/2026-09-12-restructure-docs-as-vault/tasks.md)
 
 > The register wins where this note and it disagree.

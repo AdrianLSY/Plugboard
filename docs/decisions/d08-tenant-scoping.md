@@ -23,6 +23,6 @@ re-opening it means re-opening the positioning, not just the data model.
 
 - **Full entry, with rationale and alternatives:** [register D8](../../openspec/changes/rebuild-plugboard/design.md#d8-tenant-scoping-in-the-data-model-not-in-queries)
 - **Shapes:** [tenancy/isolation](../../openspec/changes/rebuild-plugboard/specs/tenancy/isolation/spec.md), [routing/mount-points](../../openspec/changes/rebuild-plugboard/specs/routing/mount-points/spec.md), [auth/sidecar-credentials](../../openspec/changes/rebuild-plugboard/specs/auth/sidecar-credentials/spec.md)
-- **Rule notes citing it:** created by [section 6 of this change](../../openspec/changes/restructure-docs-as-vault/tasks.md)
+- **Rule notes citing it:** created by [section 6 of this change](../../openspec/changes/archive/2026-09-12-restructure-docs-as-vault/tasks.md)
 
 > The register wins where this note and it disagree.

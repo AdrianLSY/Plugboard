@@ -14,7 +14,7 @@ supplying it takes.
 
 The stake is not small. The change that created this note records **139 `file:line` citations across
 61 distinct files pointing into `reference/`**
-(`openspec/changes/restructure-docs-as-vault/proposal.md:5`), almost all of them in
+(`openspec/changes/archive/2026-09-12-restructure-docs-as-vault/proposal.md:5`), almost all of them in
 [the reference audit](reference-audit.md) and [carry-forward](carry-forward.md). That figure is a
 count taken when the change was proposed, not a live one; `python3 ci/gates/citations.py` reports
 how many citations it checked on the tree in front of you. Until the fetch step exists, none of them
@@ -69,7 +69,7 @@ came from.
 > attempted from a machine holding no existing checkout and no author credential.
 
 The requirement this note serves is
-[*A cited artifact is obtainable*](../../openspec/changes/restructure-docs-as-vault/specs/docs/knowledge-base/spec.md#requirement-a-cited-artifact-is-obtainable).
+[*A cited artifact is obtainable*](../../openspec/specs/docs/knowledge-base/spec.md#requirement-a-cited-artifact-is-obtainable).
 Its first two scenarios are decidable by a gate and pass: the artifact is declared, and this note
 pins the revisions. Its third — a reader who follows the instructions arriving at the revision the
 citations name — is the half still unsatisfied, because there are no instructions to follow. That is
@@ -119,7 +119,7 @@ Two things, in this order:
    resolves into the prior art -- 227 of them today, a figure
    `python3 ci/gates/citations.py` prints on each run.
 2. **Sample and confirm**, per task 4.2 of
-   [the change that created this note](../../openspec/changes/restructure-docs-as-vault/tasks.md):
+   [the change that created this note](../../openspec/changes/archive/2026-09-12-restructure-docs-as-vault/tasks.md):
    ten citations resolving to the cited lines at the pinned revisions, from a clean environment.
 
 Task 4.3 in the same list builds the gate that refuses a citation into an artifact with no obtaining

@@ -1,6 +1,6 @@
 ---
 type: capability
-status: planned
+status: current
 authority: rationale
 ---
 
@@ -53,12 +53,13 @@ guaranteed to be paying attention.
 
 ## The specification
 
-[`docs/code-standards`](../../openspec/changes/restructure-docs-as-vault/specs/docs/code-standards/spec.md)
+[`docs/code-standards`](../../openspec/specs/docs/code-standards/spec.md)
 owns the behaviour. Where this note and it disagree, it wins.
 
-The capability has a second, unarchived delta:
-[gate soundness](../../openspec/changes/harden-vault-harness/specs/docs/code-standards/spec.md) adds the
-requirements that make a check's *enforcement* visible — that a runner executes it, that a generator is
-held to a pinned expectation rather than its own re-run, that a fixture declares the failure it
-demonstrates, that a coverage line asserts what the run did, and that two encodings of one set are
-reconciled. Read alongside the delta above, not instead of it.
+The specification merges two deltas, both archived on 2026-09-12: the structural one from
+[restructure-docs-as-vault](../../openspec/changes/archive/2026-09-12-restructure-docs-as-vault/specs/docs/code-standards/spec.md), and the
+gate-soundness one from [harden-vault-harness](../../openspec/changes/archive/2026-09-12-harden-vault-harness/specs/docs/code-standards/spec.md),
+which added the requirements that make a check's *enforcement* visible — that a runner executes
+it, that a generator is held to a pinned expectation rather than its own re-run, that a fixture
+declares the failure it demonstrates, that a coverage line asserts what the run did, and that two
+encodings of one set are reconciled.

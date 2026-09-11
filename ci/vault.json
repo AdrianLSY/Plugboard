@@ -79,12 +79,12 @@
       "openspec/changes/rebuild-plugboard/specs"
     ],
     "declared_by": [
-      "restructure-docs-as-vault",
-      "harden-vault-harness"
+      "rebuild-plugboard"
     ],
     "baseline_ref": "d56484c",
     "_baseline_comment": "A FIXED commit, not a moving ref. This read 'HEAD', which the gate resolves per run, so the byte-unchanged assertion four tasks across two changes depend on caught an uncommitted edit and passed a committed one -- proven by appending a sentence to a frozen spec in a copied tree, which failed before the commit and passed after it. RE-BASELINED from fb24a9f to 26d2927: the sixteen specifications were legitimately revised by spec/expectations-terminator-dispatch, which adds fourteen requirements and fifty-three scenarios on expectations, a client-facing terminator accept path and cross-instance dispatch. That revision is not this declaration's subject; the two documentation changes are. So the baseline moves to the commit holding the revision, and the assertion continues to mean exactly what it meant: the documentation work has not touched these files. Moving it was a deliberate act, which is the whole point of pinning -- a moving ref would have let the revision through unnoticed and told nobody. RE-BASELINED AGAIN, from 26d2927 to d56484c, for a different reason: 26d2927 was reachable from nothing. The branch the entry above names, spec/expectations-terminator-dispatch, no longer exists, so that commit survived only as a dangling object in one local store -- no branch or tag contained it, `git fsck --unreachable` reported it, and `git gc --prune` would have deleted it. The consequence was that this gate passed only where it was written: `git clone --no-local` followed by `make check` failed with 'baseline ref 26d2927 does not resolve', so the one command this repository tells a reader to run could not pass for the reader, and no clone depth recovers a commit that is in no history. A pin only its author can resolve is not a pin. The move is not a weakening and does not re-open the frozen set: `git diff 26d2927 d56484c -- openspec/changes/rebuild-plugboard/specs` is empty, so the sixteen specifications are byte-identical at both commits and the assertion continues to mean exactly what it meant. d56484c is on main, so every clone resolves it.",
-    "_expiry_comment": "A declaration cannot outlive its reason. This set exists because the two changes named in declared_by must not edit those specifications; it does NOT mean the specifications are frozen forever, and with a pinned baseline it would read that way. So the gate fails once every declaring change has been archived, demanding the declaration be removed rather than quietly asserting a freeze nobody decided on. A LEGITIMATE revision -- there is one in flight on the branch spec/expectations-terminator-dispatch, 14 requirements and 53 scenarios -- requires re-baselining or retiring this declaration, which is a deliberate visible act rather than a silent pass. That is the whole point of pinning: changing these files takes a decision, not an oversight."
+    "_expiry_comment": "A declaration cannot outlive its reason. This set exists because the two changes named in declared_by must not edit those specifications; it does NOT mean the specifications are frozen forever, and with a pinned baseline it would read that way. So the gate fails once every declaring change has been archived, demanding the declaration be removed rather than quietly asserting a freeze nobody decided on. A LEGITIMATE revision -- there is one in flight on the branch spec/expectations-terminator-dispatch, 14 requirements and 53 scenarios -- requires re-baselining or retiring this declaration, which is a deliberate visible act rather than a silent pass. That is the whole point of pinning: changing these files takes a decision, not an oversight.",
+    "_declared_by_comment": "Re-declared from restructure-docs-as-vault and harden-vault-harness to rebuild-plugboard when those two archived on 2026-09-12. ci/gates/out_of_scope.py fails once every declaring change is archived -- the step docs/method/follow-ups.md names as what ends the freeze. Retiring the declaration outright is not the cheap option it looks like: the gate requires paths, declared_by and baseline_ref to be present, so removal means retiring the gate, its rule note, its violating input and its roster entries. The sixteen specifications are still not this change's subject, so the assertion continues to mean what it meant."
   },
   "classification": {
     "_comment": [
@@ -498,7 +498,7 @@
         "vaults, one per fixture. The isolation property that MATTERS is still",
         "checked: a fixture must not trip another PER-FILE gate, and every fixture",
         "must fail its own gate by its own logic (the neuter test).",
-        "The runner, correspondences and generators gates are added by harden-vault-harness: no fixture tree holds a workflow file, a rule index, a gate roster or a ci/gen tool, so each would otherwise fail on all 21 trees through the isolation check. The count is three, not the two that change's task 1.4 estimated; measured at task 4.",
+        "The runner, correspondences and generators gates are added by harden-vault-harness: no fixture tree holds a workflow file, a rule index, a gate roster or a ci/gen tool, so each would otherwise fail on all 26 trees through the isolation check. The count is three, not the two that change's task 1.4 estimated; measured at task 4.",
         "coverage is added for the same reason: its subject is the gate roster, so it invokes every gate-shaped module it finds. Two fixtures carry stray .py files under ci/gates for their own cases -- rule-gate-correspondence needs a gate naming no rule note, language-coverage needs Python present -- and neither is a gate roster. Running the isolation check over them reported two failures, neither a defect.",
         "fixture-declarations is added for the same reason: its subject is the whole violating-input set, so a minimal tree carrying one fixture of its own is not that set."
       ],
@@ -566,10 +566,10 @@
       "The correspondence is gated in the direction that can drift: a dependency",
       "named inside a specification with no matching link in the concept note fails.",
       "RDV5 deliberately builds the graph in the vault rather than by editing the",
-      "eighty backticked cross-references inside the specifications themselves."
+      "82 backticked cross-references inside the specifications themselves."
     ],
     "dir": "docs/capabilities",
-    "spec_glob": "openspec/changes/*/specs/*/*/spec.md",
+    "spec_glob": "openspec/**/specs/*/*/spec.md",
     "filename": "<domain>-<capability>.md",
     "ceiling_lines": 80,
     "_ceiling_comment": "Declared empirically from the first four notes written, per task 5.1: they came in at 61/66/67/73 lines and the widest capability in the remaining twelve (operability/packaging, nine dependency edges) reached 78. 80 fits every note with headroom and without inviting essays. A note over it is a finding."

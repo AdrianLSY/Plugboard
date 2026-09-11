@@ -22,6 +22,6 @@ move it back out to get a demo working sooner.
 
 - **Full entry, with rationale and alternatives:** [register D9](../../openspec/changes/rebuild-plugboard/design.md#d9-domain-ownership-verification-precedes-certificate-issuance)
 - **Shapes:** [routing/custom-domains](../../openspec/changes/rebuild-plugboard/specs/routing/custom-domains/spec.md), [security/key-custody](../../openspec/changes/rebuild-plugboard/specs/security/key-custody/spec.md)
-- **Rule notes citing it:** created by [section 6 of this change](../../openspec/changes/restructure-docs-as-vault/tasks.md)
+- **Rule notes citing it:** created by [section 6 of this change](../../openspec/changes/archive/2026-09-12-restructure-docs-as-vault/tasks.md)
 
 > The register wins where this note and it disagree.

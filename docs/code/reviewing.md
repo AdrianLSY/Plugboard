@@ -106,7 +106,7 @@ them again ([the rule](rules/review-obligations-single-sourced.md)).
    invisible to it. Narrowing one predicate there collapses twelve gates' subject sets by roughly
    80% while every one of them still reports `[ok]`. This is the weakest-protected surface in the
    harness, and the only reason it is a checklist item rather than a gate is that no cheap check
-   closes it — [the gate-harness design](../../openspec/changes/harden-vault-harness/design.md)
+   closes it — [the gate-harness design](../../openspec/changes/archive/2026-09-12-harden-vault-harness/design.md)
    records that trade-off rather than dressing it up.
 
 **Reviewers reject, not fix.** A reviewer who fixes the problem removes the author's chance to learn
@@ -178,5 +178,5 @@ This note is orientation. The obligations themselves — that every rule names i
 every gate names its rule, that unenforced preference is quarantined rather than left looking like a
 requirement, and that every gate is demonstrated to fail on a deliberately violating input — are
 normative in
-[`docs/code-standards`](../../openspec/changes/restructure-docs-as-vault/specs/docs/code-standards/spec.md).
+[`docs/code-standards`](../../openspec/specs/docs/code-standards/spec.md).
 Where this note and that specification disagree, the specification wins.

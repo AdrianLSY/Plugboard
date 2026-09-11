@@ -22,6 +22,6 @@ is recorded rather than discovered — an append-only, immutable trail against a
 
 - **Full entry, with rationale and alternatives:** [register D17](../../openspec/changes/rebuild-plugboard/design.md#d17--five-further-capabilities-are-in-scope-three-are-deferred-with-their-dependencies-named)
 - **Shapes:** [operability/packaging](../../openspec/changes/rebuild-plugboard/specs/operability/packaging/spec.md), [sidecar/program](../../openspec/changes/rebuild-plugboard/specs/sidecar/program/spec.md), [tunnel/listener](../../openspec/changes/rebuild-plugboard/specs/tunnel/listener/spec.md), [security/key-custody](../../openspec/changes/rebuild-plugboard/specs/security/key-custody/spec.md)
-- **Rule notes citing it:** created by [section 6 of this change](../../openspec/changes/restructure-docs-as-vault/tasks.md)
+- **Rule notes citing it:** created by [section 6 of this change](../../openspec/changes/archive/2026-09-12-restructure-docs-as-vault/tasks.md)
 
 > The register wins where this note and it disagree.

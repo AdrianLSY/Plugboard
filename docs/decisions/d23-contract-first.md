@@ -24,6 +24,6 @@ permanent version skew. In the register that has been removed this was `D3`; see
 
 - **Full entry, with rationale and alternatives:** [register D23](../../openspec/changes/rebuild-plugboard/design.md#d23--contract-first-with-a-conformance-suite)
 - **Shapes:** [tunnel/conformance](../../openspec/changes/rebuild-plugboard/specs/tunnel/conformance/spec.md), [tunnel/wire-contract](../../openspec/changes/rebuild-plugboard/specs/tunnel/wire-contract/spec.md), [sidecar/program](../../openspec/changes/rebuild-plugboard/specs/sidecar/program/spec.md)
-- **Rule notes citing it:** created by [section 6 of this change](../../openspec/changes/restructure-docs-as-vault/tasks.md)
+- **Rule notes citing it:** created by [section 6 of this change](../../openspec/changes/archive/2026-09-12-restructure-docs-as-vault/tasks.md)
 
 > The register wins where this note and it disagree.

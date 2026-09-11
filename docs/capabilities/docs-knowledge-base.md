@@ -1,6 +1,6 @@
 ---
 type: capability
-status: planned
+status: current
 authority: rationale
 ---
 
@@ -56,5 +56,8 @@ be.
 
 ## The specification
 
-[`docs/knowledge-base`](../../openspec/changes/restructure-docs-as-vault/specs/docs/knowledge-base/spec.md)
+[`docs/knowledge-base`](../../openspec/specs/docs/knowledge-base/spec.md)
 owns the behaviour. Where this note and it disagree, it wins.
+
+Its requirements were added by
+[restructure-docs-as-vault](../../openspec/changes/archive/2026-09-12-restructure-docs-as-vault/specs/docs/knowledge-base/spec.md), archived on 2026-09-12.

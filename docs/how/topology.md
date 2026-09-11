@@ -122,5 +122,5 @@ Things the edge owns and that never cross the tunnel:
 - **Cookie scoping across tenants:** [tenancy/isolation](../../openspec/changes/rebuild-plugboard/specs/tenancy/isolation/spec.md)
 - **Per-tenant SNI and ACME:** [routing/custom-domains](../../openspec/changes/rebuild-plugboard/specs/routing/custom-domains/spec.md)
 - **The sidecar binary:** [sidecar/program](../../openspec/changes/rebuild-plugboard/specs/sidecar/program/spec.md), [operability/packaging](../../openspec/changes/rebuild-plugboard/specs/operability/packaging/spec.md)
-- **A multi-node installation:** [D20](../decisions/d20-multi-instance.md)
+- **A multi-instance installation:** [D20](../decisions/d20-multi-instance.md)
 - **Adjacent notes:** [three primitives](three-primitives.md) · [the tunnel](the-tunnel.md)

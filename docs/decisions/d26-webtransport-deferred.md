@@ -23,6 +23,6 @@ today's `D10` is a different one about carry-forward.
 
 - **Full entry, with rationale and alternatives:** [register D26](../../openspec/changes/rebuild-plugboard/design.md#d26--webtransport-is-designed-for-not-shipped)
 - **Shapes:** [tunnel/wire-contract](../../openspec/changes/rebuild-plugboard/specs/tunnel/wire-contract/spec.md), [tunnel/conformance](../../openspec/changes/rebuild-plugboard/specs/tunnel/conformance/spec.md)
-- **Rule notes citing it:** created by [section 6 of this change](../../openspec/changes/restructure-docs-as-vault/tasks.md)
+- **Rule notes citing it:** created by [section 6 of this change](../../openspec/changes/archive/2026-09-12-restructure-docs-as-vault/tasks.md)
 
 > The register wins where this note and it disagree.

@@ -24,6 +24,6 @@ silently, which is precisely the reference's defect.
 
 - **Full entry, with rationale and alternatives:** [register D16](../../openspec/changes/rebuild-plugboard/design.md#d16--http2-to-clients-is-in-v1-and-the-edge-listener-is-a-separate-component-from-the-start)
 - **Shapes:** [proxy/edge-hygiene](../../openspec/changes/rebuild-plugboard/specs/proxy/edge-hygiene/spec.md), [proxy/websocket](../../openspec/changes/rebuild-plugboard/specs/proxy/websocket/spec.md), [tunnel/wire-contract](../../openspec/changes/rebuild-plugboard/specs/tunnel/wire-contract/spec.md)
-- **Rule notes citing it:** created by [section 6 of this change](../../openspec/changes/restructure-docs-as-vault/tasks.md)
+- **Rule notes citing it:** created by [section 6 of this change](../../openspec/changes/archive/2026-09-12-restructure-docs-as-vault/tasks.md)
 
 > The register wins where this note and it disagree.

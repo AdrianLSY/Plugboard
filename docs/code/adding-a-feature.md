@@ -36,7 +36,7 @@ the suite outranks any implementation's own tests. Where fixtures live is planne
 ## 3. Write the code in the component that owns it
 
 Which component that is comes from its boundary note, [stated
-once](../../openspec/changes/restructure-docs-as-vault/specs/docs/code-standards/spec.md#requirement-a-components-boundary-is-stated-once)
+once](../../openspec/specs/docs/code-standards/spec.md#requirement-a-components-boundary-is-stated-once)
 so placement is answerable before a file is chosen. The component directories are planned.
 
 ## 4. Update what travels with the change

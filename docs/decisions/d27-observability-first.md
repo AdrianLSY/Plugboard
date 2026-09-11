@@ -22,6 +22,6 @@ exists to prevent, however good the event names look.
 
 - **Full entry, with rationale and alternatives:** [register D27](../../openspec/changes/rebuild-plugboard/design.md#d27--observability-before-the-hot-path)
 - **Shapes:** [operability/observability](../../openspec/changes/rebuild-plugboard/specs/operability/observability/spec.md)
-- **Rule notes citing it:** created by [section 6 of this change](../../openspec/changes/restructure-docs-as-vault/tasks.md)
+- **Rule notes citing it:** created by [section 6 of this change](../../openspec/changes/archive/2026-09-12-restructure-docs-as-vault/tasks.md)
 
 > The register wins where this note and it disagree.

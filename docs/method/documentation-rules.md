@@ -53,13 +53,13 @@ the `authority` field in every note's frontmatter carry the rest of that weight.
 ## Where these rules came from
 
 The rules above predate the vault; what made them checkable was
-[the change that restructured the documentation into one](../../openspec/changes/restructure-docs-as-vault/proposal.md),
+[the change that restructured the documentation into one](../../openspec/changes/archive/2026-09-12-restructure-docs-as-vault/proposal.md),
 which turned the falsifiability convention into a gate rather than a hope. Its normative half is
-[`docs/knowledge-base`](../../openspec/changes/restructure-docs-as-vault/specs/docs/knowledge-base/spec.md).
+[`docs/knowledge-base`](../../openspec/specs/docs/knowledge-base/spec.md).
 Where this note and that specification disagree, the specification wins.
 
 What that change did not do was arrange for any of it to run.
-[The change that wires the gates to a runner](../../openspec/changes/harden-vault-harness/proposal.md)
+[The change that wires the gates to a runner](../../openspec/changes/archive/2026-09-12-harden-vault-harness/proposal.md)
 records the gap and the five requirements that close it: on a tree where twenty-one gates are declared
 blocking, no tracked configuration executes them, so "a rule with no gate is a wish" had a second half
 nobody had written down — a gate no runner invokes is a wish with a Python file attached.

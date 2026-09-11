@@ -32,7 +32,7 @@ them have not run, and fifty separate notes would each need an inbound link to b
 only links available being fifty index entries written to satisfy a gate rather than to help anyone.
 So the list keeps its anchors, and an item is split into a note of its own the first time a task
 cites it: the split becomes cheap exactly when it becomes useful. That is `RDV7`
-([design](../../openspec/changes/restructure-docs-as-vault/design.md#rdv7-banned-patterns-are-atomic-carry-forward-is-not)),
+([design](../../openspec/changes/archive/2026-09-12-restructure-docs-as-vault/design.md#rdv7-banned-patterns-are-atomic-carry-forward-is-not)),
 and it is the opposite of the treatment the banned patterns get, because those are citation targets
 already.
 
