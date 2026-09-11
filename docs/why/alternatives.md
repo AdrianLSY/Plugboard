@@ -17,7 +17,7 @@ Traefik). For each: what it does that this does not, and what this does that it 
   marked `Unverified` rather than asserted, and one such marker appears below.
 - **Claims in the "what this does" halves are obligations, not shipped behaviour.** No product code
   exists in this repository yet — the work that builds it is
-  [tasks.md](../../openspec/changes/rebuild-plugboard/tasks.md), at zero of 709. So each one links to
+  [tasks.md](../../openspec/changes/rebuild-plugboard/tasks.md), at zero of 717. So each one links to
   the specification that owns it; the specification is the claim, and this page is a pointer.
 - **This page does not compare performance and does not rank.** There is no benchmark to cite, and
   four of the five are mature shipped products while this one is a plan.
