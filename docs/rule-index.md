@@ -14,7 +14,7 @@ the build today), **gate planned** (an obligation whose check is not built yet),
 (taste, quarantined, never a blocking objection).
 
 
-**53 rules** — 37 gated, 13 gate planned, 3 preference (5% unenforced).
+**54 rules** — 38 gated, 13 gate planned, 3 preference (5% unenforced).
 
 | rule | status | gate | note |
 |---|---|---|---|
@@ -22,6 +22,7 @@ the build today), **gate planned** (an obligation whose check is not built yet),
 | A committed binary states where it came from and on what terms | **gated** | `ci/gates/binary_assets.py` | [note](code/rules/binary-assets-carry-provenance.md) |
 | A component's boundary is stated once | **gated** | `ci/gates/component_boundaries.py` | [note](code/rules/component-boundary-stated-once.md) |
 | A gate's reported coverage is an assertion about the run | **gated** | `ci/gates/coverage.py` | [note](method/rules/coverage-is-an-assertion.md) |
+| A gating test written before its subject is recorded red, and the red is a debt | **gated** | `ci/gates/expected_outcomes.py` | [note](code/rules/a-red-gate-is-a-recorded-debt.md) |
 | A generated artifact is verified against something other than its generator | **gated** | `ci/gates/generators.py` | [note](method/rules/generators-have-an-oracle.md) |
 | A generated index cannot drift | **gated** | `ci/gates/index_drift.py` | [note](method/rules/index-drift.md) |
 | A proxied body is emitted as it arrives, and nothing accumulates it first | **gated** | `ci/gates/banned_patterns.py` | [note](code/banned-patterns/read-all-on-a-proxied-body.md) |

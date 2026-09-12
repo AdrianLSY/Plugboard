@@ -13,6 +13,7 @@ Generated index of the notes in `docs/code/rules/`.
 
 ## Notes
 
+- [A gating test written before its subject is recorded red, and the red is a debt](a-red-gate-is-a-recorded-debt.md)
 - [Five defect classes are banned by name, and checked](banned-defect-classes.md)
 - [A committed binary states where it came from and on what terms](binary-assets-carry-provenance.md)
 - [A component's boundary is stated once](component-boundary-stated-once.md)

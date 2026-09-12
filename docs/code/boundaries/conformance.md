@@ -21,6 +21,10 @@ at, which is what makes "a sidecar in any language" an offer rather than an aspi
   defective counterparts that prove a case can fail.
 - Cross-compiled binaries for the declared platform set, so the suite runs where the implementation
   does.
+- **The instrument and the harness.** A recording origin that never decodes, validates or transcodes
+  an octet, and the process harness that starts a chain and waits on readiness surfaces rather than on
+  time passing. Both are the opposite peer a case is run against, which is why they are here and not
+  in a component's test directory: an instrument owned by the thing it measures agrees with it.
 
 ## What it must not own
 

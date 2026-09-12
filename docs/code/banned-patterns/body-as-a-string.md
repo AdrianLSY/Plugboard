@@ -8,9 +8,15 @@ authority: rationale
 
 <a id="body-as-a-string"></a>
 
-**Gate:** planned — the transcoding defective counterpart of rebuild-plugboard task 15.3 and the
-body-octet-coercion counterpart of task 26.2, both pinned by the octet-digest test of
-[task 4.3](../../../openspec/changes/rebuild-plugboard/tasks.md)
+**Gate:** planned — the transcoding defective counterpart of
+[rebuild-plugboard task 15.3](../../../openspec/changes/rebuild-plugboard/tasks.md) and the
+body-octet-coercion counterpart of task 26.2.
+
+The test that pins both has already landed. Task 4.3's octet-digest gate is in `conformance/e2e`: a
+1 MiB body carrying every octet value and a lone `0x80`, asserted on digest and octet count at the
+recording origin. It is [recorded red](../rules/a-red-gate-is-a-recorded-debt.md) until the chain
+carries it, which is what makes the coercion this note bans detectable the moment anything applies
+one.
 
 Prohibited: carrying a body as a JSON string, a `String`/`string` conversion of body octets, or any
 other coercion into a character encoding. One binary-safe body path serves both primitives; a second

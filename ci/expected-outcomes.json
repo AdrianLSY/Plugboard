@@ -1,0 +1,26 @@
+{
+  "_comment": [
+    "The recorded outcome of every gating test: the ones written BEFORE the code",
+    "they gate, which are therefore red on purpose. ci/expected-outcomes.py runs",
+    "each and fails when its outcome differs from the one recorded here IN EITHER",
+    "DIRECTION -- so a permanently red gate does not make every later change",
+    "unmergeable, and a gate that quietly turns green does not go unnoticed.",
+    "A RED ENTRY IS A DEBT. It names the task that closes it, and",
+    "ci/gates/expected_outcomes.py fails an entry that names none or names one",
+    "that does not exist. Advancing an outcome to green is only legitimate in the",
+    "same change that turns the test green; doing it alone fails the runner."
+  ],
+  "_key": "<package directory, from the repository root>:<test function name>",
+  "gates": {
+    "conformance/e2e:TestRequestOctetsReachTheOriginIntact": {
+      "outcome": "red",
+      "closed_by": "openspec/changes/rebuild-plugboard/tasks.md task 36.5",
+      "why": "The request-direction exact-bytes gate. Written at task 4.3, before the proxy exists, so the gap between the plan and a working chain is visible in CI from the first week rather than discovered at section 38. It fails today naming the absent proxy."
+    },
+    "conformance/e2e:TestResponseOctetsReachTheClientIntact": {
+      "outcome": "red",
+      "closed_by": "openspec/changes/rebuild-plugboard/tasks.md task 38.6",
+      "why": "The response-direction twin, written at task 4.4. Its closing task is the one that first delivers a response body to a client; design.md states that if either gate has not turned green by the end of section 38, the ordering has failed and the remaining sequence is re-planned."
+    }
+  }
+}

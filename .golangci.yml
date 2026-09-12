@@ -57,7 +57,7 @@ linters:
     - asciicheck
     - errname
     - gochecknoinits
-    - gomodguard
+    - gomodguard_v2
     - gosec
     - misspell
     - nolintlint

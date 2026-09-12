@@ -1,0 +1,28 @@
+{
+  "_comment": "A registry with one legitimate row and one per failing case.",
+  "gates": {
+    "pkg/thing:TestPresent": {
+      "outcome": "red",
+      "closed_by": "openspec/changes/demo/tasks.md task 7.1",
+      "why": "The control: red, with a closing task that exists, naming a test that exists."
+    },
+    "pkg/thing:TestNoCloser": {
+      "outcome": "red",
+      "why": "Red, and names no closing task."
+    },
+    "pkg/thing:TestBadCloser": {
+      "outcome": "red",
+      "closed_by": "openspec/changes/demo/tasks.md task 9.9",
+      "why": "Red, and its closing task is not in the list it names."
+    },
+    "pkg/thing:TestBadOutcome": {
+      "outcome": "amber",
+      "closed_by": "openspec/changes/demo/tasks.md task 7.1",
+      "why": "An outcome outside the closed set."
+    },
+    "pkg/thing:TestNobodyWrote": {
+      "outcome": "green",
+      "why": "A row about a test no source declares."
+    }
+  }
+}
