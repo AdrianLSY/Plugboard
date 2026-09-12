@@ -1,0 +1,48 @@
+# The sign-off check CONTRIBUTING.md requires.
+#
+# CONTRIBUTING.md states that every commit carries a Signed-off-by line
+# certifying the DCO. A statement in a contributor file that nothing checks is
+# the same shape of defect this repository's gate harness exists to refuse -- so
+# the obligation is enforced here rather than asked for politely.
+#
+# No branch filter and no continue-on-error, for the reason check.yml states:
+# a filter is how a change skips the check, and a non-zero exit that does not
+# fail the job is a check that cannot refuse.
+name: dco
+
+on:
+  pull_request:
+
+jobs:
+  sign-off:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Every commit the PR adds must be reachable to be read.
+          fetch-depth: 0
+
+      - name: Every commit carries a Signed-off-by line
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          missing=0
+          while read -r sha; do
+            [ -z "$sha" ] && continue
+            author="$(git show -s --format='%an <%ae>' "$sha")"
+            if ! git show -s --format='%B' "$sha" \
+                 | grep -qiE "^Signed-off-by: .+ <.+@.+>$"; then
+              echo "::error::$(git show -s --format='%h %s' "$sha") -- no Signed-off-by line"
+              echo "   author: $author"
+              missing=$((missing + 1))
+            fi
+          done < <(git rev-list "$BASE".."$HEAD")
+          if [ "$missing" -gt 0 ]; then
+            echo
+            echo "$missing commit(s) without a sign-off. See CONTRIBUTING.md#sign-off."
+            echo "Fix the branch with: git rebase --signoff $BASE"
+            exit 1
+          fi
+          echo "every commit in $BASE..$HEAD carries a sign-off"

@@ -316,13 +316,17 @@ your language; here is the suite that tells you when you are done."* Good first 
 be the reserved-but-unimplemented frame types, each a bounded piece of work against an existing
 primitive with a fixture already written.
 
-None of that exists yet. A `CONTRIBUTING.md` is itself an open task, and this README will not link to
-one before it is written — the reference attempt's README linked to two files that were dead links,
-and *first impressions of a portfolio project are made of exactly this*.
+None of that exists yet — there is no conformance suite to be an on-ramp to. What does exist is
+[`CONTRIBUTING.md`](CONTRIBUTING.md), and it arrived with the check that keeps it honest: the three
+canonical enumerations it carries are read from [reviewing](docs/code/reviewing.md) on every run, so
+an item added there fails the build until `CONTRIBUTING.md` names it. The reference attempt's README
+linked to a `CONTRIBUTING.md` that was never written, and *first impressions of a portfolio project
+are made of exactly this*.
 
-Until then: `make check` must be green, every claim carries a citation or an explicit `Unverified`
-marker, and [the conventions](docs/method/conventions.md) are generated from the same enumeration the
-gates key on, so the list you read and the list that fails you cannot diverge.
+`make check` must be green, every claim carries a citation or an explicit `Unverified` marker, every
+commit carries a [sign-off](DCO), and [the conventions](docs/method/conventions.md) are generated from
+the same enumeration the gates key on, so the list you read and the list that fails you cannot
+diverge.
 
 ---
 

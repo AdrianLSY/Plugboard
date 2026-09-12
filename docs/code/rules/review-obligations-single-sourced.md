@@ -1,13 +1,12 @@
 ---
 type: rule
-status: planned
+status: current
 authority: rationale
 ---
 
 # The review obligations are stated in one location and enumerated
 
-**Gate:** planned — the propagation check arrives with the artifact it checks, `CONTRIBUTING.md`
-([rebuild-plugboard task 1.3](../../../openspec/changes/rebuild-plugboard/tasks.md)).
+**Gate:** `ci/gates/review_obligations.py`
 
 Three enumerations — [the review checklist](../reviewing.md#the-review-checklist), [the
 change-description questions](../reviewing.md#the-change-description-questions) and [the set of
@@ -31,21 +30,27 @@ One copy and a link has no drift to detect. That is why this rule is about locat
 wording: numbering exists so a reviewer can say "checklist item 4" and a contributor can find item 4,
 without a second list to disagree with the first.
 
-## Why this is filed as planned rather than gated
+## What the gate decides
 
 The checkable form of the rule is propagation: adding an item to a canonical enumeration fails every
 artifact required to enumerate it until that artifact names the new item, and the failure lists each
 artifact still missing it. That check needs at least one artifact under the obligation to enumerate,
-and the artifact in question is `CONTRIBUTING.md` — which is not in this repository. The reference's
-README linked to a `CONTRIBUTING.md` that was never written; creating it is rebuild-plugboard task
-1.3, and this rule's gate is built with it.
+and until [`CONTRIBUTING.md`](../../../CONTRIBUTING.md) existed there was none — a gate written then
+would have passed on every input, which is worse than no gate, because it would read as enforcement
+over an unguarded obligation.
 
-A gate written today would pass on every input, which is worse than no gate: it would read as
-enforcement over an unguarded obligation. So the obligation is recorded as planned, and the
-correspondence check refuses this note the moment it claims a gate that does not run —
-[every rule names its gate](rule-gate-correspondence.md).
+Both halves landed together, which is what rebuild-plugboard task 1.3 asks for. The gate reads the
+item numbers from [reviewing](../reviewing.md) rather than from a declared count, so the enumerations
+cannot drift from the check that propagates them; `ci/vault.json` declares only the canonical note,
+the obliged artifacts and the citation form.
 
-Until then the single-sourcing is a property a reader checks by hand, and a small one: the three
-enumerations live in [reviewing](../reviewing.md), and every artifact that needs one of them —
+What it does **not** decide is wording. An obliged artifact cites an item by number and puts its own
+short handle beside it; nothing compares that handle to the canonical text. That is the rule's own
+shape — it is about location rather than wording, and a second copy of the wording is what
+[the duplication gate](../../method/rules/one-copy-of-requirement-text.md) already refuses.
+
+Beyond the propagated enumerations, the single-sourcing stays a property a reader checks by hand,
+and a small one: the three enumerations live in [reviewing](../reviewing.md), and every artifact that
+needs one of them —
 [adding a feature](../adding-a-feature.md), [fixing a bug](../fixing-a-bug.md),
 [testing](../testing.md) — links into that note instead of listing items again.

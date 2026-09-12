@@ -483,6 +483,7 @@
       "precedence",
       "reachability",
       "reader-config",
+      "review-obligations",
       "rule-gate-correspondence",
       "runner",
       "wikilinks"
@@ -501,7 +502,8 @@
         "must fail its own gate by its own logic (the neuter test).",
         "The runner, correspondences and generators gates are added by harden-vault-harness: no fixture tree holds a workflow file, a rule index, a gate roster or a ci/gen tool, so each would otherwise fail on all 27 trees through the isolation check. The count is three, not the two that change's task 1.4 estimated; measured at task 4.",
         "coverage is added for the same reason: its subject is the gate roster, so it invokes every gate-shaped module it finds. Two fixtures carry stray .py files under ci/gates for their own cases -- rule-gate-correspondence needs a gate naming no rule note, language-coverage needs Python present -- and neither is a gate roster. Running the isolation check over them reported two failures, neither a defect.",
-        "fixture-declarations is added for the same reason: its subject is the whole violating-input set, so a minimal tree carrying one fixture of its own is not that set."
+        "fixture-declarations is added for the same reason: its subject is the whole violating-input set, so a minimal tree carrying one fixture of its own is not that set.",
+        "review-obligations is added for the same reason: its subject is the canonical review note and the artifacts declared to enumerate it, and no fixture tree holds either, so it reports the canonical note absent on all 26 other trees. Its own fixture carries both, so the neuter test and the per-file isolation check still bind."
       ],
       "gates": [
         "reachability",
@@ -523,7 +525,8 @@
         "correspondences",
         "generators",
         "coverage",
-        "fixture-declarations"
+        "fixture-declarations",
+        "review-obligations"
       ]
     },
     "declared_vacuity": {
@@ -841,6 +844,37 @@
         "divergence": "docs/rule-index.md published 42 rules / 20 gated while ci/gates/rule_gate_correspondence.py counted 43 / 21 over the same set; the missing member was docs/method/authority-precedence.md, a gated rule absent from the index CLAUDE.md routes readers to",
         "closed_by": "_common.rule_notes",
         "reason": "Both sides now call the one resolver in ci/gates/_common.py -- the gate and ci/gen/rule_index.py import it rather than each walking the tree -- so the two cannot diverge by construction and there is no longer a pair to reconcile."
+      }
+    }
+  },
+  "review_obligations": {
+    "_comment": [
+      "The canonical enumerations and the artifacts obliged to enumerate them.",
+      "Declared rather than hardcoded because a gate never decides its own scope",
+      "(ci/gates/_common.py). The CITATION FORM is the key: an artifact names an",
+      "item by number, never by copying its text, because the rule is about",
+      "location rather than wording -- a second copy of the wording is what the",
+      "duplication gate already refuses. So adding item 10 to an enumeration here",
+      "fails every artifact under the obligation until it cites item 10.",
+      "Items are read from the canonical note, never declared as a count: a",
+      "cardinal in this file would be a second encoding of what that note states."
+    ],
+    "canonical": "docs/code/reviewing.md",
+    "required_in": [
+      "CONTRIBUTING.md"
+    ],
+    "enumerations": {
+      "the-review-checklist": {
+        "heading": "The review checklist",
+        "citation": "checklist item {n}"
+      },
+      "the-change-description-questions": {
+        "heading": "The change-description questions",
+        "citation": "change-description question {n}"
+      },
+      "blocking-objections": {
+        "heading": "Blocking objections",
+        "citation": "blocking objection {n}"
       }
     }
   }
