@@ -64,7 +64,7 @@ own verification** — a contributor followed it when all four hold:
 
 | named | provided by | what stands in today |
 |---|---|---|
-| `conformance/`, the component directories | [rebuild-plugboard task 1.1](../../openspec/changes/rebuild-plugboard/tasks.md) | nothing — steps 2 and 3 are ordering claims until it lands |
+| a runnable `conformance/` suite | [rebuild-plugboard task 2.6](../../openspec/changes/rebuild-plugboard/tasks.md) | nothing — steps 2 and 3 are ordering claims until it lands. The component directories and their boundary notes arrived with task 1.1; they hold no source yet |
 | `make fmt`, `make lint`, `make test`, `make precommit` | [rebuild-plugboard task 1.7](../../openspec/changes/rebuild-plugboard/tasks.md) | `make check`, `make check-gates`, `make check-links` |
 
 ## Why

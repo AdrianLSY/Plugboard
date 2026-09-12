@@ -11,24 +11,22 @@ Enforces docs/code-standards -- "A component's boundary is stated once":
      whole change exists to remove, and a README is where the second copy
      always appears.
 
-## Why this passes vacuously today, and where that is recorded
+## The vacuity it used to pass on, and what ended it
 
-The set is keyed on the components that EXIST, and none does: `contract/`,
-`proxy/`, `sidecar/`, `terminator/` and `conformance/` are created by
-rebuild-plugboard task 1.1. So the keyed set is empty and every case above is
-vacuously satisfied.
+This gate landed before its subjects did. `contract/`, `proxy/`, `sidecar/`,
+`terminator/` and `conformance/` arrived with rebuild-plugboard task 1.1; until
+then the keyed set was empty and every case above was vacuously satisfied.
 
-The reason is DECLARED, in ci/vault.json's gate_policy.declared_vacuity, not
-asserted here -- and this module reads it. It used to live in this docstring
-alone, which meant a gate reporting zero subjects and exiting zero was doing so
-on nothing but its own good manners: no check could read the reason, and nobody
-reading a green run would see it. Now an undeclared empty subject set fails, and
-a declaration that has outlived its reason fails too.
+That emptiness was DECLARED, in ci/vault.json's gate_policy.declared_vacuity, not
+asserted in this docstring -- and this module reads the declaration. An undeclared
+empty subject set fails, and so does a declaration that has outlived its reason,
+which is what removed this gate's entry the moment the five directories existed.
+The mechanism stays in place for the next gate that lands ahead of its subject.
 
-What this gate buys today is that the moment a component directory appears
-without its boundary note, the build fails. The alternative -- writing the check
-later, alongside the components -- is how you get five components and no
-boundaries.
+What it buys now: five components, five boundary notes, and a build that fails
+the moment a sixth directory appears without one -- or a note outlives the
+component it describes. The alternative, writing the check alongside the
+components, is how you get five components and no boundaries.
 """
 
 from __future__ import annotations
@@ -119,8 +117,13 @@ def run(scan_root: Path, report_only: bool) -> int:
             f"declaration has outlived its reason and must be removed"
         )
 
-        for _subject in existing:
-            report.examine(_subject)
+    # Every existing component is a subject of the three cases above, whether or
+    # not a vacuity declaration is present. This loop sat inside the `elif`
+    # branch, so removing the declaration -- the correct thing to do the moment
+    # the components existed -- made the gate report zero subjects while still
+    # checking five, which the coverage rule then failed it for.
+    for _subject in existing:
+        report.examine(_subject)
     report.coverage(
         covered=existing or ["(no component exists yet)"],
         excluded=[c for c in candidates if c not in existing],

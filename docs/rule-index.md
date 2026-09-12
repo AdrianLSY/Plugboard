@@ -14,7 +14,7 @@ the build today), **gate planned** (an obligation whose check is not built yet),
 (taste, quarantined, never a blocking objection).
 
 
-**48 rules** — 26 gated, 19 gate planned, 3 preference (6% unenforced).
+**50 rules** — 28 gated, 19 gate planned, 3 preference (6% unenforced).
 
 | rule | status | gate | note |
 |---|---|---|---|
@@ -25,6 +25,7 @@ the build today), **gate planned** (an obligation whose check is not built yet),
 | A generated index cannot drift | **gated** | `ci/gates/index_drift.py` | [note](method/rules/index-drift.md) |
 | A published enumeration and the computed one are reconciled | **gated** | `ci/gates/correspondences.py` | [note](method/rules/one-set-one-encoding.md) |
 | A spine note never states behaviour a specification owns | **gated** | `ci/gates/owned_behaviour.py` | [note](method/rules/no-owned-behaviour-in-the-spine.md) |
+| A top-level directory carries a README, or a declared reason it does not | **gated** | `ci/gates/top_level_readmes.py` | [note](code/rules/top-level-directory-carries-a-readme.md) |
 | A violating input states the failure it produces | **gated** | `ci/gates/fixture_declarations.py` | [note](method/rules/fixtures-declare-their-failure.md) |
 | An artifact declared out of scope stays byte-unchanged | **gated** | `ci/gates/out_of_scope.py` | [note](method/rules/out-of-scope-byte-unchanged.md) |
 | An entry file routes, stays small, and names nothing absent | **gated** | `ci/gates/entry_points.py` | [note](method/rules/entry-files-route.md) |
@@ -40,6 +41,7 @@ the build today), **gate planned** (an obligation whose check is not built yet),
 | Every rule names its gate, and every gate names its rule | **gated** | `ci/gates/rule_gate_correspondence.py` | [note](code/rules/rule-gate-correspondence.md) |
 | Every tracked note lives under a declared root | **gated** | `ci/gates/note_roots.py` | [note](method/rules/note-roots.md) |
 | Language conventions are keyed on the languages present | **gated** | `ci/gates/language_coverage.py` | [note](code/rules/language-conventions-keyed-on-source.md) |
+| No submodules, and no gitlink left behind | **gated** | `ci/gates/no_submodules.py` | [note](code/rules/no-submodules.md) |
 | Reader settings are tracked; per-person state is not | **gated** | `ci/gates/reader_config.py` | [note](method/rules/reader-configuration.md) |
 | Relations are relative markdown links | **gated** | `ci/gates/wikilinks.py` | [note](method/rules/relative-markdown-links.md) |
 | Requirement text has one copy | **gated** | `ci/gates/duplication.py` | [note](method/rules/one-copy-of-requirement-text.md) |

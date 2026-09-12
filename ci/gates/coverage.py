@@ -48,8 +48,11 @@ from _common import Report, load_manifest, main_guard, repo_root
 GATE_ID = "coverage"
 RULE_NOTE = "docs/method/rules/coverage-is-an-assertion.md"
 
+# The kind noun admits a hyphen: "top-level directory" is a kind, and a pattern
+# that refused one reported the line as UNPARSEABLE -- a failure naming the wrong
+# defect, since the line stated its count, its kind and its source correctly.
 COVERAGE = re.compile(
-    r"^\s*coverage: (\d+) ([a-z][a-z ]*?)s? from "
+    r"^\s*coverage: (\d+) ([a-z][a-z -]*?)s? from "
     r"(tracked index|a directory scan|a declared key in ci/vault\.json)\b"
 )
 FAILURE = re.compile(r"^\s*- ([^\s:]+)")

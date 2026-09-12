@@ -258,7 +258,13 @@ class Report:
             )
 
     def _coverage_line(self) -> str:
-        noun = self.kind if self.subject_count == 1 else f"{self.kind}s"
+        # Plural by the two rules the gate vocabulary actually needs. A naive
+        # "+ s" printed "0 top-level directorys" the day a gate counted
+        # directories, and a coverage line is read by a person as well as by
+        # ci/gates/coverage.py.
+        noun = self.kind
+        if self.subject_count != 1:
+            noun = f"{noun[:-1]}ies" if re.search(r"[^aeiou]y$", noun) else f"{noun}s"
         return (
             f"  coverage: {self.subject_count} {noun} from {self.SOURCES[self.source]}"
             f" | covered: {', '.join(self.covered) or '-'}"

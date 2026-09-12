@@ -22,5 +22,6 @@ Generated index of the notes in `docs/code/`.
 ## Subdirectories
 
 - [docs/code/banned-patterns](banned-patterns/index.md)
+- [docs/code/boundaries](boundaries/index.md)
 - [docs/code/languages](languages/index.md)
 - [docs/code/rules](rules/index.md)

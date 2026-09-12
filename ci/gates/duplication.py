@@ -16,8 +16,9 @@ is the failure mode; one copy and a link is the fix.
 
 WHAT THIS GATE DECIDES, exactly
 -------------------------------
-  * It compares paragraph- and blockquote-sized blocks between the spine and
-    the specifications and fails on an EXACT match of the normalised form:
+  * It compares paragraph- and blockquote-sized blocks ACROSS three sides --
+    the spine, the specifications, and the per-component roots -- and fails on
+    an EXACT match of the normalised form:
     blockquote markers and list bullets dropped, inline links reduced to their
     link text, markdown emphasis characters stripped, whitespace collapsed,
     case folded. So it catches a copy that was re-wrapped, re-emphasised,
@@ -31,9 +32,25 @@ WHAT THIS GATE DECIDES, exactly
     manifest excerpt appearing in both a note and a specification is duplicated
     code, which the code-standards duplication threshold owns (task 6.11), not
     a duplicated requirement.
-  * Duplication that is wholly inside the spine, or wholly inside the
-    specifications, is not this gate's subject. The requirement is about the
-    boundary between the two.
+  * Duplication that is wholly inside the spine, wholly inside the
+    specifications, or wholly among the component roots is not this gate's
+    subject. The requirement is about the boundaries BETWEEN them.
+
+WHY THE COMPONENT ROOTS ARE A SIDE
+----------------------------------
+A component README is where the second copy of a boundary appears -- reliably
+enough that ci/gates/component_boundaries.py checks the heading form of it
+separately. That check catches a README that restates its boundary under its own
+"What it owns" heading; it cannot catch one that pastes the boundary note's
+paragraphs under any other heading, or one that pastes a requirement straight out
+of a specification. This side closes that, and the two gates stay apart because
+they hand over different remedies: add the link, versus delete the copy.
+
+Entry files at the repository root (README.md, CLAUDE.md, AGENTS.md,
+CONTRIBUTING.md) are NOT a side here. They are held to a size ceiling and to the
+absent-artifact rule by ci/gates/entry_points.py, and a router short enough to
+pass that ceiling has little room to carry a copied requirement paragraph. Said
+rather than left implicit: a copy pasted into an entry file is not caught here.
 
 WHAT IT CANNOT DECIDE, and what owns that instead
 -------------------------------------------------
@@ -205,11 +222,13 @@ def run(scan_root: Path, report_only: bool) -> int:
     spec_files = [
         rel for rel in notes(scan_root, manifest, scopes=("planning",)) if _is_spec(rel)
     ]
+    comp_notes = notes(scan_root, manifest, scopes=("components",))
 
     spine_blocks, spine_unreadable = _index_blocks(scan_root, spine_notes)
     spec_blocks, spec_unreadable = _index_blocks(scan_root, spec_files)
+    comp_blocks, comp_unreadable = _index_blocks(scan_root, comp_notes)
 
-    for message in sorted({*spine_unreadable, *spec_unreadable}):
+    for message in sorted({*spine_unreadable, *spec_unreadable, *comp_unreadable}):
         report.fail(message)
 
     # Every crossing pair is reported, in one run: a contributor removing a copy
@@ -223,18 +242,34 @@ def run(scan_root: Path, report_only: bool) -> int:
                     f'specification that owns it: "{_excerpt(key)}"'
                 )
 
-    for _subject in [*spine_notes, *spec_files]:
+    # A component note copying either of the other two sides. The remedy differs
+    # per owner, so it is named per owner rather than generically.
+    for other_blocks, remedy in (
+        (spine_blocks, "link the note that owns it"),
+        (spec_blocks, "link the specification that owns it"),
+    ):
+        for key in sorted(set(comp_blocks) & set(other_blocks)):
+            for comp_path, comp_line in comp_blocks[key]:
+                for owner_path, owner_line in other_blocks[key]:
+                    report.fail(
+                        f"{comp_path}:{comp_line}: block is a copy of "
+                        f"{owner_path}:{owner_line} -- delete the copy and "
+                        f'{remedy}: "{_excerpt(key)}"'
+                    )
+
+    for _subject in [*spine_notes, *spec_files, *comp_notes]:
         report.examine(_subject)
     report.coverage(
-        covered=[spine, "openspec/**/specs/**/*.md"],
+        covered=[spine, "openspec/**/specs/**/*.md", "per-component roots"],
         excluded=[*exempt_roots(manifest), *scan_excludes(manifest)],
         kind="note",
         source="index" if from_index else "scan",
         scan_root=scan_root,
     )
     print(
-        f"  subjects: {len(spine_notes)} spine note(s) vs {len(spec_files)} "
-        f"specification file(s); blocks compared at >= {MIN_CHARS} chars and "
+        f"  subjects: {len(spine_notes)} spine note(s), {len(spec_files)} "
+        f"specification file(s), {len(comp_notes)} component note(s); blocks "
+        f"compared across the three boundaries at >= {MIN_CHARS} chars and "
         f">= {MIN_WORDS} words"
     )
     # Stated on every run, passing included, so the result is not over-read:

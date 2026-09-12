@@ -22,11 +22,13 @@ Generated index of the notes in `docs/code/rules/`.
 - [A module is at most 300 non-comment lines](module-size-ceiling.md)
 - [A test helper never performs the state transition it is written to wait for](no-helper-repairing-awaited-state.md)
 - [A security or correctness property is never weakened or disabled in test configuration](no-property-weakened-in-test-config.md)
+- [No submodules, and no gitlink left behind](no-submodules.md)
 - [A test asserts the intended behaviour, never the defective behaviour it found](no-test-accommodating-a-defect.md)
 - [No uncertainty marker, and no unconditional skip, stands in for a failing assertion](no-uncertainty-marker-or-skip.md)
 - [The review obligations are stated in one location and enumerated](review-obligations-single-sourced.md)
 - [Every rule names its gate, and every gate names its rule](rule-gate-correspondence.md)
 - [Every test runs in one of three declared tiers](test-tiers.md)
+- [A top-level directory carries a README, or a declared reason it does not](top-level-directory-carries-a-readme.md)
 
 ## Subdirectories
 

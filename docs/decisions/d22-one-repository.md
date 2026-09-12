@@ -8,8 +8,9 @@ authority: decision
 
 **In force.** Every component lives in a single tree, and the two git submodules it replaces are
 gone along with the sync workflow that auto-committed unreviewed pointer updates onto the parent's
-default branch. It rules out submodules returning, and a CI guard enforces that rather than trusting
-anyone to remember.
+default branch. It rules out submodules returning, and
+[a CI guard](../code/rules/no-submodules.md) enforces that rather than trusting anyone to
+remember — both the declaration file and the gitlink entry, because either survives the other.
 
 The part worth reading twice is what this decision explicitly does *not* buy. One tree makes the
 repository internally consistent and does nothing whatever for production, where the sidecar

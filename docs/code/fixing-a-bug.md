@@ -62,7 +62,7 @@ Each is its own rule note, citable from [the blocking objections](reviewing.md#b
 
 | named | provided by | what stands in today |
 |---|---|---|
-| `conformance/`, the component directories | [rebuild-plugboard task 1.1](../../openspec/changes/rebuild-plugboard/tasks.md) | `ci/broken-inputs/` with `make check-gates`, for gate defects |
+| a runnable `conformance/` suite | [rebuild-plugboard task 2.6](../../openspec/changes/rebuild-plugboard/tasks.md) | `ci/broken-inputs/` with `make check-gates`, for gate defects. The component directories arrived with task 1.1 and hold no source yet |
 | the per-component test targets | [rebuild-plugboard task 1.7](../../openspec/changes/rebuild-plugboard/tasks.md) | `make check` |
 
 ## Why

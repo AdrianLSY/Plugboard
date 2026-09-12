@@ -476,6 +476,7 @@
       "language-coverage",
       "links",
       "meta",
+      "no-submodules",
       "note-roots",
       "out-of-scope",
       "owned-behaviour",
@@ -484,6 +485,7 @@
       "reader-config",
       "rule-gate-correspondence",
       "runner",
+      "top-level-readmes",
       "wikilinks"
     ],
     "report_only_until": {},
@@ -500,7 +502,8 @@
         "must fail its own gate by its own logic (the neuter test).",
         "The runner, correspondences and generators gates are added by harden-vault-harness: no fixture tree holds a workflow file, a rule index, a gate roster or a ci/gen tool, so each would otherwise fail on all 27 trees through the isolation check. The count is three, not the two that change's task 1.4 estimated; measured at task 4.",
         "coverage is added for the same reason: its subject is the gate roster, so it invokes every gate-shaped module it finds. Two fixtures carry stray .py files under ci/gates for their own cases -- rule-gate-correspondence needs a gate naming no rule note, language-coverage needs Python present -- and neither is a gate roster. Running the isolation check over them reported two failures, neither a defect.",
-        "fixture-declarations is added for the same reason: its subject is the whole violating-input set, so a minimal tree carrying one fixture of its own is not that set."
+        "fixture-declarations is added for the same reason: its subject is the whole violating-input set, so a minimal tree carrying one fixture of its own is not that set.",
+        "top-level-readmes is added by rebuild-plugboard task 1.1 for the same reason: its subject is every top-level directory of a tree, and a minimal violating input has one or two of them with no README by construction. Running the isolation check over the other fixtures would have reported a failure on nearly every one, none of them a defect."
       ],
       "gates": [
         "reachability",
@@ -522,7 +525,8 @@
         "correspondences",
         "generators",
         "coverage",
-        "fixture-declarations"
+        "fixture-declarations",
+        "top-level-readmes"
       ]
     },
     "declared_vacuity": {
@@ -532,13 +536,9 @@
         "fails; a declared one passes and states both on every run; and once the",
         "named work is complete while the set is still empty, the build fails, so a",
         "declaration cannot outlive its reason. Previously this reason lived in",
-        "ci/gates/component_boundaries.py's docstring, where nothing could read it."
-      ],
-      "component-boundaries": {
-        "reason": "No component directory exists yet, so the keyed set is empty and every case the gate checks is vacuously satisfied. Writing five boundary notes now would describe absent directories, which the currency rule refuses.",
-        "ends_with": "openspec/changes/rebuild-plugboard/tasks.md task 1.1",
-        "ends_when": "any path in code_standards.components.candidates is a directory"
-      }
+        "ci/gates/component_boundaries.py's docstring, where nothing could read it.",
+        "Empty of entries as of rebuild-plugboard task 1.1: component-boundaries was the only declarant, and its five directories now exist. The mechanism stays declared because the next gate to land ahead of its subject needs it."
+      ]
     }
   },
   "reader_config": {
@@ -590,11 +590,12 @@
     "quarantine_dir": "docs/code/rules/preferences",
     "components": {
       "_comment": [
-        "Components whose boundary must be stated. Keyed on the set that EXISTS: no",
-        "note is written for a component that does not yet exist, so this list is",
-        "empty until rebuild-plugboard task 1.1 creates the directory shape. The",
-        "boundary gate therefore passes vacuously today and starts failing the",
-        "moment a component appears without its boundary note -- which is the point."
+        "Components whose boundary must be stated, keyed on the set that EXISTS. All",
+        "five directories were created by rebuild-plugboard task 1.1, so the set is no",
+        "longer empty and the gate no longer passes vacuously -- its declared_vacuity",
+        "entry was removed by that same task, which is the mechanism working rather",
+        "than a tidy-up. Adding a component now means adding its boundary note in the",
+        "same change, and deleting one means deleting the note."
       ],
       "candidates": [
         "contract",
@@ -604,6 +605,25 @@
         "conformance"
       ],
       "boundary_dir": "docs/code/boundaries"
+    },
+    "top_level_readmes": {
+      "_comment": [
+        "Read by ci/gates/top_level_readmes.py. Every top-level directory holding a",
+        "tracked file carries a README routing a reader to what owns it, unless it is",
+        "named here with the reason. Roots already declared in exempt_roots are exempt",
+        "from this obligation too and are NOT restated here -- two lists of the same",
+        "directories is the second encoding ci/gates/correspondences.py exists to catch.",
+        "An entry whose directory holds no tracked file fails: a declaration cannot",
+        "outlive its subject."
+      ],
+      "readme_name": "README.md",
+      "exempt": {
+        "docs": "The spine is entered through its generated index at docs/index.md, which ci/gen/indexes.py produces and ci/gates/index_drift.py holds byte-identical to a fresh regeneration. A hand-written README beside it would be a second entry for one directory, which is exactly what the reachability rule exists to prevent.",
+        "openspec": "Layout owned by the OpenSpec CLI: it reads openspec/config.yaml and writes the change directories beneath. This repository does not author that format, and a README here would describe a tool's tree back at it.",
+        "ci": "The harness is described once, in docs/method/harness.md, and every gate's rule note is reachable from docs/rule-index.md. A second description sitting beside the gate modules is the copy that drifts -- the same reason a component README links its boundary note instead of restating it.",
+        ".github": "Workflow files read by the hosting service rather than by a person arriving at the directory. ci/gates/runner.py holds the one workflow this repository's obligations depend on.",
+        ".obsidian": "Reader configuration owned by Obsidian and checked by ci/gates/reader_config.py. What it holds is a vault's settings, not a component's boundary."
+      }
     },
     "languages": {
       "_comment": [
@@ -627,8 +647,9 @@
         "subset of what is already registered, so 'introducing a language",
         "without its conventions fails' could only ever fire for a language",
         "somebody had already registered a glob for -- and whoever remembers",
-        "the glob remembers the note. Elixir and Go land with rebuild-plugboard",
-        "task 1.1, which is exactly when the rule has to bite, so the",
+        "the glob remembers the note. Elixir and Go source lands with",
+        "rebuild-plugboard tasks 2.1 and 2.3 -- task 1.1 creates the directories",
+        "and no source -- which is exactly when the rule has to bite, so the",
         "enumeration names them now. Admitting a further language is a",
         "deliberate edit here rather than a silent pass."
       ],

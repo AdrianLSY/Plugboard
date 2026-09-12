@@ -6,13 +6,14 @@
   "Content is not duplicated between the spine and the specifications".
 - **Violation:** three requirement paragraphs owned by
   `tree/openspec/changes/add-widget-mount/specs/widget-mount/spec.md` are also carried by notes in the
-  spine, one per form the gate must see through.
-- **Expected:** **three** failures in one run, exit 1; each names *both* locations as `path:line` and
-  quotes the normalised block. `--report-only` prints the same three and exits 0.
+  spine, one per form the gate must see through — and one boundary paragraph owned by a spine note is
+  also carried by the component README beside it.
+- **Expected:** **four** failures in one run, exit 1; each names *both* locations as `path:line` and
+  quotes the normalised block. `--report-only` prints the same four and exits 0.
 
 ## What each file in the tree is for
 
-Every case below is exercised by the fixture in one run; the three violations and the four
+Every case below is exercised by the fixture in one run; the four violations and the four
 non-violations are what distinguish this gate from a substring search.
 
 ### Violations — must fail, and must name both ends
@@ -22,6 +23,7 @@ non-violations are what distinguish this gate from a substring search.
 | **A** | `tree/docs/concepts/widget-mount.md:13` | spec `:10` | Verbatim copy, re-wrapped at different line breaks. |
 | **B** | `tree/docs/concepts/refusal-shape.md:13` | spec `:15` | Same text with `**bold**` and `*italic*` added, opening words upper-cased, run-in whitespace, and the inline link pointed at a different relative path (the note sits at a different depth from the spec). |
 | **C** | `tree/docs/method/quoting.md:15` | spec `:20` | Verbatim copy indented into a `>` blockquote — quote markers do not make a copy into a citation. |
+| **H** | `tree/proxy/README.md:11` | `tree/docs/code/boundaries/proxy.md:13` | The **third side**: a component README carrying its boundary note's paragraph instead of linking it. `component_boundaries` catches only the heading form of this; a copy under any other heading is invisible to it and visible here. |
 
 ### Non-violations — must stay silent, and each states why
 
@@ -33,12 +35,12 @@ non-violations are what distinguish this gate from a substring search.
 | **G** | `tree/docs/method/authoring.md` + `tree/docs/rules/refuse-never-degrade.md` | One long paragraph repeated between two spine notes, crossing no boundary. The requirement is about the spine-versus-specification boundary, so this pair is out of scope. |
 
 `tree/docs/start-here.md` is the declared entry point, so every note in the tree is reachable and
-every relative link in the fixture resolves.
+every relative link in the fixture resolves — the component README and its boundary note included.
 
 ## The fixture fails only this gate
 
-`python3 ci/gates/note_roots.py --root ci/broken-inputs/duplication/tree` exits 0: all seven files sit
-under the governed roots `docs` and `openspec`, none is an undeclared root-level note. Every spine note
+`python3 ci/gates/note_roots.py --root ci/broken-inputs/duplication/tree` exits 0: all nine files sit
+under the governed roots `docs`, `openspec` and `proxy`, none is an undeclared root-level note. Every spine note
 carries `type`/`status`/`authority` from the declared enumerations with non-normative authority, links
 are relative markdown with resolving targets and no wiki-link or transclusion syntax, and the
 specification file is under a declared planning directory, where frontmatter is not required.
@@ -46,12 +48,13 @@ specification file is under a declared planning directory, where frontmatter is 
 ## Proof
 
 ```bash
-python3 ci/gates/duplication.py --root ci/broken-inputs/duplication/tree               # 3 failures, exit 1
-python3 ci/gates/duplication.py --root ci/broken-inputs/duplication/tree --report-only # same 3, exit 0
+python3 ci/gates/duplication.py --root ci/broken-inputs/duplication/tree               # 4 failures, exit 1
+python3 ci/gates/duplication.py --root ci/broken-inputs/duplication/tree --report-only # same 4, exit 0
 python3 ci/gates/duplication.py                                                        # real tree, exit 0
 ```
 
-The real tree currently reports **0 violations** over 11 spine notes and 16 specification files. That is
+The real tree currently reports **0 violations** over its spine notes, specification files and component
+notes — `make check` prints the three counts on every run rather than this note stating them. That is
 a real result, not an inert gate: pasting a genuine paragraph from
 `openspec/changes/rebuild-plugboard/specs/auth/sidecar-credentials/spec.md:3` into `docs/README.md` in a
 throwaway copy of the tree produced exactly one failure naming both locations.
