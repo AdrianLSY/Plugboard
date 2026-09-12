@@ -45,7 +45,13 @@ one, in [follow-ups](../docs/method/follow-ups.md).
 ## What this means for a reader
 
 Clone, read and run the harness as the upstream terms allow — this repository does not extend a grant
-it does not hold. If you are redistributing this tree, the six MIT directories need their notices and
-the remaining thirty-one need their provenance established first. Removing `.claude/` entirely
-leaves the vault, the specifications and the gate harness intact: it is a declared exempt root, so no
-gate takes a subject from it.
+it does not hold. If you are redistributing this tree, the MIT directories need their notices and the
+undeclared ones need their provenance established first.
+
+Removing `.claude/` entirely leaves the vault and the specifications in place: it is a declared exempt
+root, so no gate takes a *subject* from it. That is not the same as removing it cleanly. Three tracked
+notes link *into* this file — the README, [`d28-licensing`](../docs/decisions/d28-licensing.md) and
+[`follow-ups`](../docs/method/follow-ups.md) — and `ci/gates/links.py` resolves link targets whatever
+root they point at, so those three links have to go with the directory or `make check` fails with
+three `missing-file` violations. Exemption governs what a gate takes as its subject, never what a
+tracked note may point at.

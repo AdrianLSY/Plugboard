@@ -222,7 +222,7 @@ Requirements: **Python 3** (standard library only — no dependencies, no lockfi
 clone. [OpenSpec](openspec/config.yaml) is needed only for the two planning commands.
 
 ```bash
-make check          # every vault gate; the one command CI runs
+make check          # every vault gate; one command, and CI runs it
 ```
 
 ```bash
@@ -323,8 +323,8 @@ an item added there fails the build until `CONTRIBUTING.md` names it. The refere
 linked to a `CONTRIBUTING.md` that was never written, and *first impressions of a portfolio project
 are made of exactly this*.
 
-`make check` must be green, every claim carries a citation or an explicit `Unverified` marker, every
-commit carries a [sign-off](DCO), and [the conventions](docs/method/conventions.md) are generated from
+`make check` must be green, every claim carries a citation or an explicit `Unverified` marker, new
+commits carry a [sign-off](DCO), and [the conventions](docs/method/conventions.md) are generated from
 the same enumeration the gates key on, so the list you read and the list that fails you cannot
 diverge.
 

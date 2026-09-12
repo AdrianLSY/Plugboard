@@ -80,9 +80,10 @@ def mask_fences(text: str) -> str:
     through Report.fail(), so the meta gate's neuter test cannot catch it, and
     one whose subject is a code sample rather than this rule.
 
-    Four sibling gates mask fences for the same reason -- citations, duplication,
-    links and reachability -- each with its own copy. A fifth copy is taken here
-    rather than hoisting a shared helper into ci/gates/_common.py: that module is
+    Five sibling gates mask fences for the same reason -- citations, duplication,
+    links, reachability and wikilinks -- each with its own copy. A sixth copy is
+    taken here rather than hoisting a shared helper into ci/gates/_common.py: that
+    module is
     imported by every gate and is the harness's weakest-protected surface, which
     is why checklist item 9 exists at all. Refactoring it is not this gate's
     subject, and doing it here would be the change that item warns about.

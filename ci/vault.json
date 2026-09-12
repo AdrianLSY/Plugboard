@@ -761,16 +761,36 @@
       "The runner configuration the gates require. Declared rather than hardcoded",
       "because a gate never decides its own scope (ci/gates/_common.py). The",
       "PROVIDER is not a spec-level commitment: harden-vault-harness HVH2 keys the",
-      "requirement on this path, so switching forge edits this value and the file",
-      "it names, and changes no requirement. The file is inert on a repository",
-      "with no configured remote, which is the state today."
+      "requirement on these paths, so switching forge edits these values and the",
+      "files they name, and changes no requirement.",
+      "WORKFLOWS is a mapping rather than one path because CI runs more than one",
+      "job: D28's sign-off check is blocking on a pull request and reachable from",
+      "no local target, and until it was declared here nothing checked it -- every",
+      "property its header comment claimed for itself was prose. A second blocking",
+      "workflow outside the gate's declared scope is the exact condition the rule",
+      "behind this gate exists to refuse.",
+      "Each entry declares its OWN required triggers, so a workflow that",
+      "deliberately runs on fewer events states that as a decision a gate holds,",
+      "rather than differing from its sibling for no recorded reason."
     ],
-    "path": ".github/workflows/check.yml",
     "aggregating_target": "make check",
-    "required_triggers": [
-      "push",
-      "pull_request"
-    ],
+    "workflows": {
+      ".github/workflows/check.yml": {
+        "required_triggers": [
+          "push",
+          "pull_request"
+        ],
+        "invokes_aggregating_target": true,
+        "why_these_triggers": "Every gate's subject is the tree, so every event that changes the tree must run them."
+      },
+      ".github/workflows/dco.yml": {
+        "required_triggers": [
+          "pull_request"
+        ],
+        "invokes_aggregating_target": false,
+        "why_these_triggers": "The subject is the set of commits a pull request proposes, which a push event does not define. Declared so the narrower trigger is a decision rather than an omission."
+      }
+    },
     "forbidden_clauses": {
       "_comment": "Each maps a configuration key to the refusal it would defeat.",
       "paths": "a path filter lets a change touching only unlisted paths skip every gate",

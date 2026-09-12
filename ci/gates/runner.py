@@ -64,20 +64,25 @@ def trigger_block(body: str) -> str:
 def run(scan_root: Path, report_only: bool) -> int:
     manifest = load_manifest(repo_root())
     cfg = manifest["runner"]
-    rel = cfg["path"]
     target = cfg["aggregating_target"]
+    workflows = {k: v for k, v in cfg["workflows"].items() if not k.startswith("_")}
     forbidden = {k: v for k, v in cfg["forbidden_clauses"].items() if not k.startswith("_")}
     report = Report(GATE_ID, RULE_NOTE)
-    report.examine(rel)
 
-    path = scan_root / rel
-    if not path.is_file():
-        report.fail(
-            f"{rel}: no runner configuration at the path ci/vault.json declares -- "
-            f"until one exists, every gate declared blocking blocks nothing and runs "
-            f"only when somebody chooses to"
-        )
-    else:
+    # Every declared workflow, not just the aggregating one. A second blocking
+    # workflow outside this gate's scope is the condition the rule refuses: the
+    # properties its own header claims would be prose, checked by nothing.
+    for rel, spec in sorted(workflows.items()):
+        report.examine(rel)
+        path = scan_root / rel
+        if not path.is_file():
+            report.fail(
+                f"{rel}: no runner configuration at a path ci/vault.json declares -- "
+                f"until one exists, what it was declared to run runs only when "
+                f"somebody chooses to"
+            )
+            continue
+
         body = uncommented(path.read_text(encoding="utf-8"))
 
         # (2) a clause that defeats refusal.
@@ -85,15 +90,16 @@ def run(scan_root: Path, report_only: bool) -> int:
             if re.search(rf"^\s*{re.escape(key)}\s*:", body, re.M):
                 report.fail(f"{rel}: carries `{key}:` -- {why}")
 
-        # (3) both declared triggers, and the declared target.
+        # (3) the triggers this workflow declares for itself, and -- for the one
+        # that runs the gates -- the aggregating target.
         triggers = trigger_block(body)
-        for want in cfg["required_triggers"]:
+        for want in spec["required_triggers"]:
             if not re.search(rf"^\s+{re.escape(want)}\s*:", triggers, re.M):
                 report.fail(
                     f"{rel}: does not trigger on `{want}` -- a runner that misses one "
-                    f"of the declared events leaves that event unchecked"
+                    f"of the events it declares leaves that event unchecked"
                 )
-        if target not in body:
+        if spec.get("invokes_aggregating_target") and target not in body:
             report.fail(
                 f"{rel}: does not invoke the declared aggregating target "
                 f"('{target}') -- a runner that runs something else is not this "
@@ -127,14 +133,20 @@ def run(scan_root: Path, report_only: bool) -> int:
                     )
 
     report.coverage(
-        covered=[rel, f"Makefile:{target.split()[-1]}"],
+        covered=[*sorted(workflows), f"Makefile:{target.split()[-1]}"],
         excluded=["whether the hosting service refuses a merge (server-side, unreadable here)"],
         kind="runner declaration",
         source="manifest",
         scan_root=scan_root,
     )
-    print(f"  runner: {rel} | target: {target} | triggers: "
-          f"{', '.join(cfg['required_triggers'])} | forbidden clauses checked: {len(forbidden)}")
+    print(
+        "  runners: "
+        + " | ".join(
+            f"{rel} ({', '.join(spec['required_triggers'])})"
+            for rel, spec in sorted(workflows.items())
+        )
+        + f" | target: {target} | forbidden clauses checked: {len(forbidden)}"
+    )
     return report.finish(report_only=report_only)
 
 

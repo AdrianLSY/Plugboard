@@ -17,9 +17,12 @@ assigned beyond the licence. → [D28](docs/decisions/d28-licensing.md)
 make check
 ```
 
-Every vault gate, and the one command CI runs. It must be green before a pull request, and it
-enumerates every gate it ran, so the inventory is a build output rather than a prose count. Changes
-under `openspec/` also need `openspec validate rebuild-plugboard --strict`.
+Every vault gate in one command, and CI runs it on every push and pull request. It must be green
+before a pull request, and it enumerates every gate it ran, so the inventory is a build output rather
+than a prose count. Changes under `openspec/` also need `openspec validate rebuild-plugboard --strict`.
+
+It is not the *only* thing CI runs: the [sign-off](#sign-off) check reads the commits in a pull
+request, which no local target can do. Those two workflows are the whole of CI.
 
 ---
 
