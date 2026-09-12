@@ -7,3 +7,10 @@ __pycache__/
 .obsidian/cache/
 .obsidian/graph.json
 .obsidian/hotkeys.json
+# Go build output. `go build ./...` writes the command's binary into the module
+# root, and two of them reached a commit before this line existed. The binary
+# provenance gate that would have caught it is rebuild-plugboard task 3.14.
+/sidecar/sidecar
+/terminator/terminator
+/conformance/conformance
+conformance/dist/

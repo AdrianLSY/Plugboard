@@ -13,4 +13,6 @@ Generated index of the notes in `docs/code/languages/`.
 
 ## Notes
 
+- [Elixir conventions](elixir.md)
+- [Go conventions](go.md)
 - [Python conventions](python.md)

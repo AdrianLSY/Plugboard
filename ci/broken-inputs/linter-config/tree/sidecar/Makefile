@@ -1,0 +1,3 @@
+# Reaches neither the shared include nor the declared configuration.
+lint:
+	golangci-lint run ./...

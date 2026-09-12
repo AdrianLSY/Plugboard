@@ -1,6 +1,6 @@
 ---
 type: guide
-status: planned
+status: current
 authority: rationale
 ---
 
@@ -12,5 +12,7 @@ A contract speaker, replaceable on its own.
 **Boundary:** stated once, in [docs/code/boundaries/terminator.md](../docs/code/boundaries/terminator.md).
 This file routes; it does not restate.
 
-**Nothing is built here yet.** The skeleton arrives with
-[rebuild-plugboard task 2.4](../openspec/changes/rebuild-plugboard/tasks.md).
+**Skeleton only.** The Go module and its command are in place, sharing exactly one linter
+configuration with the sidecar. What is not here is any termination code: HTTP/2 from clients
+arrives at [task 54.4](../openspec/changes/rebuild-plugboard/tasks.md), and it speaks the contract
+rather than reimplementing the proxy.

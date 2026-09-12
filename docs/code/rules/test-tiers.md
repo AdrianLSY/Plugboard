@@ -1,14 +1,18 @@
 ---
 type: rule
-status: planned
+status: current
 authority: rationale
 ---
 
 # Every test runs in one of three declared tiers
 
-**Gate:** planned — the separately invocable tier targets of
-[rebuild-plugboard task 2.7](../../../openspec/changes/rebuild-plugboard/tasks.md), whose fast-tier
-CI job runs with no Postgres service and no network so a misplaced test fails rather than skips
+**Gate:** `ci/gates/test_tiers.py`
+
+The gate holds the **wiring**: every tier target present in every shared include, every component
+reaching those includes rather than carrying its own copy, and the fast tier routed through its
+budget. What it cannot decide is whether a given test is in the right tier — no check over source
+decides that a subject "requires" a database. That half is held by the fast tier's own CI job, which
+declares no Postgres service, so a fast-tier test reaching for one fails on its own.
 
 ```
   FAST         no Postgres, no network, no sleeps, fully async. What runs on save.

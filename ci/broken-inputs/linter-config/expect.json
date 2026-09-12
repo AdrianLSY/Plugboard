@@ -1,0 +1,18 @@
+{
+  "_comment": "What this gate emits against each tree here. Machine-readable because prose in GATE.md is not a declaration: a stated count nothing checks drifts the moment a case is added.",
+  "trees": {
+    "tree": {
+      "violations": 2,
+      "cases": [
+        "sidecar/.golangci.yaml: a second Go linter configuration",
+        "sidecar/Makefile: names neither ci/make/go.mk nor .golangci.yml"
+      ]
+    },
+    "tree2": {
+      "violations": 1,
+      "cases": [
+        ".golangci.yml: absent, with 1 Go module(s) in the tree (terminator)"
+      ]
+    }
+  }
+}

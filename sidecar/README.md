@@ -1,6 +1,6 @@
 ---
 type: guide
-status: planned
+status: current
 authority: rationale
 ---
 
@@ -12,5 +12,7 @@ tenant's network is required.
 **Boundary:** stated once, in [docs/code/boundaries/sidecar.md](../docs/code/boundaries/sidecar.md).
 This file routes; it does not restate.
 
-**Nothing is built here yet.** The skeleton arrives with
-[rebuild-plugboard task 2.3](../openspec/changes/rebuild-plugboard/tasks.md).
+**Skeleton only.** The Go module, its command under `cmd/telephone/`, and the shared linter
+configuration are in place. What is not here is any contract code: the schema is frozen first
+([section 17](../openspec/changes/rebuild-plugboard/tasks.md)), because a hand-written codec landing
+ahead of it is the two-independent-fictions failure the conformance suite exists to remove.

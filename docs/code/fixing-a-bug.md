@@ -62,8 +62,8 @@ Each is its own rule note, citable from [the blocking objections](reviewing.md#b
 
 | named | provided by | what stands in today |
 |---|---|---|
-| a runnable `conformance/` suite | [rebuild-plugboard task 2.6](../../openspec/changes/rebuild-plugboard/tasks.md) | `ci/broken-inputs/` with `make check-gates`, for gate defects. The component directories arrived with task 1.1 and hold no source yet |
-| the three test tiers as separately invocable targets | [rebuild-plugboard task 2.7](../../openspec/changes/rebuild-plugboard/tasks.md) | `make check`, and `make test` (task 1.7), which refuses by name for every component whose toolchain has not landed |
+| a conformance suite with cases in it | [rebuild-plugboard task 13.1](../../openspec/changes/rebuild-plugboard/tasks.md) | `ci/broken-inputs/` with `make check-gates`, for gate defects. The module builds (task 2.6) and carries no case yet |
+| a case to write the failing test in | [rebuild-plugboard task 12.1](../../openspec/changes/rebuild-plugboard/tasks.md) | `make test-fast`, `make test-integration` and `make test-conformance` are separately invocable (task 2.7) and every tier is empty |
 
 ## Why
 

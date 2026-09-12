@@ -476,6 +476,7 @@
       "index-drift",
       "language-coverage",
       "links",
+      "linter-config",
       "meta",
       "no-submodules",
       "note-roots",
@@ -487,6 +488,7 @@
       "review-obligations",
       "rule-gate-correspondence",
       "runner",
+      "test-tiers",
       "top-level-readmes",
       "wikilinks"
     ],
@@ -506,7 +508,8 @@
         "coverage is added for the same reason: its subject is the gate roster, so it invokes every gate-shaped module it finds. Two fixtures carry stray .py files under ci/gates for their own cases -- rule-gate-correspondence needs a gate naming no rule note, language-coverage needs Python present -- and neither is a gate roster. Running the isolation check over them reported two failures, neither a defect.",
         "fixture-declarations is added for the same reason: its subject is the whole violating-input set, so a minimal tree carrying one fixture of its own is not that set.",
         "top-level-readmes is added by rebuild-plugboard task 1.1 for the same reason: its subject is every top-level directory of a tree, and a minimal violating input has one or two of them with no README by construction. Running the isolation check over the other fixtures would have reported a failure on nearly every one, none of them a defect.",
-        "review-obligations is added by rebuild-plugboard task 1.3: its subject is one declared note and one declared enumerator at fixed paths, and no other fixture tree carries either, so it would fail on every one of them for the absence rather than for a defect."
+        "review-obligations is added by rebuild-plugboard task 1.3: its subject is one declared note and one declared enumerator at fixed paths, and no other fixture tree carries either, so it would fail on every one of them for the absence rather than for a defect.",
+        "test-tiers is added by rebuild-plugboard task 2.7: its subjects are the shared make includes and the top-level Makefile at fixed paths, none of which any other fixture tree carries, so it would fail on every one of them for absence rather than for a defect."
       ],
       "gates": [
         "reachability",
@@ -530,7 +533,8 @@
         "coverage",
         "fixture-declarations",
         "top-level-readmes",
-        "review-obligations"
+        "review-obligations",
+        "test-tiers"
       ]
     },
     "declared_vacuity": {
@@ -609,6 +613,67 @@
         "conformance"
       ],
       "boundary_dir": "docs/code/boundaries"
+    },
+    "conformance": {
+      "_comment": [
+        "The platform set ci/gen has no part in: conformance/Makefile's build target",
+        "reads it, so the declaration and the artifacts cannot disagree. The suite is",
+        "handed to someone writing a sidecar in a language this repository has never",
+        "seen; a binary that needs a matching libc is where that offer fails first,",
+        "which is why the build is CGO-free rather than merely cross-compiled."
+      ],
+      "binary": "plugboard-conformance",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64",
+        "darwin/amd64",
+        "darwin/arm64",
+        "windows/amd64"
+      ]
+    },
+    "linter_config": {
+      "_comment": [
+        "Read by ci/gates/linter_config.py. One configuration for every Go module,",
+        "one copy of it, and one copy of the recipes that invoke it. recognised_names",
+        "is golangci-lint's own set rather than the one file this repository uses: a",
+        "second copy added as .golangci.yaml would otherwise be invisible to the check",
+        "that exists to find a second copy."
+      ],
+      "path": ".golangci.yml",
+      "shared_include": "ci/make/go.mk",
+      "recognised_names": [
+        ".golangci.yml",
+        ".golangci.yaml",
+        ".golangci.toml",
+        ".golangci.json"
+      ]
+    },
+    "test_tiers": {
+      "_comment": [
+        "The three tiers, read by ci/fast-tier.py and ci/gates/test_tiers.py. The",
+        "budget lives here rather than in the tool or in the rule note, so the number",
+        "the rule states and the number enforced cannot become two numbers -- which is",
+        "the failure the correspondences gate exists for, in miniature.",
+        "Every component exposes all three targets; a tier with no tests in a given",
+        "component is a no-op there, never a missing target, because a dispatch that",
+        "silently skips a component is the shape this repository keeps refusing."
+      ],
+      "tiers": [
+        "fast",
+        "integration",
+        "conformance"
+      ],
+      "targets": [
+        "test-fast",
+        "test-integration",
+        "test-conformance"
+      ],
+      "fast_budget_seconds": 10,
+      "budget_tool": "ci/fast-tier.py",
+      "includes": [
+        "ci/make/go.mk",
+        "ci/make/elixir.mk"
+      ]
     },
     "top_level_readmes": {
       "_comment": [

@@ -1,0 +1,100 @@
+# The per-component toolchains. Separate from check.yml, which runs the vault
+# gates and needs neither Elixir nor Go -- keeping them apart means a Go
+# toolchain outage cannot take the gates down with it.
+#
+# The FAST job declares no service containers, so nothing answers on 5432 and a
+# fast-tier test that reaches for Postgres fails rather than skips
+# (rebuild-plugboard task 2.7). What this job cannot do is cut the network: a
+# hosted runner has one, and pretending otherwise would be a claim nobody can
+# check. The rule's "no network" is held by review and by the tier's own latency
+# budget, which a test waiting on a socket breaches.
+name: test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  fast:
+    runs-on: ubuntu-latest
+    # No `services:` block. That absence is the check.
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27'
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: '27'
+          elixir-version: '1.18'
+      - run: make -C proxy deps
+      # Routed through ci/fast-tier.py, which prints the elapsed time on every
+      # run and fails above the budget declared in ci/vault.json.
+      - run: make test-fast
+
+  integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready --health-interval 10s
+          --health-timeout 5s --health-retries 5
+        ports:
+          - 5432:5432
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27'
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: '27'
+          elixir-version: '1.18'
+      - run: make -C proxy deps
+      - run: make test-integration
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27'
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: '27'
+          elixir-version: '1.18'
+      - run: make -C proxy deps
+      # One configuration for all three Go modules, at the repository root;
+      # ci/gates/linter_config.py fails the build if a second copy appears.
+      - uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          working-directory: sidecar
+          args: --config ../.golangci.yml
+      - uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          working-directory: terminator
+          args: --config ../.golangci.yml
+      - uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          working-directory: conformance
+          args: --config ../.golangci.yml
+      - run: make -C proxy lint
+
+  conformance-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27'
+      # One statically linked binary per declared platform. The suite is handed
+      # to somebody writing a sidecar in a language this repository has never
+      # seen; an artifact needing a matching libc is where that offer fails.
+      - run: make -C conformance build

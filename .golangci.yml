@@ -1,0 +1,119 @@
+# ONE linter configuration for every Go module in this repository. There is no
+# second copy, and ci/gates/linter_config.py fails the build if one appears.
+#
+# Why one: the prior art was two repositories, and the sidecar carried thirty
+# linters while the component terminating untrusted traffic had no format check,
+# no Dialyzer and no dependency audit at all. A per-module configuration is how
+# that asymmetry gets rebuilt one file at a time -- each copy drifts toward
+# whatever its module found inconvenient.
+#
+# Ported from the reference's config rather than written fresh: that half was
+# the better-maintained one, and rebuild-plugboard task 2.3 names the four
+# settings that carry the weight -- govet enable-all, errcheck checking type
+# assertions and blank assignments, gocyclo at 15, and test exclusions kept
+# narrow.
+version: "2"
+
+run:
+  timeout: 5m
+  tests: true
+
+linters:
+  # Nothing is on by accident. Every linter below is here because it was chosen.
+  default: none
+  enable:
+    # correctness
+    - asasalint
+    - bidichk
+    - bodyclose
+    - contextcheck
+    - copyloopvar
+    - durationcheck
+    - errcheck
+    - errorlint
+    - exhaustive
+    - forcetypeassert
+    - gocheckcompilerdirectives
+    - govet
+    - ineffassign
+    - makezero
+    - nilerr
+    - noctx
+    - reassign
+    - rowserrcheck
+    - sqlclosecheck
+    - staticcheck
+    - unused
+    # shape and size
+    - cyclop
+    - gocognit
+    - goconst
+    - gocritic
+    - gocyclo
+    - nakedret
+    - unconvert
+    - unparam
+    # security and hygiene
+    - asciicheck
+    - errname
+    - gochecknoinits
+    - gomodguard
+    - gosec
+    - misspell
+    - nolintlint
+    - predeclared
+    - usestdlibvars
+    - wastedassign
+
+  settings:
+    govet:
+      # Task 2.3 names this one specifically. It is loud, including
+      # fieldalignment, and that is the trade accepted rather than tuned away.
+      enable-all: true
+
+    errcheck:
+      # An unchecked type assertion is the defect class that reaches production
+      # as a panic in a proxy hot path; a blank assignment is an error somebody
+      # decided not to read. Both are named by task 2.3.
+      check-type-assertions: true
+      check-blank: true
+
+    gocyclo:
+      min-complexity: 15
+    cyclop:
+      max-complexity: 15
+    gocognit:
+      min-complexity: 20
+
+    gosec:
+      excludes:
+        # G104 duplicates errcheck, which is configured more strictly above.
+        - G104
+
+    nolintlint:
+      # A suppression states which linter it suppresses and why. An unexplained
+      # //nolint is the mechanism by which a thirty-linter configuration becomes
+      # decorative.
+      require-explanation: true
+      require-specific: true
+      allow-unused: false
+
+  exclusions:
+    generated: lax
+    rules:
+      # NARROW, and test-only. A test is allowed to be long and to assert a type
+      # directly; it is not allowed to skip errcheck, because a test that
+      # ignores an error is the test that passes over a defect.
+      - path: _test\.go$
+        linters:
+          - cyclop
+          - gocognit
+          - gocyclo
+          - gosec
+          - forcetypeassert
+          - unparam
+
+formatters:
+  enable:
+    - gofmt
+    - goimports

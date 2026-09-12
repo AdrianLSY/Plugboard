@@ -14,9 +14,16 @@
 # The component list is read from ci/vault.json, so it is not a second copy of
 # the set ci/gates/component_boundaries.py keys on.
 
+.PHONY: test-fast-unbudgeted
 .PHONY: check check-report check-links check-gates \
-        fmt lint test gen dev precommit hooks components help
+        fmt lint test test-fast test-integration test-conformance \
+        gen dev precommit hooks components help
 
+# Named literally rather than read from ci/vault.json, so a reader of this file
+# can see what wraps the fast tier. That makes it a second encoding of
+# code_standards.test_tiers.budget_tool -- which is why ci/gates/test_tiers.py
+# reconciles the two rather than trusting either.
+BUDGET_TOOL := ci/fast-tier.py
 COMPONENTS := $(shell python3 -c "import json;print(' '.join(c for c in json.load(open('ci/vault.json'))['code_standards']['components']['candidates'] if not c.startswith('_')))")
 PRESENT    := $(strip $(foreach c,$(COMPONENTS),$(if $(wildcard $(c)/Makefile),$(c),)))
 ABSENT     := $(filter-out $(PRESENT),$(COMPONENTS))
@@ -68,8 +75,24 @@ fmt:                  ## format every present component; fail naming any absent 
 lint:                 ## lint every present component; fail naming any absent one
 	$(call dispatch,lint)
 
-test:                 ## test every present component; fail naming any absent one
+test:                 ## every tier, every present component
 	$(call dispatch,test)
+
+# The fast tier is wrapped by its budget. The ceiling and the tool are declared
+# in ci/vault.json, so the number the rule states and the number enforced are one
+# number. Suite latency is treated as a defect class, not a target:
+# docs/code/rules/fast-tier-latency-budget.md.
+test-fast:            ## the fast tier, under its declared wall-clock budget
+	@python3 $(BUDGET_TOOL) -- $(MAKE) --no-print-directory test-fast-unbudgeted
+
+test-fast-unbudgeted:
+	$(call dispatch,test-fast)
+
+test-integration:     ## the integration tier: real Postgres, real sockets
+	$(call dispatch,test-integration)
+
+test-conformance:     ## the conformance tier: the wire contract, adversarially
+	$(call dispatch,test-conformance)
 
 gen:                  ## regenerate generated sources per component
 	$(call dispatch,gen)

@@ -14,7 +14,7 @@ the build today), **gate planned** (an obligation whose check is not built yet),
 (taste, quarantined, never a blocking objection).
 
 
-**50 rules** — 29 gated, 18 gate planned, 3 preference (6% unenforced).
+**51 rules** — 32 gated, 16 gate planned, 3 preference (5% unenforced).
 
 | rule | status | gate | note |
 |---|---|---|---|
@@ -39,12 +39,15 @@ the build today), **gate planned** (an obligation whose check is not built yet),
 | Every note carries a classification | **gated** | `ci/gates/frontmatter.py` | [note](method/rules/note-classification.md) |
 | Every note is reachable from an entry point | **gated** | `ci/gates/reachability.py` | [note](method/rules/reachability.md) |
 | Every rule names its gate, and every gate names its rule | **gated** | `ci/gates/rule_gate_correspondence.py` | [note](code/rules/rule-gate-correspondence.md) |
+| Every test runs in one of three declared tiers | **gated** | `ci/gates/test_tiers.py` | [note](code/rules/test-tiers.md) |
 | Every tracked note lives under a declared root | **gated** | `ci/gates/note_roots.py` | [note](method/rules/note-roots.md) |
 | Language conventions are keyed on the languages present | **gated** | `ci/gates/language_coverage.py` | [note](code/rules/language-conventions-keyed-on-source.md) |
 | No submodules, and no gitlink left behind | **gated** | `ci/gates/no_submodules.py` | [note](code/rules/no-submodules.md) |
+| One linter configuration, one copy, for every Go module | **gated** | `ci/gates/linter_config.py` | [note](code/rules/one-linter-config.md) |
 | Reader settings are tracked; per-person state is not | **gated** | `ci/gates/reader_config.py` | [note](method/rules/reader-configuration.md) |
 | Relations are relative markdown links | **gated** | `ci/gates/wikilinks.py` | [note](method/rules/relative-markdown-links.md) |
 | Requirement text has one copy | **gated** | `ci/gates/duplication.py` | [note](method/rules/one-copy-of-requirement-text.md) |
+| The fast tier stays inside ten seconds, and its latency is treated as a defect class | **gated** | `ci/gates/test_tiers.py` | [note](code/rules/fast-tier-latency-budget.md) |
 | The review obligations are stated in one location and enumerated | **gated** | `ci/gates/review_obligations.py` | [note](code/rules/review-obligations-single-sourced.md) |
 | There is exactly one decision register | **gated** | `ci/gates/decision_register.py` | [note](method/rules/decision-register.md) |
 | A body is octets end to end, and no character encoding is applied to it | **gate planned** | `—` | [note](code/banned-patterns/body-as-a-string.md) |
@@ -59,12 +62,10 @@ the build today), **gate planned** (an obligation whose check is not built yet),
 | A test helper never performs the state transition it is written to wait for | **gate planned** | `—` | [note](code/rules/no-helper-repairing-awaited-state.md) |
 | A wire error is a typed code, and no term rendering crosses the wire | **gate planned** | `—` | [note](code/banned-patterns/inspect-on-a-wire-payload.md) |
 | Every queue, buffer and accumulator carries a bound and a stated overflow behaviour | **gate planned** | `—` | [note](code/banned-patterns/unbounded-accumulator.md) |
-| Every test runs in one of three declared tiers | **gate planned** | `—` | [note](code/rules/test-tiers.md) |
 | Framing is decided per hop, and a received `Content-Length` or `Transfer-Encoding` is never relayed | **gate planned** | `—` | [note](code/banned-patterns/relayed-framing-headers.md) |
 | Header fields cross every hop as an ordered list of pairs, never a map | **gate planned** | `—` | [note](code/banned-patterns/headers-as-a-map.md) |
 | No uncertainty marker, and no unconditional skip, stands in for a failing assertion | **gate planned** | `—` | [note](code/rules/no-uncertainty-marker-or-skip.md) |
 | Nothing in the application's request pipeline touches mount-destined traffic | **gate planned** | `—` | [note](code/banned-patterns/middleware-on-proxied-traffic.md) |
 | Ten identical non-comment lines in two places is a duplication failure | **gate planned** | `—` | [note](code/rules/duplication-threshold.md) |
 | The conformance suite outranks any implementation's own tests | **gate planned** | `—` | [note](code/rules/conformance-suite-is-the-authority.md) |
-| The fast tier stays inside ten seconds, and its latency is treated as a defect class | **gate planned** | `—` | [note](code/rules/fast-tier-latency-budget.md) |
 | The method token passes through unread and unrewritten | **gate planned** | `—` | [note](code/banned-patterns/method-allowlists.md) |
