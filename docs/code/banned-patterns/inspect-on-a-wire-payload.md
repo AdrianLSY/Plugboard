@@ -1,6 +1,6 @@
 ---
 type: banned-pattern
-status: planned
+status: current
 authority: rationale
 ---
 
@@ -8,8 +8,8 @@ authority: rationale
 
 <a id="inspect-on-a-wire-payload"></a>
 
-**Gate:** planned — the `inspect/1`-on-a-wire-payload banned-defect-class check of
-[rebuild-plugboard task 3.7](../../../openspec/changes/rebuild-plugboard/tasks.md)
+**Gate:** `ci/gates/banned_patterns.py` — `inspect/1` outside a log line, with an explicit escape
+for the cases that are legitimately for a human to read.
 
 Prohibited: `inspect/1` — or any language's debug formatter — applied to a value that leaves the
 process, whether as a frame field, an error reason, or a response body. A peer receives an

@@ -449,6 +449,17 @@
       "SHOULD NOT"
     ]
   },
+  "binary_assets": {
+    "_comment": [
+      "Read by ci/gates/binary_assets.py. Every tracked binary appears here with its",
+      "origin and the terms it is carried under; anything else fails. Empty today,",
+      "and that is the intended steady state -- the prior attempt shipped 85 JPEGs",
+      "whose origin was established nowhere, and two compiled Go commands reached a",
+      "commit in THIS repository before the check existed, left by `go build ./...`",
+      "writing into a module root. Adding a binary is now a deliberate edit here,",
+      "which is a place a reviewer looks."
+    ]
+  },
   "gate_policy": {
     "_comment": [
       "Which gates block, and which task flips each remaining one. A gate that",
@@ -461,6 +472,8 @@
     "phase": "complete",
     "blocking": [
       "authoring-channels",
+      "banned-patterns",
+      "binary-assets",
       "capability-notes",
       "citations",
       "component-boundaries",
@@ -674,6 +687,37 @@
         "ci/make/go.mk",
         "ci/make/elixir.mk"
       ]
+    },
+    "banned_patterns": {
+      "_comment": [
+        "Read by ci/gates/banned_patterns.py. Five project-specific prohibitions no",
+        "off-the-shelf linter expresses. header_tokens is what makes check 1 decidable:",
+        "the construct alone is legitimate, and the check fires only where the line also",
+        "names a header field. That trades false negatives for zero false positives on",
+        "purpose -- a check firing on every map[string]string is turned off within a",
+        "week, and a rule with no enforcement is worse than one with partial.",
+        "notes maps each check to the note stating it, so a failure hands over the rule",
+        "rather than a verdict."
+      ],
+      "header_tokens": [
+        "header",
+        "headers",
+        "req_headers",
+        "resp_headers",
+        "trailer",
+        "trailers",
+        "field_lines",
+        "set-cookie",
+        "Set-Cookie"
+      ],
+      "exemption_marker": "not-a-wire-payload:",
+      "notes": {
+        "headers-as-a-map": "docs/code/banned-patterns/headers-as-a-map.md",
+        "read-all-on-a-proxied-body": "docs/code/banned-patterns/read-all-on-a-proxied-body.md",
+        "inspect-on-a-wire-payload": "docs/code/banned-patterns/inspect-on-a-wire-payload.md",
+        "monitor-without-trap-exit": "docs/method/harness.md#the-finding-to-constraint-table",
+        "with-without-else": "docs/method/harness.md#the-finding-to-constraint-table"
+      }
     },
     "top_level_readmes": {
       "_comment": [

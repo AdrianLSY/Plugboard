@@ -1,6 +1,6 @@
 ---
 type: banned-pattern
-status: planned
+status: current
 authority: rationale
 ---
 
@@ -8,9 +8,10 @@ authority: rationale
 
 <a id="read-all-on-a-proxied-body"></a>
 
-**Gate:** planned — the `io.ReadAll` banned-defect-class check of
-[rebuild-plugboard task 3.7](../../../openspec/changes/rebuild-plugboard/tasks.md), with the
-aggregate-before-emitting defective counterpart of task 15.4
+**Gate:** `ci/gates/banned_patterns.py` — every `ReadAll` in production Go, with an explicit escape
+for a read that is not a body in transit. The accumulate-into-a-list shape it cannot see is held by
+[the aggregate-before-emitting defective counterpart](../../../openspec/changes/rebuild-plugboard/tasks.md)
+of task 15.4.
 
 Prohibited: `io.ReadAll` on a proxied body, appending chunks into a list or buffer before emitting
 any of them, and any size or content check that needs the whole body first. A hop reads a chunk and

@@ -13,6 +13,8 @@ Generated index of the notes in `docs/code/rules/`.
 
 ## Notes
 
+- [Five defect classes are banned by name, and checked](banned-defect-classes.md)
+- [A committed binary states where it came from and on what terms](binary-assets-carry-provenance.md)
 - [A component's boundary is stated once](component-boundary-stated-once.md)
 - [The conformance suite outranks any implementation's own tests](conformance-suite-is-the-authority.md)
 - [Ten identical non-comment lines in two places is a duplication failure](duplication-threshold.md)

@@ -1,6 +1,6 @@
 ---
 type: banned-pattern
-status: planned
+status: current
 authority: rationale
 ---
 
@@ -8,7 +8,10 @@ authority: rationale
 
 <a id="headers-as-a-map"></a>
 
-**Gate:** planned — the banned-defect-class check of [rebuild-plugboard task 3.7](../../../openspec/changes/rebuild-plugboard/tasks.md), with the field-collapsing defective counterpart of task 15.3
+**Gate:** `ci/gates/banned_patterns.py` — the construct on a line naming a header field. What it
+cannot see is a map built into a variable two lines earlier; that residue is held by
+[the field-collapsing defective counterpart](../../../openspec/changes/rebuild-plugboard/tasks.md)
+of task 15.3 and by review.
 
 Prohibited: `map[string]string`, `Map.new`, `Enum.into(…, %{})`, or any other one-value-per-name
 container over header fields — in either direction, at any hop, including a struct field typed that

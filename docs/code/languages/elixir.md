@@ -55,9 +55,14 @@ payload, which no client can branch on; and
 [an unbounded accumulator](../banned-patterns/unbounded-accumulator.md), against a code base that had
 exactly one bounded queue in twenty thousand lines.
 
-Two more are checklist items rather than notes, because they are shapes rather than constructs: a
-monitoring `GenServer` started without `trap_exit`, and `with` in a controller action with no `else`.
-Both are [blocking objections](../reviewing.md#blocking-objections).
+Two more are shapes rather than constructs, so they carry no note of their own: a monitoring
+`GenServer` started without `trap_exit`, and `with` in a controller action with no `else`. They come
+from [the finding table](../../method/harness.md#the-finding-to-constraint-table) — the prior
+attempt's notifier linked without trapping exits, so it died before its `:DOWN` clause could run and
+the documented exponential backoff was unreachable ceremony (`mount_notifier.ex:120`). Both are
+checked by [the banned-defect-class gate](../rules/banned-defect-classes.md) alongside the notes
+above, and neither is a blocking objection: that set is closed and numbered, and adding to it is an
+edit to [reviewing](../reviewing.md#blocking-objections) rather than a sentence here.
 
 ## What is deliberately absent
 
