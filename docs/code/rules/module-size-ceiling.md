@@ -1,15 +1,14 @@
 ---
 type: rule
-status: planned
+status: current
 authority: rationale
 ---
 
 # A module is at most 300 non-comment lines
 
-**Gate:** planned — rebuild-plugboard task 3.5 builds the module-size and function-size ceiling gate
-for both languages
-([tasks.md](../../../openspec/changes/rebuild-plugboard/tasks.md), task 3.5). Until it runs, the
-ceiling is an obligation with no automated check.
+**Gate:** `ci/gates/size_ceilings.py` — non-comment lines per file, for every declared source
+language. Python is out of scope by declaration in `ci/vault.json`, with the reason and the four
+modules that end it printed on every run.
 
 Three hundred non-comment lines per file, counted per module rather than per repository, and refused
 rather than warned. A file crossing it is split along the responsibilities that made it long, not

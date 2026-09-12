@@ -36,7 +36,11 @@ import subprocess
 import sys
 from pathlib import Path
 
-NOT_A_GATE = {"_common"}
+#: A module whose name starts with `_` is a shared library, not a gate. This
+#: was six hardcoded copies of {"_common"} until ci/gates/_source.py arrived
+#: and made every one of them wrong in the same commit.
+def is_gate(stem: str) -> bool:
+    return not stem.startswith("_")
 
 
 def repo_root() -> Path:
@@ -64,7 +68,7 @@ def main(argv: list[str]) -> int:
     deferred = {k: v for k, v in policy["report_only_until"].items() if not k.startswith("_")}
 
     modules = sorted(
-        p.stem for p in (root / "ci" / "gates").glob("*.py") if p.stem not in NOT_A_GATE
+        p.stem for p in (root / "ci" / "gates").glob("*.py") if is_gate(p.stem)
     )
 
     # A gate in neither list is unclassified: fail rather than guess, so adding a

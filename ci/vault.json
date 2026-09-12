@@ -476,6 +476,7 @@
       "binary-assets",
       "capability-notes",
       "citations",
+      "code-duplication",
       "component-boundaries",
       "correspondences",
       "coverage",
@@ -492,6 +493,7 @@
       "links",
       "linter-config",
       "meta",
+      "no-repair",
       "no-submodules",
       "note-roots",
       "out-of-scope",
@@ -502,6 +504,8 @@
       "review-obligations",
       "rule-gate-correspondence",
       "runner",
+      "size-ceilings",
+      "test-hygiene",
       "test-tiers",
       "top-level-readmes",
       "wikilinks"
@@ -721,6 +725,81 @@
         "monitor-without-trap-exit": "docs/method/harness.md#the-finding-to-constraint-table",
         "with-without-else": "docs/method/harness.md#the-finding-to-constraint-table"
       }
+    },
+    "code_size": {
+      "_comment": [
+        "Read by ci/gates/size_ceilings.py, ci/gates/code_duplication.py and",
+        "ci/gates/no_repair.py through the shared reader ci/gates/_source.py. The",
+        "numbers live here and not in the gates, so the figure a rule note states and",
+        "the figure enforced cannot become two figures."
+      ],
+      "module_lines": 300,
+      "function_lines": 60,
+      "duplicate_lines": 10,
+      "languages": {
+        ".ex": "elixir",
+        ".exs": "elixir",
+        ".go": "go"
+      },
+      "excluded_languages": {
+        "_comment": "A language deliberately out of scope, with the reason and the work that ends it. Printed on every run: an exclusion nobody can see is an exemption.",
+        ".py": {
+          "reason": "The harness itself. Task 3.5 asks for the ceilings in 'both languages', meaning the two the components are written in, and four gate modules are over 300 non-comment lines today (ci/gates/out_of_scope.py at 442, links.py 340, wikilinks.py 305, citations.py 301). Holding the harness to its own ceiling is right and is a separate piece of work from building the gate.",
+          "ends_with": "a change that splits those four modules, recorded in docs/method/follow-ups.md"
+        }
+      }
+    },
+    "no_repair": {
+      "_comment": [
+        "Read by ci/gates/no_repair.py. Two vocabularies, declared rather than written",
+        "into the gate: the words that make a path a WAIT, and the verbs that make a",
+        "call a REPAIR. Widening either to every verb would fire on every test, so the",
+        "residue is review's and the gate says so."
+      ],
+      "waiting_words": [
+        "wait",
+        "poll",
+        "retry",
+        "eventually",
+        "until",
+        "awaiting",
+        "settle"
+      ],
+      "repairing_words": [
+        "reload",
+        "restart",
+        "resync",
+        "reconcile",
+        "refresh",
+        "rebuild",
+        "reset"
+      ],
+      "harness_paths": [
+        "conformance/harness",
+        "conformance/e2e"
+      ]
+    },
+    "test_hygiene": {
+      "_comment": [
+        "Read by ci/gates/test_hygiene.py. Abandoned reasoning committed as a comment,",
+        "which the audit found is the signature of a test written around a defect",
+        "rather than at it. Phrases rather than a heuristic: a check for 'uncertainty'",
+        "over English fires on every honest comment."
+      ],
+      "uncertainty_markers": [
+        "actually this shouldn't",
+        "actually, this shouldn't",
+        "let me think",
+        "for now we just",
+        "for now, we just",
+        "not sure why",
+        "not sure if this",
+        "should probably",
+        "hopefully this",
+        "this might be wrong",
+        "XXX:",
+        "FIXME"
+      ]
     },
     "top_level_readmes": {
       "_comment": [

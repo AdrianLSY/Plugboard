@@ -66,7 +66,7 @@ def resolve(side: dict, scan_root: Path, manifest: dict) -> tuple[set[str], str 
             return {
                 p.stem.replace("_", "-")
                 for p in d.glob("*.py")
-                if p.stem != "_common"
+                if not p.stem.startswith("_")
             }, None
         if kind == "manifest_list":
             return {str(x) for x in _dig(manifest, side["path"])}, None

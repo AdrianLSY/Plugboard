@@ -14,20 +14,23 @@ the build today), **gate planned** (an obligation whose check is not built yet),
 (taste, quarantined, never a blocking objection).
 
 
-**54 rules** — 38 gated, 13 gate planned, 3 preference (5% unenforced).
+**54 rules** — 43 gated, 8 gate planned, 3 preference (5% unenforced).
 
 | rule | status | gate | note |
 |---|---|---|---|
 | A cited artifact is obtainable | **gated** | `ci/gates/citations.py` | [note](method/rules/citations.md) |
 | A committed binary states where it came from and on what terms | **gated** | `ci/gates/binary_assets.py` | [note](code/rules/binary-assets-carry-provenance.md) |
 | A component's boundary is stated once | **gated** | `ci/gates/component_boundaries.py` | [note](code/rules/component-boundary-stated-once.md) |
+| A function is at most 60 non-comment lines | **gated** | `ci/gates/size_ceilings.py` | [note](code/rules/function-size-ceiling.md) |
 | A gate's reported coverage is an assertion about the run | **gated** | `ci/gates/coverage.py` | [note](method/rules/coverage-is-an-assertion.md) |
 | A gating test written before its subject is recorded red, and the red is a debt | **gated** | `ci/gates/expected_outcomes.py` | [note](code/rules/a-red-gate-is-a-recorded-debt.md) |
 | A generated artifact is verified against something other than its generator | **gated** | `ci/gates/generators.py` | [note](method/rules/generators-have-an-oracle.md) |
 | A generated index cannot drift | **gated** | `ci/gates/index_drift.py` | [note](method/rules/index-drift.md) |
+| A module is at most 300 non-comment lines | **gated** | `ci/gates/size_ceilings.py` | [note](code/rules/module-size-ceiling.md) |
 | A proxied body is emitted as it arrives, and nothing accumulates it first | **gated** | `ci/gates/banned_patterns.py` | [note](code/banned-patterns/read-all-on-a-proxied-body.md) |
 | A published enumeration and the computed one are reconciled | **gated** | `ci/gates/correspondences.py` | [note](method/rules/one-set-one-encoding.md) |
 | A spine note never states behaviour a specification owns | **gated** | `ci/gates/owned_behaviour.py` | [note](method/rules/no-owned-behaviour-in-the-spine.md) |
+| A test helper never performs the state transition it is written to wait for | **gated** | `ci/gates/no_repair.py` | [note](code/rules/no-helper-repairing-awaited-state.md) |
 | A top-level directory carries a README, or a declared reason it does not | **gated** | `ci/gates/top_level_readmes.py` | [note](code/rules/top-level-directory-carries-a-readme.md) |
 | A violating input states the failure it produces | **gated** | `ci/gates/fixture_declarations.py` | [note](method/rules/fixtures-declare-their-failure.md) |
 | A wire error is a typed code, and no term rendering crosses the wire | **gated** | `ci/gates/banned_patterns.py` | [note](code/banned-patterns/inspect-on-a-wire-payload.md) |
@@ -49,26 +52,23 @@ the build today), **gate planned** (an obligation whose check is not built yet),
 | Header fields cross every hop as an ordered list of pairs, never a map | **gated** | `ci/gates/banned_patterns.py` | [note](code/banned-patterns/headers-as-a-map.md) |
 | Language conventions are keyed on the languages present | **gated** | `ci/gates/language_coverage.py` | [note](code/rules/language-conventions-keyed-on-source.md) |
 | No submodules, and no gitlink left behind | **gated** | `ci/gates/no_submodules.py` | [note](code/rules/no-submodules.md) |
+| No uncertainty marker, and no unconditional skip, stands in for a failing assertion | **gated** | `ci/gates/test_hygiene.py` | [note](code/rules/no-uncertainty-marker-or-skip.md) |
 | One linter configuration, one copy, for every Go module | **gated** | `ci/gates/linter_config.py` | [note](code/rules/one-linter-config.md) |
 | Reader settings are tracked; per-person state is not | **gated** | `ci/gates/reader_config.py` | [note](method/rules/reader-configuration.md) |
 | Relations are relative markdown links | **gated** | `ci/gates/wikilinks.py` | [note](method/rules/relative-markdown-links.md) |
 | Requirement text has one copy | **gated** | `ci/gates/duplication.py` | [note](method/rules/one-copy-of-requirement-text.md) |
+| Ten identical non-comment lines in two places is a duplication failure | **gated** | `ci/gates/code_duplication.py` | [note](code/rules/duplication-threshold.md) |
 | The fast tier stays inside ten seconds, and its latency is treated as a defect class | **gated** | `ci/gates/test_tiers.py` | [note](code/rules/fast-tier-latency-budget.md) |
 | The review obligations are stated in one location and enumerated | **gated** | `ci/gates/review_obligations.py` | [note](code/rules/review-obligations-single-sourced.md) |
 | There is exactly one decision register | **gated** | `ci/gates/decision_register.py` | [note](method/rules/decision-register.md) |
 | A body is octets end to end, and no character encoding is applied to it | **gate planned** | `—` | [note](code/banned-patterns/body-as-a-string.md) |
 | A failure message is a sentence naming the consequence, not a code | **preference** | `—` | [note](code/rules/preferences/failure-messages-are-sentences.md) |
-| A function is at most 60 non-comment lines | **gate planned** | `—` | [note](code/rules/function-size-ceiling.md) |
 | A gate says what it does not decide | **preference** | `—` | [note](code/rules/preferences/gate-states-what-it-does-not-decide.md) |
 | A gate's docstring opens with the requirement it enforces and the defect behind it | **preference** | `—` | [note](code/rules/preferences/gate-docstring-names-requirement-and-defect.md) |
-| A module is at most 300 non-comment lines | **gate planned** | `—` | [note](code/rules/module-size-ceiling.md) |
 | A security or correctness property is never weakened or disabled in test configuration | **gate planned** | `—` | [note](code/rules/no-property-weakened-in-test-config.md) |
 | A test asserts the intended behaviour, never the defective behaviour it found | **gate planned** | `—` | [note](code/rules/no-test-accommodating-a-defect.md) |
-| A test helper never performs the state transition it is written to wait for | **gate planned** | `—` | [note](code/rules/no-helper-repairing-awaited-state.md) |
 | Every queue, buffer and accumulator carries a bound and a stated overflow behaviour | **gate planned** | `—` | [note](code/banned-patterns/unbounded-accumulator.md) |
 | Framing is decided per hop, and a received `Content-Length` or `Transfer-Encoding` is never relayed | **gate planned** | `—` | [note](code/banned-patterns/relayed-framing-headers.md) |
-| No uncertainty marker, and no unconditional skip, stands in for a failing assertion | **gate planned** | `—` | [note](code/rules/no-uncertainty-marker-or-skip.md) |
 | Nothing in the application's request pipeline touches mount-destined traffic | **gate planned** | `—` | [note](code/banned-patterns/middleware-on-proxied-traffic.md) |
-| Ten identical non-comment lines in two places is a duplication failure | **gate planned** | `—` | [note](code/rules/duplication-threshold.md) |
 | The conformance suite outranks any implementation's own tests | **gate planned** | `—` | [note](code/rules/conformance-suite-is-the-authority.md) |
 | The method token passes through unread and unrewritten | **gate planned** | `—` | [note](code/banned-patterns/method-allowlists.md) |

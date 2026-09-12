@@ -1,14 +1,14 @@
 ---
 type: rule
-status: planned
+status: current
 authority: rationale
 ---
 
 # Ten identical non-comment lines in two places is a duplication failure
 
-**Gate:** planned — rebuild-plugboard task 3.6 builds the duplication gate
-([tasks.md](../../../openspec/changes/rebuild-plugboard/tasks.md), task 3.6). Until it runs, the
-threshold is an obligation with no automated check.
+**Gate:** `ci/gates/code_duplication.py` — two passes, verbatim and with identifiers set aside, so
+a renamed copy is caught as well as a pasted one. One finding per duplicated region rather than one
+per window.
 
 Ten consecutive non-comment lines appearing at two locations is refused, whether the two locations
 are two modules or two places in one module, and whether or not identifiers were renamed between

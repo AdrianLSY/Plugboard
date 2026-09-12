@@ -56,14 +56,14 @@ COVERAGE = re.compile(
     r"(tracked index|a directory scan|a declared key in ci/vault\.json)\b"
 )
 FAILURE = re.compile(r"^\s*- ([^\s:]+)")
-SELF = {"_common", GATE_ID}
+SELF = {GATE_ID, "a module whose name starts with _ (a shared library)"}
 
 
 def gate_modules(root: Path) -> dict[str, Path]:
     return {
         p.stem: p
         for p in sorted((root / "ci" / "gates").glob("*.py"))
-        if p.stem not in SELF
+        if p.stem not in SELF and not p.stem.startswith("_")
     }
 
 

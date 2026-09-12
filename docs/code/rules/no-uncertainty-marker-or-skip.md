@@ -1,6 +1,6 @@
 ---
 type: rule
-status: planned
+status: current
 authority: rationale
 ---
 
@@ -8,10 +8,9 @@ authority: rationale
 
 <a id="no-uncertainty-marker-or-skip"></a>
 
-**Gate:** planned — the test-hygiene check of
-[rebuild-plugboard task 3.9](../../../openspec/changes/rebuild-plugboard/tasks.md), which rejects an
-uncertainty marker in a test body, a `@tag :skip` with no linked issue, and a new `async: false`
-with no stated reason
+**Gate:** `ci/gates/test_hygiene.py` — an uncertainty marker in a test body, a skip with no linked
+issue, and `async: false` with no stated reason. The marker phrases are declared in `ci/vault.json`:
+a check for "uncertainty" over English fires on every honest comment.
 
 Prohibited in a test: abandoned reasoning committed as comments — "actually this shouldn't be…",
 "let me think again", "for now we just…" — and a skip that carries no linked issue. A skip claiming

@@ -49,14 +49,14 @@ GATE_ID = "meta"
 RULE_NOTE = "docs/method/rules/gates-are-demonstrated-to-fail.md"
 
 # This module checks the others; it is not its own subject.
-NOT_A_GATE = {"_common", "meta"}
+NOT_A_GATE = {"meta", "a module whose name starts with _ (a shared library)"}
 
 
 def gate_modules(root: Path) -> dict[str, Path]:
     return {
         p.stem: p
         for p in sorted((root / "ci" / "gates").glob("*.py"))
-        if p.stem not in NOT_A_GATE
+        if p.stem != "meta" and not p.stem.startswith("_")
     }
 
 

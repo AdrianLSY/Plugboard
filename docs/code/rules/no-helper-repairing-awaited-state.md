@@ -1,6 +1,6 @@
 ---
 type: rule
-status: planned
+status: current
 authority: rationale
 ---
 
@@ -8,10 +8,9 @@ authority: rationale
 
 <a id="no-helper-repairing-awaited-state"></a>
 
-**Gate:** planned — the no-repair guard of
-[rebuild-plugboard task 3.8](../../../openspec/changes/rebuild-plugboard/tasks.md), which fails CI
-when a harness or test helper calls a reload, restart, resync, or reconcile entry point from a wait,
-poll, or retry path, naming the file and line
+**Gate:** `ci/gates/no_repair.py` — a repairing verb called from a waiting path in a test or a
+declared harness, named with its file and line. Both vocabularies are declared in `ci/vault.json`; a
+repair spelled outside them is review's.
 
 A helper waits, observes, and fails. Prohibited: calling the reload, reconcile, restart, or resync
 the awaited transition would have performed — on timeout, in a fallback branch, or anywhere inside

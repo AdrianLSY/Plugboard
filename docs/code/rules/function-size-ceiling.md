@@ -1,15 +1,13 @@
 ---
 type: rule
-status: planned
+status: current
 authority: rationale
 ---
 
 # A function is at most 60 non-comment lines
 
-**Gate:** planned — rebuild-plugboard task 3.5 builds the module-size and function-size ceiling gate
-for both languages
-([tasks.md](../../../openspec/changes/rebuild-plugboard/tasks.md), task 3.5). Until it runs, the
-ceiling is an obligation with no automated check.
+**Gate:** `ci/gates/size_ceilings.py` — non-comment lines per clause, so a function with many
+clauses is measured clause by clause.
 
 Sixty non-comment lines per function body, counted per clause rather than per name, so a function
 with many clauses is measured clause by clause and a template rendered inline is measured with the

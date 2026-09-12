@@ -56,7 +56,7 @@ RULE_NOTE = "docs/method/rules/fixtures-declare-their-failure.md"
 
 FAIL_COUNT = re.compile(r"\[FAIL\] [a-z-]+: (\d+) violation")
 FLAG = re.compile(r"`?(--[a-z][a-z-]+)`?")
-NOT_A_GATE = {"_common"}
+NOT_A_GATE = {"a module whose name starts with _ (a shared library)"}
 
 
 def run_module(module: Path, args: list[str]) -> tuple[int, str]:
@@ -83,7 +83,7 @@ def run(scan_root: Path, report_only: bool) -> int:
     for d in sorted(p for p in fixtures.iterdir() if p.is_dir()):
         gid = d.name
         module = scan_root / "ci" / "gates" / (gid.replace("-", "_") + ".py")
-        if not module.is_file() or module.stem in NOT_A_GATE:
+        if not module.is_file() or module.stem.startswith("_"):
             continue
         decl_path = d / "expect.json"
         trees = sorted(p for p in d.glob("tree*") if p.is_dir())

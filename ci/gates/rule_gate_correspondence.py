@@ -60,7 +60,7 @@ NO_GATE = re.compile(r"^\*\*Gate:\*\*\s*none\b", re.M | re.I)
 # and the currency rule then refuses it once that gate exists.
 PLANNED_GATE = re.compile(r"^\*\*Gate:\*\*\s*planned\b", re.M | re.I)
 
-NOT_A_GATE = {"_common"}
+NOT_A_GATE = {"a module whose name starts with _ (a shared library)"}
 
 
 def run(scan_root: Path, report_only: bool) -> int:
@@ -72,7 +72,7 @@ def run(scan_root: Path, report_only: bool) -> int:
     gates = {
         p.stem: p
         for p in sorted((scan_root / "ci" / "gates").glob("*.py"))
-        if p.stem not in NOT_A_GATE
+        if not p.stem.startswith("_")
     }
     notes = rule_notes(scan_root, cfg)
 
