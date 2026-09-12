@@ -44,11 +44,18 @@ item numbers from [reviewing](../reviewing.md) rather than from a declared count
 cannot drift from the check that propagates them; `ci/vault.json` declares only the canonical note,
 the obliged artifacts and the citation form.
 
-Both halves of the rule are gated. The citations are checked item by item, and so is the **link**:
-an artifact that names an enumeration without linking the note that owns it fails, because "every
-other mention links to that anchor" is the sentence this rule opens with. A canonical heading stated
-twice fails too, rather than resolving to the first — an enumeration stated in two places is the
-condition the rule exists to refuse, so the gate cannot quietly pick one of them.
+Every half of the rule is gated, and by one gate. The citations are checked item by item; so is the
+**link**, because "every other mention links to that anchor" is the sentence this rule opens with; and
+so is the **copy**, because an artifact that carries an item's text has made the second copy whether
+or not it also cites the number. A canonical heading stated twice fails too, rather than resolving to
+the first — an enumeration stated in two places is the condition the rule exists to refuse, so the
+gate cannot quietly pick one of them.
+
+The no-copy half was for a while attributed to [the duplication
+gate](../../method/rules/one-copy-of-requirement-text.md), which does not reach it: that gate compares
+the spine against the specifications, and a copy from one spine note into a root-level artifact is
+outside its subjects in both directions. The attribution was wrong rather than the obligation, and it
+is checked where it belongs now.
 
 What it does **not** decide is wording. An obliged artifact cites an item by number and puts its own
 short handle beside it; nothing compares that handle to the canonical text. That is the rule's own

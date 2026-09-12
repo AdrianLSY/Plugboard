@@ -33,5 +33,6 @@ stated twice, and the earlier stub would win a first-match search.
 
 ### Blocking objections
 
-1. Headers as a map.
+1. Headers as a map, in any form: `map[string]string`, `Map.new`, or an `Enum.into` over header
+   fields, with `Set-Cookie` as the case that proves it.
 2. A body carried as a string.

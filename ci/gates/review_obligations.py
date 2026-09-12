@@ -28,11 +28,16 @@ the Go side hardcoding a three-second check timeout against a configurable five
 on the Elixir side (`websocket.go:339`).
 
 So the checkable form is propagation, not equality. An obliged artifact cites an
-item BY NUMBER and links to the anchor that owns it; it never carries the item's
-text, because a second copy of the wording is what ci/gates/duplication.py
-already refuses. Adding item 10 to a canonical enumeration fails every obliged
-artifact until each one cites item 10 -- and the failure lists each artifact
-still missing it, so the fix is a list rather than a search.
+item BY NUMBER, links to the anchor that owns it, and does not carry the item's
+text. Adding item 10 to a canonical enumeration fails every obliged artifact until
+each one cites item 10 -- and the failure lists each artifact still missing it, so
+the fix is a list rather than a search.
+
+The no-copy half is checked HERE rather than by ci/gates/duplication.py, which was
+once claimed to cover it and does not: that gate's subjects are the spine against
+the specifications, and duplication wholly inside the spine is out of its scope by
+design, so no root-level artifact is among its 156 notes. The copy this rule exists
+to prevent is refused here or nowhere.
 
 ## What it does not decide
 
@@ -123,6 +128,40 @@ def cites(text: str, citation: str) -> bool:
     """
     pattern = r"\s+".join(re.escape(w) for w in citation.split()) + r"(?!\d)"
     return re.search(pattern, text, re.I) is not None
+
+
+# A copied item is only a copy worth refusing once it is long enough to be text
+# rather than a label. ci/gates/duplication.py takes the same position with its own
+# MIN_CHARS, for the same reason: a short run collides by coincidence.
+MIN_COPY_CHARS = 40
+
+_LINK = re.compile(r"\[([^\]]*)\]\([^)]*\)")
+_EMPHASIS = re.compile(r"[*_`]")
+_LEAD = re.compile(r"^\s*\d+\.\s*")
+
+
+def normalise(text: str) -> str:
+    """The normal form ci/gates/duplication.py compares in, reduced to one item.
+
+    Inline links become their link text, emphasis and code ticks are dropped, the
+    item's own number goes, whitespace collapses and case folds. So a copy that
+    was re-wrapped, re-emphasised, re-cased or relinked at a different relative
+    path is still the same block.
+    """
+    t = _LINK.sub(r"\1", text)
+    t = _EMPHASIS.sub("", t)
+    t = _LEAD.sub("", t)
+    return re.sub(r"\s+", " ", t).strip().casefold()
+
+
+def items_with_text(section_text: str) -> list[tuple[int, str]]:
+    """(number, full text) for each top-level item, each running to the next."""
+    marks = list(ITEM.finditer(section_text))
+    out = []
+    for i, m in enumerate(marks):
+        end = marks[i + 1].start() if i + 1 < len(marks) else len(section_text)
+        out.append((int(m.group(1)), section_text[m.start() : end]))
+    return out
 
 
 def sections(body: str, heading: str) -> list[str]:
@@ -226,7 +265,27 @@ def run(scan_root: Path, report_only: bool) -> int:
                     f"prevent"
                 )
 
-        items = [int(n) for n in ITEM.findall(opened[0])] if opened else []
+        pairs = items_with_text(opened[0]) if opened else []
+        items = [n for n, _ in pairs]
+
+        # An obliged artifact names an item and links to it; it does not carry the
+        # item's text. ci/gates/duplication.py does not reach here -- its subjects
+        # are the spine against the specifications, and duplication wholly inside
+        # the spine is out of its scope by design -- so the copy this rule exists
+        # to prevent is refused here or nowhere.
+        for rel, text in sorted(texts.items()):
+            if text is None:
+                continue
+            haystack = normalise(text)
+            for n, body_text in pairs:
+                needle = normalise(body_text)
+                if len(needle) >= MIN_COPY_CHARS and needle in haystack:
+                    report.fail(
+                        f"{rel}: carries the text of {form.format(n=n)} verbatim, not "
+                        f"just a citation of it -- {canonical_rel} owns the wording, "
+                        f"and a second copy is the drift this rule exists to prevent; "
+                        f"cite the number and link the anchor instead"
+                    )
 
         if not items:
             report.fail(

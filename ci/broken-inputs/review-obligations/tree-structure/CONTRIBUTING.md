@@ -11,3 +11,8 @@ Review, [the canonical set](docs/code/reviewing.md#the-review-checklist): checkl
 item 2, checklist item 3.
 
 Refusals, with no link at all: blocking objection 1, blocking objection 2.
+
+And one item carried as text rather than cited, which is the second copy the rule refuses:
+
+1. Headers as a map, in any form: `map[string]string`, `Map.new`, or an `Enum.into` over header
+   fields, with `Set-Cookie` as the case that proves it.

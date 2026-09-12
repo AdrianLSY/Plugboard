@@ -6,7 +6,7 @@ This product includes software developed by Adrian Low.
 Licensed under the Apache License, Version 2.0. See LICENSE for the terms.
 
 The agent harness under .claude/ is NOT covered by that grant. It is vendored
-third-party material: six skills declare MIT and the remaining twenty-five
-skills and six slash commands declare no licence, no copyright holder and no
-source. See .claude/THIRD-PARTY-NOTICES.md, which states what is known and what
-is not.
+third-party material: the openspec skills declare MIT, and every other skill and
+slash command declares no licence, no copyright holder and no source. See
+.claude/THIRD-PARTY-NOTICES.md, which enumerates them by path and states what is
+known and what is not.

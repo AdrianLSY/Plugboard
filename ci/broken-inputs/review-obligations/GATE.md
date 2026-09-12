@@ -41,20 +41,27 @@ The second is why a fenced sample sits inside the review-checklist section here.
 without masking, that block alone fails the gate, and the failure arrives through `Report.fail()` — so
 the meta gate's neuter test passes and proves nothing about it.
 
-## `tree-structure/` — two violations, exit 1
+## `tree-structure/` — three violations, exit 1
 
 Its `CONTRIBUTING.md` cites **every** item of every enumeration, so no propagation case fires. What
-is wrong is structural:
+is wrong is structural — the three ways an artifact can carry the numbers and still break the rule:
 
 1. The canonical note states `### The review checklist` **twice** — a two-item stub under Pull
    requests, then the real three-item list. A first-match search reads the stub as the enumeration and
    passes an artifact citing two items; the gate refuses the repeat instead of choosing between them.
 2. Its `CONTRIBUTING.md` names the blocking objections with **no link** to the note that owns them.
-   The rule is that every other mention links rather than copies, so the link is half the obligation
-   and the citations are the other half.
+   Every other mention links rather than copies, so the link is part of the obligation and not
+   decoration.
+3. It carries the **text** of blocking objection 1 verbatim rather than citing the number. That is the
+   second copy the whole rule exists to prevent, and citing the number correctly does not excuse it.
 
-Case 1 is the one that was silently wrong: before the gate counted occurrences, this exact tree
-exited 0.
+Case 1 is one of two that were silently wrong: before the gate counted heading occurrences, this exact
+tree exited 0. Case 3 is the other — it was attributed to `ci/gates/duplication.py`, whose subjects are
+the spine against the specifications, so no root-level artifact was ever among them.
+
+The item copied in case 3 is deliberately long. A short item is a label, and `MIN_COPY_CHARS` lets it
+collide by coincidence rather than by copying — `ci/gates/duplication.py` takes the same position for
+the same reason.
 
 ## Runs
 

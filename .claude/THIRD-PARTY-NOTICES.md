@@ -10,6 +10,12 @@ the rest.
 skills". That exemption is about *classification*. This file is about *copyright*, which no gate
 checks and no exemption settles.
 
+> **This file is itself ungated.** It is the one note here the repository authored, and it sits inside
+> an exempt root, so no note gate takes it as a subject — its frontmatter, its links and its claims are
+> checked by review alone. It sits here anyway because a notice has to travel with the material it
+> describes: a redistributor who takes `.claude/` must take this with it, and a copy under `docs/`
+> would be gated and left behind. The trade is recorded rather than hidden.
+
 ## What is declared
 
 Six skills carry a licence in their own frontmatter, at `SKILL.md:5` and `SKILL.md:8` of each:

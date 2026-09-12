@@ -22,7 +22,12 @@ that serves contributors specifically.
 - **Good first issues are the reserved-but-unimplemented frame types.** Trailers, 1xx interim responses,
   Range — each is a bounded piece of work against an existing primitive with a conformance fixture
   already written.
-- **`CONTRIBUTING.md` must exist.** The reference's README linked to it, and to `FUTURE_WORK.md`, and
-  **both were dead links.** First impressions of a portfolio project are made of exactly this.
+- **`CONTRIBUTING.md` exists**, at [the repository root](../../CONTRIBUTING.md). The reference's
+  README linked to it, and to `FUTURE_WORK.md`, and **both were dead links** — first impressions of a
+  portfolio project are made of exactly this. It landed with the propagation check that keeps it
+  honest rather than before one, so the three canonical enumerations it carries are read from
+  [reviewing](reviewing.md) on every run: an item added there fails the build until `CONTRIBUTING.md`
+  names it, and a copy of an item's text fails whether or not the number is cited.
+  → [the rule](rules/review-obligations-single-sourced.md)
 
 > Orientation, not behaviour. The specifications win.

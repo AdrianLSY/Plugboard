@@ -43,7 +43,7 @@ specifications.
 
 ## Before you write a note
 
-Fifteen [conventions](docs/method/conventions.md), each with the gate that enforces it. A first draft
+The [conventions](docs/method/conventions.md), each with the gate that enforces it. A first draft
 that violates one fails the build rather than a review. The short version: every claim carries a
 citation or an explicit `Unverified` marker, relations are relative markdown links, and a note never
 states behaviour a specification owns —
@@ -60,13 +60,14 @@ feedback is slow, an author writes assertions that are cheap to satisfy rather t
 are expensive to satisfy. → [testing](docs/code/testing.md)
 
 The prior attempt had more test code than production code, zero `TODO` markers, and did not catch
-that `POST` bodies arrive empty. **Test volume is not evidence.**
+that `POST` bodies arrive empty — [the audit](docs/history/reference-audit.md) records each.
+**Test volume is not evidence.**
 
 ---
 
 ## Describing a change
 
-Four questions, [stated once and cited by number](docs/code/reviewing.md#the-change-description-questions).
+Stated once and [cited by number](docs/code/reviewing.md#the-change-description-questions).
 Every pull request answers all four:
 
 | # | answers |
@@ -82,7 +83,7 @@ A `BREAKING` answer cannot merge without a version bump and a capability flag.
 
 ## The review checklist
 
-Nine items, [stated once and cited by number](docs/code/reviewing.md#the-review-checklist). A
+Stated once and [cited by number](docs/code/reviewing.md#the-review-checklist). A
 reviewer says "checklist item 4" and you find item 4 — there is no second list to disagree with the
 first, which is why this table carries numbers and links rather than a copy of the text
 ([the rule](docs/code/rules/review-obligations-single-sourced.md)).
@@ -106,7 +107,7 @@ The first four are the ones that would have caught actual shipped defects.
 
 ## Blocking objections
 
-Sixteen, [stated once and cited by number](docs/code/reviewing.md#blocking-objections) — the closed
+Stated once and [cited by number](docs/code/reviewing.md#blocking-objections) — the closed
 set. An objection outside it is a comment rather than a refusal, and a rule in
 [the quarantine](docs/code/rules/preferences/) is never one of these: raising a preference as a
 refusal is itself a review defect.
@@ -149,8 +150,9 @@ assuming it — and the provenance of contributed code is exactly that kind of c
 
 No direct pushes, no force pushes, squash merge so `main` reads as one commit per change. **If a PR
 cannot be reviewed in one sitting, split it** — a hard constraint for a solo-maintainer project,
-because unreviewable PRs are either merged unread or abandoned, and both happened in the prior
-attempt. → [reviewing](docs/code/reviewing.md)
+because unreviewable PRs are either merged unread or abandoned, and
+[the audit](docs/history/reference-audit.md) records both happening.
+→ [reviewing](docs/code/reviewing.md)
 
 Assume a fraction of contributions are model-written, because they will be. If yours is, the
 [signatures a reviewer looks for](docs/code/reviewing.md#ai-generated-pr-review) are worth reading

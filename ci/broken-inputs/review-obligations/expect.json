@@ -9,10 +9,11 @@
       ]
     },
     "tree-structure": {
-      "violations": 2,
+      "violations": 3,
       "cases": [
         "docs/code/reviewing.md: 'The review checklist' opens 2 sections",
-        "CONTRIBUTING.md: cites the 'Blocking objections' items but carries no link to reviewing.md#blocking-objections"
+        "CONTRIBUTING.md: cites the 'Blocking objections' items but carries no link to reviewing.md#blocking-objections",
+        "CONTRIBUTING.md: carries the text of blocking objection 1 verbatim, not just a citation of it"
       ]
     }
   }
