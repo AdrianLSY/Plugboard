@@ -15,7 +15,7 @@ AUTHORITY PRECEDENCE -- stated here and nowhere else
 
   1  contract/              machine-checked encoding and vectors      ABSOLUTE
   2  specifications         normative SHALL statements                BEHAVIOUR
-  3  decisions in force     D1-D10, D16-D27 in the register           DECISIONS
+  3  decisions in force     the decisions in force, in the register   DECISIONS
   4  spine notes            orientation, rationale, glossary          NEVER states behaviour
   5  generated              indexes, and the code map once it exists  WHERE the code is
 ```

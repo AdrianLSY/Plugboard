@@ -1,13 +1,25 @@
 {
-  "_comment": "What this gate emits against each tree here. Machine-readable because prose in GATE.md is not a declaration: a stated count nothing checks drifts the moment a case is added.",
   "trees": {
     "tree": {
-      "violations": 4,
+      "violations": 3,
       "cases": [
-        "CONTRIBUTING.md: does not name the review checklist item 2",
-        "CONTRIBUTING.md: does not name the change-description questions item 1",
-        "docs/code/reviewing.md: no heading 'Blocking objections'",
-        "docs/code/reviewing.md: no fenced block under 'PR template'"
+        "CONTRIBUTING.md: does not cite 'change-description question 2'",
+        "CONTRIBUTING.md: does not cite 'checklist item 1'",
+        "CONTRIBUTING.md: does not cite 'blocking objection 3'"
+      ]
+    },
+    "tree-structure": {
+      "violations": 3,
+      "cases": [
+        "docs/code/reviewing.md: 'The review checklist' opens 2 sections",
+        "CONTRIBUTING.md: cites the 'Blocking objections' items but carries no link to reviewing.md#blocking-objections",
+        "CONTRIBUTING.md: carries the text of blocking objection 1 verbatim, not just a citation of it"
+      ]
+    },
+    "tree-template": {
+      "violations": 1,
+      "cases": [
+        ".github/pull_request_template.md: differs from the block stating it at docs/code/reviewing.md 'PR template'"
       ]
     }
   }

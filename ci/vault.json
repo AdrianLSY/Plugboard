@@ -277,7 +277,8 @@
       "D24",
       "D25",
       "D26",
-      "D27"
+      "D27",
+      "D28"
     ],
     "retired": {
       "_comment": [
@@ -526,7 +527,7 @@
         "coverage is added for the same reason: its subject is the gate roster, so it invokes every gate-shaped module it finds. Two fixtures carry stray .py files under ci/gates for their own cases -- rule-gate-correspondence needs a gate naming no rule note, language-coverage needs Python present -- and neither is a gate roster. Running the isolation check over them reported two failures, neither a defect.",
         "fixture-declarations is added for the same reason: its subject is the whole violating-input set, so a minimal tree carrying one fixture of its own is not that set.",
         "top-level-readmes is added by rebuild-plugboard task 1.1 for the same reason: its subject is every top-level directory of a tree, and a minimal violating input has one or two of them with no README by construction. Running the isolation check over the other fixtures would have reported a failure on nearly every one, none of them a defect.",
-        "review-obligations is added by rebuild-plugboard task 1.3: its subject is one declared note and one declared enumerator at fixed paths, and no other fixture tree carries either, so it would fail on every one of them for the absence rather than for a defect.",
+        "review-obligations is added for the same reason: its subject is the canonical review note and the artifacts declared to enumerate it, and no fixture tree holds either, so it reports the canonical note absent on every other tree. Its own fixture carries both, so the neuter test and the per-file isolation check still bind.",
         "test-tiers is added by rebuild-plugboard task 2.7: its subjects are the shared make includes and the top-level Makefile at fixed paths, none of which any other fixture tree carries, so it would fail on every one of them for absence rather than for a defect.",
         "expected-outcomes is added by rebuild-plugboard task 4.5: its subject is ci/expected-outcomes.json at a fixed path, which no other fixture tree carries, so it would fail on every one of them for absence rather than for a defect."
       ],
@@ -819,47 +820,6 @@
         ".obsidian": "Reader configuration owned by Obsidian and checked by ci/gates/reader_config.py. What it holds is a vault's settings, not a component's boundary."
       }
     },
-    "review_obligations": {
-      "_comment": [
-        "Read by ci/gates/review_obligations.py. Three enumerations are stated once, in",
-        "`source`, and every artifact in `enumerators` names each of their items without",
-        "restating it. The ITEMS are not listed here on purpose: a declared copy of the",
-        "list would be the second encoding the rule exists to prevent, appearing inside",
-        "the check that enforces it. The gate derives each item's name from the source",
-        "note itself -- leading bold, else leading link text, else the lead clause.",
-        "`anchor` is the heading's generated anchor, carried so a failure hands over the",
-        "location rather than the heading text alone."
-      ],
-      "source": "docs/code/reviewing.md",
-      "enumerations": [
-        {
-          "heading": "The change-description questions",
-          "anchor": "the-change-description-questions"
-        },
-        {
-          "heading": "The review checklist",
-          "anchor": "the-review-checklist"
-        },
-        {
-          "heading": "Blocking objections",
-          "anchor": "blocking-objections"
-        }
-      ],
-      "enumerators": [
-        "CONTRIBUTING.md"
-      ],
-      "template": {
-        "_comment": [
-          "The pull-request template is STATED in the source note, inside the fenced",
-          "block under `heading`, and PUBLISHED at `path` where the forge reads it.",
-          "reviewing.md's own words: a template is the artifact most likely to be",
-          "copied and then left behind. So the published copy is held byte-identical",
-          "to the block that states it, and editing either alone fails."
-        ],
-        "heading": "PR template",
-        "path": ".github/pull_request_template.md"
-      }
-    },
     "languages": {
       "_comment": [
         "Keyed on the languages that hold tracked source. Today that is Python only",
@@ -1031,16 +991,36 @@
       "The runner configuration the gates require. Declared rather than hardcoded",
       "because a gate never decides its own scope (ci/gates/_common.py). The",
       "PROVIDER is not a spec-level commitment: harden-vault-harness HVH2 keys the",
-      "requirement on this path, so switching forge edits this value and the file",
-      "it names, and changes no requirement. The file is inert on a repository",
-      "with no configured remote, which is the state today."
+      "requirement on these paths, so switching forge edits these values and the",
+      "files they name, and changes no requirement.",
+      "WORKFLOWS is a mapping rather than one path because CI runs more than one",
+      "job: D28's sign-off check is blocking on a pull request and reachable from",
+      "no local target, and until it was declared here nothing checked it -- every",
+      "property its header comment claimed for itself was prose. A second blocking",
+      "workflow outside the gate's declared scope is the exact condition the rule",
+      "behind this gate exists to refuse.",
+      "Each entry declares its OWN required triggers, so a workflow that",
+      "deliberately runs on fewer events states that as a decision a gate holds,",
+      "rather than differing from its sibling for no recorded reason."
     ],
-    "path": ".github/workflows/check.yml",
     "aggregating_target": "make check",
-    "required_triggers": [
-      "push",
-      "pull_request"
-    ],
+    "workflows": {
+      ".github/workflows/check.yml": {
+        "required_triggers": [
+          "push",
+          "pull_request"
+        ],
+        "invokes_aggregating_target": true,
+        "why_these_triggers": "Every gate's subject is the tree, so every event that changes the tree must run them."
+      },
+      ".github/workflows/dco.yml": {
+        "required_triggers": [
+          "pull_request"
+        ],
+        "invokes_aggregating_target": false,
+        "why_these_triggers": "The subject is the set of commits a pull request proposes, which a push event does not define. Declared so the narrower trigger is a decision rather than an omission."
+      }
+    },
     "forbidden_clauses": {
       "_comment": "Each maps a configuration key to the refusal it would defeat.",
       "paths": "a path filter lets a change touching only unlisted paths skip every gate",
@@ -1115,6 +1095,50 @@
         "closed_by": "_common.rule_notes",
         "reason": "Both sides now call the one resolver in ci/gates/_common.py -- the gate and ci/gen/rule_index.py import it rather than each walking the tree -- so the two cannot diverge by construction and there is no longer a pair to reconcile."
       }
+    }
+  },
+  "review_obligations": {
+    "_comment": [
+      "The canonical enumerations and the artifacts obliged to enumerate them.",
+      "Declared rather than hardcoded because a gate never decides its own scope",
+      "(ci/gates/_common.py). The CITATION FORM is the key: an artifact names an",
+      "item by number, never by copying its text, because the rule is about",
+      "location rather than wording -- a second copy of the wording is what the",
+      "duplication gate already refuses. So adding item 10 to an enumeration here",
+      "fails every artifact under the obligation until it cites item 10.",
+      "Items are read from the canonical note, never declared as a count: a",
+      "cardinal in this file would be a second encoding of what that note states."
+    ],
+    "canonical": "docs/code/reviewing.md",
+    "required_in": [
+      "CONTRIBUTING.md"
+    ],
+    "enumerations": {
+      "the-review-checklist": {
+        "heading": "The review checklist",
+        "citation": "checklist item {n}"
+      },
+      "the-change-description-questions": {
+        "heading": "The change-description questions",
+        "citation": "change-description question {n}"
+      },
+      "blocking-objections": {
+        "heading": "Blocking objections",
+        "citation": "blocking objection {n}"
+      }
+    },
+    "template": {
+      "_comment": [
+        "The pull-request template is STATED in the canonical note, inside the fenced",
+        "block under `heading`, and PUBLISHED at `path` where the forge reads it.",
+        "reviewing.md's own words: a template is the artifact most likely to be copied",
+        "and then left behind. So the published copy is held byte-identical to the",
+        "block stating it, in both directions, and editing either alone fails.",
+        "Read from the UNMASKED note: mask_fences blanks exactly the block this case",
+        "is about."
+      ],
+      "heading": "PR template",
+      "path": ".github/pull_request_template.md"
     }
   }
 }

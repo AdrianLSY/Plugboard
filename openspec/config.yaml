@@ -30,8 +30,8 @@ context: |
   them under one operator, and *node* means an entry in the mount-point hierarchy -- never a running
   process. Terms are defined in docs/glossary.md, which also names the ones nothing defines.
 
-  Decisions live in ONE register: openspec/changes/rebuild-plugboard/design.md, holding D1-D10 and
-  D16-D27. D11-D15 are permanently retired and never reused. A change's own design decisions carry a
+  Decisions live in ONE register: openspec/changes/rebuild-plugboard/design.md, whose `assigned`
+  list in ci/vault.json is the roster. D11-D15 are permanently retired and never reused. A change's own design decisions carry a
   prefix naming the change. Run `make check` before claiming anything is done.
 
 rules:

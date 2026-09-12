@@ -5,16 +5,25 @@ Exercises [`ci/gates/runner.py`](../../gates/runner.py), which enforces
 
 ## Violations
 
-**Five** violations, exit 1:
+**Six** violations, exit 1, across **two** declared workflows:
 
-1. The workflow carries `branches:` — a branch filter.
-2. The workflow carries `continue-on-error:` — a non-zero exit that does not fail the job.
-3. The workflow triggers on `push` only, missing `pull_request`.
-4. The `check` recipe begins with `-`, so make ignores its exit status.
-5. The same recipe ends with `|| true`.
+1. `check.yml` carries `branches:` — a branch filter.
+2. `check.yml` carries `continue-on-error:` — a non-zero exit that does not fail the job.
+3. `check.yml` triggers on `push` only, missing `pull_request`.
+4. `dco.yml` triggers on `push` only, missing the `pull_request` **it declares for itself**.
+5. The `check` recipe begins with `-`, so make ignores its exit status.
+6. The same recipe ends with `|| true`.
 
-Cases 4 and 5 are separate because they are separate mistakes with one effect, and a fixture that
+Cases 5 and 6 are separate because they are separate mistakes with one effect, and a fixture that
 merged them would let either fix alone appear to work.
+
+Case 4 is why the tree carries a second workflow. `ci/vault.json` declares each workflow's own
+required triggers, so `dco.yml` is held to `pull_request` where `check.yml` is held to both — a
+workflow that deliberately runs on fewer events states that as a decision the gate holds, rather than
+differing from its sibling for no recorded reason. Before the declaration became a mapping, `dco.yml`
+was named in no gate at all: a branch filter and a `continue-on-error:` could be added to it and
+`make check` still reported every gate passing, which is the condition
+[the rule](../../../docs/method/rules/the-gates-actually-run.md) exists to refuse.
 
 ## Runs
 

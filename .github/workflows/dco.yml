@@ -1,0 +1,74 @@
+# The sign-off check CONTRIBUTING.md requires.
+#
+# CONTRIBUTING.md states that every commit carries a Signed-off-by line certifying
+# the DCO. A statement in a contributor file that nothing checks is the shape of
+# defect this repository's gate harness exists to refuse -- so the obligation is
+# enforced here rather than asked for politely.
+#
+# No branch filter and no continue-on-error, for the reason check.yml states. This
+# file is a declared runner in ci/vault.json, so ci/gates/runner.py checks both
+# against the declaration and this comment is not the enforcement. The trigger is
+# pull_request ALONE, and that is declared rather than inherited: the subject is
+# the set of commits a pull request proposes, which a push event does not define.
+name: dco
+
+on:
+  pull_request:
+
+jobs:
+  sign-off:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history. The range below is resolved against it.
+          fetch-depth: 0
+
+      - name: Every commit carries a Signed-off-by line
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+
+          # Both endpoints must be readable. A pull_request checkout gives
+          # refs/pull/N/merge, and head.sha is reachable only as its second
+          # parent -- GitHub recomputes that ref asynchronously, so a rapid
+          # re-push can leave it naming the previous head. A base branch that was
+          # force-pushed or deleted takes base.sha with it. Either way the range
+          # is unreadable, and a check that cannot read its input must refuse
+          # rather than report success over zero commits.
+          git cat-file -e "${BASE}^{commit}" 2>/dev/null || {
+            echo "::error::base commit $BASE is not reachable in this checkout"; exit 1; }
+          git cat-file -e "${HEAD}^{commit}" 2>/dev/null || {
+            echo "::error::head commit $HEAD is not reachable in this checkout -- stale refs/pull/N/merge?"; exit 1; }
+
+          # Captured, not piped into the loop: bash never propagates the exit
+          # status of a process substitution, and `set -e` does not change that,
+          # so `done < <(git rev-list ...)` would swallow a failure and pass green
+          # having read no commits at all.
+          shas="$(git rev-list "$BASE".."$HEAD")"
+          [ -n "$shas" ] || { echo "::error::empty commit range $BASE..$HEAD"; exit 1; }
+
+          missing=0
+          while read -r sha; do
+            [ -z "$sha" ] && continue
+            body="$(git show -s --format='%B' "$sha")"
+            # A here-string rather than a pipe: `... | grep -q` exits on the first
+            # match, the writer takes SIGPIPE, and `set -o pipefail` then reports
+            # 141 for a commit that WAS correctly signed. Trailing whitespace and
+            # a CR are tolerated, and the name may hold commas or non-ASCII.
+            if ! grep -qiE '^[[:space:]]*Signed-off-by:.*<[^>]*@[^>]*>[[:space:]]*$' <<< "$body"; then
+              echo "::error::$(git show -s --format='%h %s' "$sha") -- no Signed-off-by line"
+              echo "   author: $(git show -s --format='%an <%ae>' "$sha")"
+              missing=$((missing + 1))
+            fi
+          done <<< "$shas"
+
+          if [ "$missing" -gt 0 ]; then
+            echo
+            echo "$missing commit(s) without a sign-off. See CONTRIBUTING.md#sign-off."
+            echo "Fix the branch with: git rebase --signoff $BASE"
+            exit 1
+          fi
+          echo "every commit in $BASE..$HEAD carries a sign-off"

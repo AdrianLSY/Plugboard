@@ -170,10 +170,9 @@ maybe*:
 | Full gRPC at the ingress | `grpc-status` must travel as a trailer even on success. gRPC-Web *is* in scope; the bridge belongs in the sidecar. |
 | Response caching in v1 | No cache-key design, therefore no cache-poisoning surface. |
 
-**Deferred, not refused:** WebTransport (designed for, reserved in the contract as the one v1 frame
-type nothing uses yet, and carried later by the edge terminator) and HTTP/3 at the edge — cheap later
-*because that frame type is reserved in v1 and every edge protocol sits behind the contract*.
-Trailers, 1xx interim responses and Range/206 are **in v1**, not deferred.
+**Deferred, not refused:** WebTransport (reserved in the contract, shipped later as a separate HTTP/3
+terminator), HTTP/3 at the edge, trailers, 1xx interim responses, Range/206 — all cheap later
+*because the frame types are reserved in v1*.
 
 → [scope and refusals](docs/why/scope-refusals.md) · [protocol fidelity](docs/how/protocol-fidelity.md)
 
@@ -219,14 +218,11 @@ where a false claim is guaranteed to be read first*.
 
 ## Run it yourself
 
-Requirements: **Python 3** (standard library only — no dependencies, no lockfile), a full-history
-clone, and [OpenSpec](openspec/config.yaml) `1.13.0` on `PATH`
-(`npm install -g @fission-ai/openspec@1.13.0`). The gates are standard-library Python, but one of
-them reads the conventions back *through* the planning tool rather than out of the file, so
-`make check` needs it too — not only the two planning commands.
+Requirements: **Python 3** (standard library only — no dependencies, no lockfile) and a full-history
+clone. [OpenSpec](openspec/config.yaml) is needed only for the two planning commands.
 
 ```bash
-make check          # every vault gate; the one command CI runs
+make check          # every vault gate; one command, and CI runs it
 ```
 
 ```bash
@@ -320,15 +316,17 @@ your language; here is the suite that tells you when you are done."* Good first 
 be the reserved-but-unimplemented frame types, each a bounded piece of work against an existing
 primitive with a fixture already written.
 
-None of that exists yet — there is no product code to contribute to. What does exist is
-[`CONTRIBUTING.md`](CONTRIBUTING.md), written before the code rather than after it, naming every item
-of the three review enumerations and linking each to the one place it is stated. The reference
-attempt's README linked to two files that were never written, and *first impressions of a portfolio
-project are made of exactly this*; this one links only what it contains, and a gate holds it to that.
+None of that exists yet — there is no conformance suite to be an on-ramp to. What does exist is
+[`CONTRIBUTING.md`](CONTRIBUTING.md), and it arrived with the check that keeps it honest: the three
+canonical enumerations it carries are read from [reviewing](docs/code/reviewing.md) on every run, so
+an item added there fails the build until `CONTRIBUTING.md` names it. The reference attempt's README
+linked to a `CONTRIBUTING.md` that was never written, and *first impressions of a portfolio project
+are made of exactly this*.
 
-Meanwhile: `make check` must be green, every claim carries a citation or an explicit `Unverified`
-marker, and [the conventions](docs/method/conventions.md) are generated from the same enumeration the
-gates key on, so the list you read and the list that fails you cannot diverge.
+`make check` must be green, every claim carries a citation or an explicit `Unverified` marker, new
+commits carry a [sign-off](DCO), and [the conventions](docs/method/conventions.md) are generated from
+the same enumeration the gates key on, so the list you read and the list that fails you cannot
+diverge.
 
 ---
 
@@ -341,4 +339,16 @@ specification it points at is simply wrong.
 
 ---
 
-*No `LICENSE` file yet, so default copyright applies.*
+## Licence
+
+[Apache-2.0](LICENSE) — the work this repository authors: the notes, the sixteen specifications, the
+gate harness, and the component directories when they exist. Contributions arrive under the same terms
+by §5 of that licence, which does not depend on this repository living on GitHub. The name is not part
+of the grant: §6 conveys no trademark rights, so *Plugboard* stays governed separately from the code.
+
+`.claude/` is excluded, and [`LICENSE`](LICENSE) says so above the Apache text rather than leaving it
+to a note. It is a vendored agent harness this repository did not author: the openspec skills declare
+a licence, and every other skill and slash command declares none —
+[enumerated by path, not papered over](.claude/THIRD-PARTY-NOTICES.md).
+
+→ [why Apache-2.0, and the alternative it beat](docs/decisions/d28-licensing.md)

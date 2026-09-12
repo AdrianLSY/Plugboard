@@ -1,11 +1,12 @@
 {
   "trees": {
     "tree": {
-      "violations": 5,
+      "violations": 6,
       "cases": [
         ".github/workflows/check.yml: carries `branches:`",
         ".github/workflows/check.yml: carries `continue-on-error:`",
         ".github/workflows/check.yml: does not trigger on `pull_request`",
+        ".github/workflows/dco.yml: does not trigger on `pull_request`",
         "Makefile `check`: a recipe line begins with `-`, so make ignores its exit status",
         "Makefile `check`: a recipe line swallows failure with `-@python3 ci/run-gates.py || true`"
       ]

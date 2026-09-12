@@ -1,11 +1,15 @@
 # Contributing to Plugboard
 
-**There is no product code yet.** This repository is the plan — sixteen capability specifications, a
-decision register, a task list and the vault that explains them. [Start here](docs/start-here.md) is
-the entry point; [the README](README.md) says what the product is meant to be.
+**There is no product code yet.** This repository is the plan — the specifications, the decision
+register, the documentation vault and the gate harness that refuses prose which drifts from the tree.
+Read [start here](docs/start-here.md) before anything else; it carries the five governing facts and
+the routing table.
 
-That shapes what a contribution looks like today. The highest-value thing you can do is not a feature:
-it is a fixture, a gate, or a defect found in a specification before anything is built against it.
+Contributions are accepted under [Apache-2.0](LICENSE) by §5 of that licence, and every commit needs
+a [sign-off](#sign-off). There is **no contributor licence agreement** — nothing to sign, no rights
+assigned beyond the licence. → [D28](docs/decisions/d28-licensing.md)
+
+---
 
 ## The one command
 
@@ -13,108 +17,144 @@ it is a fixture, a gate, or a defect found in a specification before anything is
 make check
 ```
 
-Every gate a merge depends on, in one run, with the roots each covered printed even when it passes. It
-needs Python 3 and [OpenSpec](openspec/config.yaml) on `PATH`; nothing else. If it is red, nothing
-else matters yet.
+Every vault gate in one command, and CI runs it on every push and pull request. It must be green
+before a pull request, and it enumerates every gate it ran, so the inventory is a build output rather
+than a prose count. Changes under `openspec/` also need `openspec validate rebuild-plugboard --strict`.
 
-## The three test tiers
-
-Every test runs in exactly one declared tier — **fast**, **integration**, or **conformance** — stated
-once in [the tier rule](docs/code/rules/test-tiers.md), with the reasoning in
-[testing](docs/code/testing.md). The two properties that matter to you before you write a test:
-
-- The **fast** tier needs no Postgres, no network and no sleeps, and it is what runs on save. Its
-  latency is treated as a correctness control, not a convenience — see
-  [the latency budget](docs/code/rules/fast-tier-latency-budget.md).
-- A test is judged by [mutation thinking](docs/code/testing.md#mutation-thinking-as-the-review-standard):
-  name the wrong implementation it would reject. If you cannot, it is decorative.
-
-## The on-ramp: the conformance suite
-
-*"Write a sidecar in your language; here is the suite that tells you when you are done."* That is the
-best-scoped, highest-status contribution an outside contributor can make, and it exists as a side
-effect of [contract-first](docs/decisions/d23-contract-first.md). The reasoning, and what else the
-contributor experience owes you, is in [contributor experience](docs/code/contributing.md).
-
-Good first issues are the conformance fixtures. Each is bounded work against an existing primitive,
-and the corpus is written *before* the code it gates — so a fixture can land ahead of the
-implementation it holds to account.
+It is not the *only* thing CI runs: the [sign-off](#sign-off) check reads the commits in a pull
+request, which no local target can do. Those two workflows are the whole of CI.
 
 ---
 
-The three lists below are **named here and stated elsewhere.** Each is single-sourced in
-[reviewing](docs/code/reviewing.md) and cited by number, so "checklist item 4" means one thing. This
-file names every item and restates none of them, and
-[`ci/gates/review_obligations.py`](ci/gates/review_obligations.py) fails the build if an item is added
-there and not named here — [the rule](docs/code/rules/review-obligations-single-sourced.md).
+## Where to start
 
-## The change-description questions
+**The conformance suite is the on-ramp** — *"write a sidecar in your language; here is the suite that
+tells you when you are done."* It is the best-scoped, highest-status contribution an outside
+contributor can make, and it exists as a side effect of
+[D23](docs/decisions/d23-contract-first.md). → [contributor experience](docs/code/contributing.md)
 
-Four, answered in [the PR template](docs/code/reviewing.md#pr-template), stated at
-[the canonical anchor](docs/code/reviewing.md#the-change-description-questions):
+Good first issues are the reserved-but-unimplemented frame types — trailers, 1xx interim responses,
+Range — each a bounded piece of work against an existing primitive with a fixture already written.
 
-1. [What breaks if this is wrong](docs/code/reviewing.md#the-change-description-questions)
-2. [The wire-contract impact](docs/code/reviewing.md#the-change-description-questions)
-3. [What was tested, and what the test would catch that a wrong implementation would not](docs/code/reviewing.md#the-change-description-questions)
-4. [Which pre-submit checks were run](docs/code/reviewing.md#the-change-description-questions)
+None of that exists yet either. Until it does, the work is the plan: the vault, the gates, and the
+specifications.
+
+---
+
+## Before you write a note
+
+The [conventions](docs/method/conventions.md), each with the gate that enforces it. A first draft
+that violates one fails the build rather than a review. The short version: every claim carries a
+citation or an explicit `Unverified` marker, relations are relative markdown links, and a note never
+states behaviour a specification owns —
+[precedence](docs/method/authority-precedence.md) decides who wins.
+
+---
+
+## Tests
+
+Three tiers, and the first one is a correctness control: [every test runs in one of three declared
+tiers](docs/code/rules/test-tiers.md), and [the fast tier stays inside ten
+seconds](docs/code/rules/fast-tier-latency-budget.md). That budget is not a convenience — when
+feedback is slow, an author writes assertions that are cheap to satisfy rather than assertions that
+are expensive to satisfy. → [testing](docs/code/testing.md)
+
+The prior attempt had more test code than production code, zero `TODO` markers, and did not catch
+that `POST` bodies arrive empty — [the audit](docs/history/reference-audit.md) records each.
+**Test volume is not evidence.**
+
+---
+
+## Describing a change
+
+Stated once and [cited by number](docs/code/reviewing.md#the-change-description-questions).
+Every pull request answers all four:
+
+| # | answers |
+|---|---|
+| change-description question 1 | what *breaks* if this is wrong — not what it does |
+| change-description question 2 | the wire-contract impact: none, additive, or **BREAKING** |
+| change-description question 3 | what was tested, and what the test would catch |
+| change-description question 4 | which pre-submit checks were run, item by item |
+
+A `BREAKING` answer cannot merge without a version bump and a capability flag.
+
+---
 
 ## The review checklist
 
-Nine, in order, at [the canonical anchor](docs/code/reviewing.md#the-review-checklist). The first four
-would each have caught a defect that actually shipped in the prior art:
+Stated once and [cited by number](docs/code/reviewing.md#the-review-checklist). A
+reviewer says "checklist item 4" and you find item 4 — there is no second list to disagree with the
+first, which is why this table carries numbers and links rather than a copy of the text
+([the rule](docs/code/rules/review-obligations-single-sourced.md)).
 
-1. [Does the body survive?](docs/code/reviewing.md#the-review-checklist)
-2. [Are headers still an ordered list of pairs?](docs/code/reviewing.md#the-review-checklist)
-3. [Does the method pass through unmodified?](docs/code/reviewing.md#the-review-checklist)
-4. [Does it stream, or does it aggregate?](docs/code/reviewing.md#the-review-checklist)
-5. [Does the test prove the thing?](docs/code/reviewing.md#the-review-checklist)
-6. [Is the mutation authorized in its signature?](docs/code/reviewing.md#the-review-checklist)
-7. [Is the queue bounded?](docs/code/reviewing.md#the-review-checklist)
-8. [Is the error typed?](docs/code/reviewing.md#the-review-checklist)
-9. [Does it change how a gate finds its subjects?](docs/code/reviewing.md#the-review-checklist)
+| # | subject |
+|---|---|
+| checklist item 1 | the body surviving the round trip |
+| checklist item 2 | headers still an ordered list of pairs |
+| checklist item 3 | the method passing through unmodified |
+| checklist item 4 | streaming rather than aggregating |
+| checklist item 5 | the test proving the thing |
+| checklist item 6 | the mutation authorized in its signature |
+| checklist item 7 | the queue bounded |
+| checklist item 8 | the error typed |
+| checklist item 9 | how a gate finds its subjects |
 
-## Blocking objections
-
-Sixteen, and the set is **closed**: an objection outside it is a comment, not a refusal. A rule in
-[the quarantine](docs/code/rules/preferences/) carries no gate and is never one of these. Stated at
-[the canonical anchor](docs/code/reviewing.md#blocking-objections); each item links the note that owns
-its rule.
-
-1. [Headers as a map](docs/code/banned-patterns/headers-as-a-map.md)
-2. [A body carried as a string, or coerced to a character encoding](docs/code/banned-patterns/body-as-a-string.md)
-3. [A proxied body accumulated before it is emitted](docs/code/banned-patterns/read-all-on-a-proxied-body.md)
-4. [A method allowlisted or rewritten](docs/code/banned-patterns/method-allowlists.md)
-5. [A received `Content-Length` or `Transfer-Encoding` relayed](docs/code/banned-patterns/relayed-framing-headers.md)
-6. [Application middleware reaching proxied traffic](docs/code/banned-patterns/middleware-on-proxied-traffic.md)
-7. [A term rendering on the wire in place of a typed code](docs/code/banned-patterns/inspect-on-a-wire-payload.md)
-8. [A queue, buffer or accumulator with no bound](docs/code/banned-patterns/unbounded-accumulator.md)
-9. [A mutation whose signature does not take the acting principal](docs/code/reviewing.md#blocking-objections)
-10. [A helper that performs the transition it waits for](docs/code/rules/no-helper-repairing-awaited-state.md)
-11. [A test that accommodates a defect instead of exposing it](docs/code/rules/no-test-accommodating-a-defect.md)
-12. [A property weakened or disabled in test configuration](docs/code/rules/no-property-weakened-in-test-config.md)
-13. [An uncertainty marker, or a skip standing in for a failing assertion](docs/code/rules/no-uncertainty-marker-or-skip.md)
-14. [A module or a function past its ceiling, or duplication past the threshold](docs/code/rules/module-size-ceiling.md)
-15. [A change description leaving one of the four questions unanswered](docs/code/reviewing.md#blocking-objections)
-16. [A fix with no case that failed before it](docs/code/fixing-a-bug.md)
+The first four are the ones that would have caught actual shipped defects.
+**Reviewers reject, not fix.**
 
 ---
 
-## Procedures
+## Blocking objections
 
-- [Adding a feature](docs/code/adding-a-feature.md) — the order the artifacts are touched.
-- [Fixing a bug](docs/code/fixing-a-bug.md) — starting from a case that fails.
-- [Authoring a note](docs/method/conventions.md) — fifteen conventions, each with its gate.
-- [Reviewing a change](docs/code/reviewing.md) — how a change is proposed, described and refused.
+Stated once and [cited by number](docs/code/reviewing.md#blocking-objections) — the closed
+set. An objection outside it is a comment rather than a refusal, and a rule in
+[the quarantine](docs/code/rules/preferences/) is never one of these: raising a preference as a
+refusal is itself a review defect.
 
-## Two things that will trip you first
+| # | construct refused | # | construct refused |
+|---|---|---|---|
+| blocking objection 1 | headers as a map | blocking objection 9 | a mutation not taking the acting principal |
+| blocking objection 2 | a body as a string | blocking objection 10 | a helper performing the transition it waits for |
+| blocking objection 3 | a proxied body accumulated | blocking objection 11 | a test accommodating a defect |
+| blocking objection 4 | a method allowlisted or rewritten | blocking objection 12 | a property weakened in test config |
+| blocking objection 5 | relayed framing headers | blocking objection 13 | an uncertainty marker or a skip |
+| blocking objection 6 | middleware on proxied traffic | blocking objection 14 | past a size or duplication ceiling |
+| blocking objection 7 | a term rendering on the wire | blocking objection 15 | a description leaving a question unanswered |
+| blocking objection 8 | an unbounded accumulator | blocking objection 16 | a fix with no case that failed before it |
 
-- **Never hand-edit a generated file.** `docs/index.md`, every `docs/*/index.md`,
-  [`docs/rule-index.md`](docs/rule-index.md) and [`docs/method/conventions.md`](docs/method/conventions.md)
-  are produced by the tools under `ci/gen/`. Regenerate and commit the result; the drift gate reads the
-  bytes, not the intent.
-- **Every claim carries a citation** into a tracked file or an obtainable artifact, or an explicit
-  `Unverified` marker — [the rule](docs/method/rules/citations.md). A confident unsourced sentence is
-  the failure mode this repository exists to remove.
+The canary is **headers as a map**, with `Set-Cookie` as the case that proves it —
+[the eight banned patterns](docs/code/banned-patterns/index.md).
 
-> The contract wins, then the specifications, then the decisions in force, then the vault notes, then
-> the generated indexes. [Stated once](docs/method/authority-precedence.md).
+---
+
+## Sign-off
+
+Every commit carries a `Signed-off-by` line certifying the [Developer Certificate of
+Origin](DCO) — that you wrote the change, or have the right to submit it under Apache-2.0:
+
+```bash
+git commit -s
+```
+
+which appends `Signed-off-by: Your Name <your@email>` using your `git config` identity. Use a real
+name and a reachable address. `git rebase --signoff` fixes a branch that missed it.
+
+The DCO is an attestation about *provenance*, not a transfer of rights. It exists because this
+repository states [what it cannot check](docs/history/obtaining-the-reference.md) rather than
+assuming it — and the provenance of contributed code is exactly that kind of claim.
+
+---
+
+## Pull requests
+
+No direct pushes, no force pushes, squash merge so `main` reads as one commit per change. **If a PR
+cannot be reviewed in one sitting, split it** — a hard constraint for a solo-maintainer project,
+because unreviewable PRs are either merged unread or abandoned, and
+[the audit](docs/history/reference-audit.md) records both happening.
+→ [reviewing](docs/code/reviewing.md)
+
+Assume a fraction of contributions are model-written, because they will be. If yours is, the
+[signatures a reviewer looks for](docs/code/reviewing.md#ai-generated-pr-review) are worth reading
+first — tests named for one thing asserting another, tautological assertions, volume where depth is
+needed.

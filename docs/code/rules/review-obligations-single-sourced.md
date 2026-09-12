@@ -14,17 +14,6 @@ blocking objections](../reviewing.md#blocking-objections) — are each stated in
 numbered so an item is cited by its number. Every other mention links to that anchor rather than
 carrying its own copy of the list.
 
-One artifact is required to *name* every item without restating it:
-[`CONTRIBUTING.md`](../../../CONTRIBUTING.md), which a contributor reads before they reach the spine.
-Adding an item to a canonical enumeration fails the build until that file names it.
-
-One artifact is required to *reproduce* a block exactly: the pull-request template the forge serves,
-[`.github/pull_request_template.md`](../../../.github/pull_request_template.md), held byte-identical
-to the fenced block stating it in [reviewing](../reviewing.md#pr-template). The two directions differ
-because the artifacts differ — a contributor guide names a list, a forge template *is* the file — and
-reviewing's own words are that a template is the artifact most likely to be copied and then left
-behind.
-
 ## Why
 
 A checklist is the kind of text that gets pasted into whatever artifact needs it next — a
@@ -41,23 +30,40 @@ One copy and a link has no drift to detect. That is why this rule is about locat
 wording: numbering exists so a reviewer can say "checklist item 4" and a contributor can find item 4,
 without a second list to disagree with the first.
 
-## The checkable form is propagation
+## What the gate decides
 
-"Nobody copied the list" is not decidable over prose, and a check that tried would fire on every note
-that mentions a checklist. The other direction is decidable, and it is the one that fails in practice:
-an artifact required to enumerate the list falls behind it. So the gate derives each item's name from
-the canonical enumeration itself — leading bold, else leading link text, else the lead clause — and
-fails any required enumerator that does not carry it. A list that cannot silently fall behind has
-nothing to drift from.
+The checkable form of the rule is propagation: adding an item to a canonical enumeration fails every
+artifact required to enumerate it until that artifact names the new item, and the failure lists each
+artifact still missing it. That check needs at least one artifact under the obligation to enumerate,
+and until [`CONTRIBUTING.md`](../../../CONTRIBUTING.md) existed there was none — a gate written then
+would have passed on every input, which is worse than no gate, because it would read as enforcement
+over an unguarded obligation.
 
-The item names are derived rather than declared for the same reason the rule exists: a list of them in
-`ci/vault.json` would be a second encoding of the enumeration, reappearing inside the check meant to
-prevent one.
+Both halves landed together, which is what rebuild-plugboard task 1.3 asks for. The gate reads the
+item numbers from [reviewing](../reviewing.md) rather than from a declared count, so the enumerations
+cannot drift from the check that propagates them; `ci/vault.json` declares only the canonical note,
+the obliged artifacts and the citation form.
 
-## What the gate does not reach
+Every half of the rule is gated, and by one gate. The citations are checked item by item; so is the
+**link**, because "every other mention links to that anchor" is the sentence this rule opens with; and
+so is the **copy**, because an artifact that carries an item's text has made the second copy whether
+or not it also cites the number. A canonical heading stated twice fails too, rather than resolving to
+the first — an enumeration stated in two places is the condition the rule exists to refuse, so the
+gate cannot quietly pick one of them.
 
-Order, a stale entry the canonical list has since dropped, and whether the sentence an enumerator
-wraps a name in is true. A green run means no item is missing from a required enumerator — not that
-nothing anywhere carries a second copy. That residue is owned by review and by
-[one copy of requirement text](../../method/rules/one-copy-of-requirement-text.md), which decides
-copy-paste across the spine, the specifications and the component roots.
+The no-copy half was for a while attributed to [the duplication
+gate](../../method/rules/one-copy-of-requirement-text.md), which does not reach it: that gate compares
+the spine against the specifications, and a copy from one spine note into a root-level artifact is
+outside its subjects in both directions. The attribution was wrong rather than the obligation, and it
+is checked where it belongs now.
+
+What it does **not** decide is wording. An obliged artifact cites an item by number and puts its own
+short handle beside it; nothing compares that handle to the canonical text. That is the rule's own
+shape — it is about location rather than wording, and a second copy of the wording is what
+[the duplication gate](../../method/rules/one-copy-of-requirement-text.md) already refuses.
+
+Beyond the propagated enumerations, the single-sourcing stays a property a reader checks by hand,
+and a small one: the three enumerations live in [reviewing](../reviewing.md), and every artifact that
+needs one of them —
+[adding a feature](../adding-a-feature.md), [fixing a bug](../fixing-a-bug.md),
+[testing](../testing.md) — links into that note instead of listing items again.

@@ -1,0 +1,10 @@
+name: dco
+
+on:
+  push:
+
+jobs:
+  sign-off:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo checking sign-offs

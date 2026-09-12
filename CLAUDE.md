@@ -15,7 +15,7 @@ gitignored and **does not work**; cite it with a `file:line` or not at all, and 
 ## Commands
 
 ```bash
-make check                                    # every vault gate; the one command CI runs
+make check                                    # every vault gate; CI runs this one command
 openspec list                                 # task progress
 openspec validate rebuild-plugboard --strict  # gate for any openspec/ commit
 ```

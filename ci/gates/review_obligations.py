@@ -1,54 +1,67 @@
 #!/usr/bin/env python3
-"""Gate: an enumeration stated once propagates to every artifact required to name it.
+"""Gate: an artifact obliged to enumerate a review obligation names every item.
 
 Enforces docs/code-standards -- "The review obligations are stated in one
-location and enumerated". Three enumerations live in one note: the
-change-description questions, the review checklist, and the closed set of
-blocking objections. Every other artifact that needs one of them LINKS it; the
-one artifact required to enumerate it -- `CONTRIBUTING.md`, which a contributor
-reads before they read the spine -- names each item without restating it.
+location and enumerated":
 
-The checkable form of "stated once" is PROPAGATION. "Nobody copied the list" is
-not decidable over prose, and a gate that tried would fire on every note that
-mentions a checklist. What is decidable is the other direction: adding an item to
-a canonical enumeration fails every artifact required to enumerate it, until that
-artifact names the new item. A list that cannot silently fall behind has nothing
-to drift from.
+  * every item of every canonical enumeration is cited by each artifact declared
+    to carry that obligation;
+  * an item present in the canonical note and absent from an obliged artifact
+    fails, naming the artifact, the enumeration and the item;
+  * each obliged artifact links to the anchor that owns each enumeration, because
+    the rule is that every other mention LINKS rather than copies -- the link is
+    half the obligation and the citations are the other half;
+  * a canonical enumeration that yields no items fails, because a heading that
+    stopped matching would otherwise silently discharge the whole obligation;
+  * a heading that opens more than one section fails rather than resolving to the
+    first, because a canonical enumeration stated twice is not canonical and the
+    earlier of the two would otherwise be checked against;
+  * the published pull-request template differs from the fenced block that states
+    it, in either direction. That one is read from the UNMASKED note, because
+    mask_fences blanks exactly the block the case is about -- and reviewing.md's
+    own words are that a template is "the artifact most likely to be copied and
+    then left behind". The forge serves its copy, not the note's.
 
-Three cases, all three failing:
+## Why propagation rather than wording
 
-  1. An item of a canonical enumeration that a required enumerator does not name,
-     naming the item, the enumerator and the anchor the item is stated at.
-  2. A declared enumeration whose heading the source note no longer carries --
-     the declaration outlived its subject, or the note was reorganised and the
-     check quietly stopped covering it.
-  3. A declared enumerator that does not exist.
-  4. The published pull-request template differing from the fenced block that
-     states it in the source note, in either direction. reviewing.md's own words:
-     a template is "the artifact most likely to be copied and then left behind",
-     and the forge reads its copy, not the note's.
+A checklist is the kind of text that gets pasted into whatever artifact needs it
+next -- a CONTRIBUTING.md, a PR template, an agent context file -- and the copies
+then diverge silently, because nothing fails when one is left behind. The prior
+art shows both halves: `ws_check` appears nowhere in the 457 lines documenting
+its own protocol, and where both ends WERE documented they had already drifted,
+the Go side hardcoding a three-second check timeout against a configurable five
+on the Elixir side (`websocket.go:339`).
 
-## What an item's NAME is, and why it is derived rather than declared
+So the checkable form is propagation, not equality. An obliged artifact cites an
+item BY NUMBER, links to the anchor that owns it, and does not carry the item's
+text. Adding item 10 to a canonical enumeration fails every obliged artifact until
+each one cites item 10 -- and the failure lists each artifact still missing it, so
+the fix is a list rather than a search.
 
-The key is taken from the canonical enumeration itself, in this order: the item's
-leading bold phrase; failing that, its leading link text; failing that, the text
-up to its first em dash or comma. Declaring the keys in ci/vault.json instead
-would be a second encoding of the list -- the exact defect this rule exists to
-prevent, reappearing in the check that enforces it.
-
-That ordering is not arbitrary. Every item of the two prose enumerations opens
-with a bold phrase, and thirteen of the sixteen blocking objections open with a
-link to the note stating the rule. The three that do neither are prose whose
-identity ends at an em dash or the first clause boundary, which is where the
-truncation lands.
+The no-copy half is checked HERE rather than by ci/gates/duplication.py, which was
+once claimed to cover it and does not: that gate's subjects are the spine against
+the specifications, and duplication wholly inside the spine is out of its scope by
+design, so no root-level artifact is among its 156 notes. The copy this rule exists
+to prevent is refused here or nowhere.
 
 ## What it does not decide
 
-Whether an enumerator names the items in the right ORDER, whether it names an
-item that has since been removed from the canonical list, or whether the sentence
-it wraps the name in is true. The first two are a stale-entry check that needs a
-notion of "this file's list" the file does not carry as data; the third is
-review's. A green run means no item is missing, not that the enumerator is right.
+Whether the label an artifact puts beside a number is a good summary of the item.
+That is wording, and wording is deliberately not this rule's subject: one copy
+and a link has no drift to detect, which is the whole reason the enumerations are
+single-sourced. A label that misleads is a review comment, not a build failure.
+
+Nor whether the anchor a link names resolves. ci/gates/links.py already resolves
+every anchor in every tracked note, so a link to a heading that does not exist
+fails there; checking it twice would be a second encoding of one property.
+
+## Why the items are read rather than declared
+
+ci/vault.json names the canonical note, the obliged artifacts and the citation
+form. It does NOT name how many items an enumeration holds. A cardinal there
+would be a second encoding of what the canonical note already states, and the two
+would drift -- which is the defect this repository has already spent three
+commits removing from its own prose.
 """
 
 from __future__ import annotations
@@ -61,196 +74,323 @@ from _common import Report, load_manifest, main_guard, repo_root
 GATE_ID = "review-obligations"
 RULE_NOTE = "docs/code/rules/review-obligations-single-sourced.md"
 
-HEADING = re.compile(r"^(#+)\s+(.*?)\s*$")
-ITEM = re.compile(r"^(\d+)\.\s+(.*)$")
-BOLD_LEAD = re.compile(r"^\*\*(.+?)\*\*")
-LINK_LEAD = re.compile(r"^\[([^\]]+)\]\([^)]*\)")
-LINK = re.compile(r"\[([^\]]*)\]\([^)]*\)")
-EMPHASIS = str.maketrans("", "", "*_`")
+# A top-level ordered-list item: "1. ", "12. " at the start of a line.
+ITEM = re.compile(r"^(\d+)\.\s", re.M)
+
+_FENCE = re.compile(r"^\s{0,3}(`{3,}|~{3,})")
 
 
-def _normalise(text: str) -> str:
-    text = LINK.sub(r"\1", text)
-    text = text.translate(EMPHASIS)
-    return re.sub(r"\s+", " ", text).strip().casefold()
+def mask_fences(text: str) -> str:
+    """Blank every fenced line, keeping the line count.
 
+    A numbered line inside a code sample is an example, not an item of an
+    enumeration, and a heading inside one does not open a section. Without this,
+    a fenced example added to the canonical note invents a phantom item and the
+    gate demands a citation for something no enumeration states -- a failure
+    through Report.fail(), so the meta gate's neuter test cannot catch it, and
+    one whose subject is a code sample rather than this rule.
 
-def _fenced(section: list[str]) -> str | None:
-    """The first fenced block's contents, with a trailing newline."""
-    opener = next((i for i, l in enumerate(section) if l.startswith("```")), None)
-    if opener is None:
-        return None
-    closer = next(
-        (i for i in range(opener + 1, len(section)) if section[i].startswith("```")), None
-    )
-    if closer is None:
-        return None
-    return "\n".join(section[opener + 1:closer]) + "\n"
-
-
-def _section(lines: list[str], heading: str) -> list[str] | None:
-    """The lines under `heading`, up to the next heading of the same or higher level.
-
-    Fence-aware in both passes. The pull-request template is a fenced block whose
-    own content opens with `## What breaks if this is wrong?`, so a scan that read
-    `#` at the left margin as a heading ended the section on the template's first
-    line and reported the block absent.
+    Five sibling gates mask fences for the same reason -- citations, duplication,
+    links, reachability and wikilinks -- each with its own copy. A sixth copy is
+    taken here rather than hoisting a shared helper into ci/gates/_common.py: that
+    module is
+    imported by every gate and is the harness's weakest-protected surface, which
+    is why checklist item 9 exists at all. Refactoring it is not this gate's
+    subject, and doing it here would be the change that item warns about.
     """
+    out: list[str] = []
+    fence: str | None = None
+    for line in text.splitlines():
+        m = _FENCE.match(line)
+        token = m.group(1) if m else None
+        if fence is None:
+            if token:
+                fence = token
+                out.append("")
+                continue
+        else:
+            # A closing fence is the same character, at least as long.
+            if token and token[0] == fence[0] and len(token) >= len(fence):
+                fence = None
+            out.append("")
+            continue
+        out.append(line)
+    return "\n".join(out)
+
+
+def fenced_block(raw: str, heading: str) -> str | None:
+    """The first fenced block under `heading`, from the UNMASKED note.
+
+    Fence-aware in both passes: the template's own content opens with
+    `## What breaks if this is wrong?`, so a scan reading `#` at the left margin
+    as a heading ends the section on the template's first line and reports the
+    block absent.
+    """
+    lines = raw.splitlines()
     fence = False
-    for index, line in enumerate(lines):
-        if line.startswith("```"):
+    start = None
+    for i, line in enumerate(lines):
+        if _FENCE.match(line):
             fence = not fence
             continue
         if fence:
             continue
-        m = HEADING.match(line)
-        if not m or m.group(2) != heading:
-            continue
-        level = len(m.group(1))
-        out, inner = [], False
-        for follow in lines[index + 1:]:
-            if follow.startswith("```"):
-                inner = not inner
-            elif not inner:
-                m2 = HEADING.match(follow)
-                if m2 and len(m2.group(1)) <= level:
-                    break
-            out.append(follow)
-        return out
+        m = re.match(r"^(#+)\s+(.*?)\s*$", line)
+        if m and m.group(2) == heading:
+            start, level = i, len(m.group(1))
+            break
+    if start is None:
+        return None
+    opener = None
+    inner = False
+    for i in range(start + 1, len(lines)):
+        if _FENCE.match(lines[i]):
+            if opener is None:
+                opener = i
+                inner = True
+                continue
+            if inner:
+                return "\n".join(lines[opener + 1:i]) + "\n"
+        if opener is None:
+            m = re.match(r"^(#+)\s+", lines[i])
+            if m and len(m.group(1)) <= level:
+                return None
     return None
 
 
-def _items(section: list[str]) -> list[tuple[int, str]]:
-    """(number, joined raw text) for each top-level ordered item."""
-    found: list[tuple[int, list[str]]] = []
-    for line in section:
-        m = ITEM.match(line)
-        if m:
-            found.append((int(m.group(1)), [m.group(2)]))
-        elif found and line.startswith(("   ", "\t")) and line.strip():
-            found[-1][1].append(line.strip())
-        elif not line.strip():
-            continue
-        else:
-            # A paragraph at the left margin ends the list.
-            if found and not ITEM.match(line):
-                pass
-    return [(n, " ".join(parts)) for n, parts in found]
+def cites(text: str, citation: str) -> bool:
+    """Whether `text` cites exactly this item, and not a longer-numbered one.
+
+    'checklist item 1' is a prefix of 'checklist item 10', so a plain substring
+    test would read an artifact that cites only item 10 as having cited item 1.
+    The trailing digit is refused rather than a full word boundary, so a citation
+    followed by punctuation, a pipe or a line end still counts.
+
+    Whitespace inside the citation matches any run of whitespace, because markdown
+    renders a line break inside a paragraph as a space: an artifact that wraps
+    'checklist item 3' across two lines has cited item 3, and a matcher that said
+    otherwise would report a defect the reader cannot see.
+    """
+    pattern = r"\s+".join(re.escape(w) for w in citation.split()) + r"(?!\d)"
+    return re.search(pattern, text, re.I) is not None
 
 
-def _key(raw: str) -> str:
-    """The item's name: leading bold, else leading link text, else the lead clause."""
-    m = BOLD_LEAD.match(raw)
-    if m:
-        return _normalise(m.group(1)).rstrip(".")
-    m = LINK_LEAD.match(raw)
-    if m:
-        return _normalise(m.group(1)).rstrip(".")
-    text = _normalise(raw)
-    for cut in ("—", ","):
-        if cut in text:
-            text = text.split(cut, 1)[0]
-            break
-    return text.strip().rstrip(".")
+# A copied item is only a copy worth refusing once it is long enough to be text
+# rather than a label. ci/gates/duplication.py takes the same position with its own
+# MIN_CHARS, for the same reason: a short run collides by coincidence.
+MIN_COPY_CHARS = 40
+
+_LINK = re.compile(r"\[([^\]]*)\]\([^)]*\)")
+_EMPHASIS = re.compile(r"[*_`]")
+_LEAD = re.compile(r"^\s*\d+\.\s*")
+
+
+def normalise(text: str) -> str:
+    """The normal form ci/gates/duplication.py compares in, reduced to one item.
+
+    Inline links become their link text, emphasis and code ticks are dropped, the
+    item's own number goes, whitespace collapses and case folds. So a copy that
+    was re-wrapped, re-emphasised, re-cased or relinked at a different relative
+    path is still the same block.
+    """
+    t = _LINK.sub(r"\1", text)
+    t = _EMPHASIS.sub("", t)
+    t = _LEAD.sub("", t)
+    return re.sub(r"\s+", " ", t).strip().casefold()
+
+
+def items_with_text(section_text: str) -> list[tuple[int, str]]:
+    """(number, full text) for each top-level item, each running to the next."""
+    marks = list(ITEM.finditer(section_text))
+    out = []
+    for i, m in enumerate(marks):
+        end = marks[i + 1].start() if i + 1 < len(marks) else len(section_text)
+        out.append((int(m.group(1)), section_text[m.start() : end]))
+    return out
+
+
+def sections(body: str, heading: str) -> list[str]:
+    """Every section this heading opens, in document order.
+
+    Each runs to the next heading of the same or higher level. Matched on the
+    heading TEXT rather than on a declared level, so promoting or demoting the
+    section does not silently empty it.
+
+    A LIST rather than the first match, because the first match is the wrong
+    answer when there are two: a plausible edit -- an 'in brief' summary under
+    Pull requests reusing the heading 'The review checklist' -- would put a
+    two-item stub ahead of the canonical nine, and the gate would read the stub
+    as the enumeration and pass an artifact citing two items. The caller refuses
+    a repeated heading rather than picking one, because a canonical enumeration
+    stated twice is not canonical, which is the whole subject of this rule.
+    """
+    out: list[str] = []
+    for m in re.finditer(rf"^(#{{1,6}})\s+{re.escape(heading)}\s*$", body, re.M):
+        level = len(m.group(1))
+        rest = body[m.end() :]
+        nxt = re.search(rf"^#{{1,{level}}}\s+\S", rest, re.M)
+        out.append(rest[: nxt.start()] if nxt else rest)
+    return out
+
+
+def links_to(text: str, basename: str, anchor: str) -> bool:
+    """Whether `text` carries a markdown link to that anchor of the canonical note.
+
+    Matched on the note's BASENAME rather than a full path, so an artifact at the
+    repository root and one nested in the vault both satisfy it with the correct
+    relative path for where they sit. That the anchor RESOLVES is not checked
+    here -- ci/gates/links.py already resolves every anchor in every tracked note,
+    so a link naming a heading that does not exist fails there. This gate checks
+    only that the link is present.
+    """
+    return re.search(
+        r"\]\([^)]*" + re.escape(basename) + r"#" + re.escape(anchor) + r"\)", text
+    ) is not None
 
 
 def run(scan_root: Path, report_only: bool) -> int:
     manifest = load_manifest(repo_root())
-    cfg = manifest["code_standards"]["review_obligations"]
-    source_rel = cfg["source"]
-    declared = [e for e in cfg["enumerations"] if not e.get("heading", "").startswith("_")]
-    enumerators = [e for e in cfg["enumerators"] if not e.startswith("_")]
+    cfg = manifest["review_obligations"]
+    canonical_rel = cfg["canonical"]
+    obliged = list(cfg["required_in"])
+    enums = {k: v for k, v in cfg["enumerations"].items() if not k.startswith("_")}
     report = Report(GATE_ID, RULE_NOTE)
+    report.examine(canonical_rel)
 
-    source = scan_root / source_rel
-    if not source.is_file():
+    canonical = scan_root / canonical_rel
+    if not canonical.is_file():
         report.fail(
-            f"{source_rel}: the note declared to single-source the review "
-            f"obligations is absent -- every enumerator's obligation is keyed on it"
+            f"{canonical_rel}: the note ci/vault.json declares canonical is absent, "
+            f"so every enumeration it owns is unstated and nothing can be checked "
+            f"against it"
         )
-        report.coverage(covered=[], excluded=[], kind="enumerated item",
-                        source="manifest", scan_root=scan_root)
         return report.finish(report_only=report_only)
 
-    lines = source.read_text(encoding="utf-8").splitlines()
-    bodies = {}
-    for rel in enumerators:
-        path = scan_root / rel
-        # (3) a declared enumerator that is not there.
-        if not path.is_file():
-            report.fail(
-                f"{rel}: declared as an artifact required to enumerate the review "
-                f"obligations, and absent -- a propagation check with no "
-                f"destination enforces nothing"
-            )
-            continue
-        bodies[rel] = _normalise(path.read_text(encoding="utf-8"))
+    body = mask_fences(canonical.read_text(encoding="utf-8"))
 
-    # (4) the published template against the block that states it.
+    # Read each obliged artifact once; an absent one fails against every
+    # enumeration at once rather than once per item.
+    texts: dict[str, str | None] = {}
+    for rel in obliged:
+        report.examine(rel)
+        path = scan_root / rel
+        texts[rel] = mask_fences(path.read_text(encoding="utf-8")) if path.is_file() else None
+        if texts[rel] is None:
+            report.fail(
+                f"{rel}: declared to carry the review obligations and absent -- "
+                f"an obligation with no artifact under it is not enforced by this "
+                f"gate passing"
+            )
+
+    basename = canonical_rel.rsplit("/", 1)[-1]
+
+    # The published template against the block that states it. Raw text, because
+    # mask_fences blanks exactly the block this case is about.
     template = {k: v for k, v in cfg.get("template", {}).items() if not k.startswith("_")}
     if template:
-        heading, rel = template["heading"], template["path"]
-        report.examine(f"template {rel}")
-        section = _section(lines, heading)
-        stated = _fenced(section) if section is not None else None
+        heading, published_rel = template["heading"], template["path"]
+        report.examine(published_rel)
+        stated = fenced_block(canonical.read_text(encoding="utf-8"), heading)
+        published = scan_root / published_rel
         if stated is None:
             report.fail(
-                f"{source_rel}: no fenced block under '{heading}' -- it is where "
-                f"{rel} is stated, and the forge reads {rel}"
+                f"{canonical_rel}: no fenced block under '{heading}' -- it is where "
+                f"{published_rel} is stated, and the forge serves {published_rel}"
             )
-        else:
-            published = scan_root / rel
-            if not published.is_file():
-                report.fail(
-                    f"{rel}: the pull-request template the forge reads is absent, "
-                    f"while {source_rel} states one under '{heading}'"
-                )
-            elif published.read_text(encoding="utf-8") != stated:
-                report.fail(
-                    f"{rel}: differs from the block stating it at "
-                    f"{source_rel} '{heading}' -- one of the two was edited alone, "
-                    f"and the forge serves this one"
-                )
-
-    total = 0
-    for entry in declared:
-        heading, anchor = entry["heading"], entry["anchor"]
-        section = _section(lines, heading)
-        # (2) a declared enumeration the source note no longer carries.
-        if section is None:
+        elif not published.is_file():
             report.fail(
-                f"{source_rel}: no heading '{heading}' -- ci/vault.json declares it "
-                f"a canonical enumeration, so either the note was reorganised and "
-                f"this check stopped covering it, or the declaration is stale"
+                f"{published_rel}: the pull-request template the forge reads is "
+                f"absent, while {canonical_rel} states one under '{heading}'"
+            )
+        elif published.read_text(encoding="utf-8") != stated:
+            report.fail(
+                f"{published_rel}: differs from the block stating it at "
+                f"{canonical_rel} '{heading}' -- one of the two was edited alone, "
+                f"and the forge serves this one"
+            )
+
+    for key, spec in sorted(enums.items()):
+        heading = spec["heading"]
+        form = spec["citation"]
+        opened = sections(body, heading)
+
+        if len(opened) > 1:
+            report.fail(
+                f"{canonical_rel}: '{heading}' opens {len(opened)} sections -- a "
+                f"canonical enumeration stated twice is two enumerations, and this "
+                f"gate would otherwise read whichever came first and check an "
+                f"obliged artifact against a stub"
             )
             continue
-        for number, raw in _items(section):
-            key = _key(raw)
-            if not key:
+
+        # Every obliged artifact links to the anchor that owns the enumeration;
+        # the rule is that every other mention links rather than copies, so the
+        # link is half the obligation and the citations are the other half.
+        for rel, text in sorted(texts.items()):
+            if text is not None and not links_to(text, basename, key):
+                report.fail(
+                    f"{rel}: cites the '{heading}' items but carries no link to "
+                    f"{basename}#{key} -- an enumeration named without a link to "
+                    f"the note that owns it is the second copy this rule exists to "
+                    f"prevent"
+                )
+
+        pairs = items_with_text(opened[0]) if opened else []
+        items = [n for n, _ in pairs]
+
+        # An obliged artifact names an item and links to it; it does not carry the
+        # item's text. ci/gates/duplication.py does not reach here -- its subjects
+        # are the spine against the specifications, and duplication wholly inside
+        # the spine is out of its scope by design -- so the copy this rule exists
+        # to prevent is refused here or nowhere.
+        for rel, text in sorted(texts.items()):
+            if text is None:
                 continue
-            total += 1
-            subject = f"{heading} item {number}"
-            report.examine(subject)
-            # (1) the propagation direction.
-            for rel, body in bodies.items():
-                if key not in body:
+            haystack = normalise(text)
+            for n, body_text in pairs:
+                needle = normalise(body_text)
+                if len(needle) >= MIN_COPY_CHARS and needle in haystack:
                     report.fail(
-                        f"{rel}: does not name {heading.lower()} item {number}, "
-                        f'"{raw[:70]}" -- link it at {source_rel}#{anchor}; an '
-                        f"enumeration that can silently fall behind is a second "
-                        f"copy waiting to happen"
+                        f"{rel}: carries the text of {form.format(n=n)} verbatim, not "
+                        f"just a citation of it -- {canonical_rel} owns the wording, "
+                        f"and a second copy is the drift this rule exists to prevent; "
+                        f"cite the number and link the anchor instead"
                     )
 
+        if not items:
+            report.fail(
+                f"{canonical_rel}: the '{heading}' enumeration yields no numbered "
+                f"items -- a heading that stopped matching discharges the whole "
+                f"obligation silently, so an empty enumeration is a failure rather "
+                f"than a vacuous pass"
+            )
+            continue
+
+        for rel, text in sorted(texts.items()):
+            if text is None:
+                continue
+            missing = [n for n in items if not cites(text, form.format(n=n))]
+            for n in missing:
+                report.fail(
+                    f"{rel}: does not cite '{form.format(n=n)}' -- "
+                    f"{canonical_rel} '{heading}' states it and this artifact is "
+                    f"declared to enumerate that set, so the copy here is behind "
+                    f"the canonical one"
+                )
+
     report.coverage(
-        covered=[f"{source_rel}#{e['anchor']}" for e in declared],
-        excluded=["order", "a stale entry the canonical list has dropped"],
-        kind="enumerated item",
+        covered=[canonical_rel, *sorted(obliged)],
+        excluded=[
+            "the wording an obliged artifact puts beside an item number "
+            "(single-sourced, so there is no second copy to diverge)"
+        ],
+        kind="artifact",
         source="manifest",
         scan_root=scan_root,
     )
     print(
-        f"  enumerations: {len(declared)} declared | items: {total} | "
-        f"enumerators: {len(bodies)} of {len(enumerators)} present"
+        f"  canonical: {canonical_rel} | obliged: {', '.join(sorted(obliged))} | "
+        f"enumerations: {', '.join(sorted(enums))}"
     )
     return report.finish(report_only=report_only)
 
