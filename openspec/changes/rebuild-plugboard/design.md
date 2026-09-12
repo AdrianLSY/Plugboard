@@ -135,9 +135,9 @@ Deliberately **not** carried forward: the correlation-id machinery. Keep the ide
 
 ## Risks / Trade-offs
 
-**[Bandit implements neither HTTP/3 nor RFC 8441 extended CONNECT]** → The strongest surviving argument against D4, and it bites without WebTransport ever being mentioned: behind an h2-terminating CDN, WebSocket upgrades arrive as extended CONNECT with `:protocol: websocket`, an HTTP/1.1-only upgrade predicate can never be true, and WebSocket fails. HTTP/2 to clients is also where real per-stream flow control lives. *Mitigation:* decide HTTP/2-to-client support explicitly during `proxy/websocket`; if it is in v1, the edge listener is a separate contract-speaking terminator from the start, which is the same mitigation D4 already prescribes for H3.
+**[Bandit implements neither HTTP/3 nor RFC 8441 extended CONNECT]** → The strongest surviving argument against D4, and it bites without WebTransport ever being mentioned: behind an h2-terminating CDN, WebSocket upgrades arrive as extended CONNECT with `:protocol: websocket`, an HTTP/1.1-only upgrade predicate can never be true, and WebSocket fails. HTTP/2 to clients is also where real per-stream flow control lives. *Mitigation:* **settled by D16** — HTTP/2 to clients is in v1, so the edge listener is a separate contract-speaking terminator from the start, which is the same mitigation D4 already prescribes for H3. This entry is therefore a scheduled cost, not an open question: task 54.4 terminates HTTP/2 from clients and task 55.1 recognises extended `CONNECT` as an establishment request.
 
-**[Three moving parts for one developer: Elixir proxy, Go sidecar, eventual Go terminator]** → *Mitigation:* every edge protocol sits behind the versioned contract, so each component is independently replaceable and independently testable against the conformance suite. Do not add the terminator until WebTransport or HTTP/2 forces it.
+**[Three moving parts for one developer: Elixir proxy, Go sidecar, Go edge terminator]** → *Mitigation:* every edge protocol sits behind the versioned contract, so each component is independently replaceable and independently testable against the conformance suite. D16 settled that HTTP/2 to clients already forces the terminator, so all three are v1 deployables and the mitigation is the contract boundary rather than deferral.
 
 **[A bespoke frame vocabulary duplicates a standard]** → *Mitigation:* D2's alternative. Evaluate `draft-ietf-webtrans-http2` capsules before freezing v1, and prefer the standard if hand-implementing its framing is tractable.
 
@@ -162,7 +162,7 @@ No migration. The reference is read-only prior art with no users to carry forwar
 
 ### The cost of this ordering, stated rather than discovered
 
-Sorting by reversibility puts the irreversible work first, and the price is that end-to-end signal arrives late. In `tasks.md` as it stood on 2026-09-11, 260 of 717 tasks land before the streaming spine begins (section 26), 396 before a response body first reaches a client (task 38.6), and 430 before the spine closes (section 43). More than half the plan is spent before the architecture is known to carry real traffic, and contract v1 is frozen and published (section 17) before any of it.
+Sorting by reversibility puts the irreversible work first, and the price is that end-to-end signal arrives late. In `tasks.md` as it stood on 2026-09-12, 270 of 727 tasks land before the streaming spine begins (section 26), 406 before a response body first reaches a client (task 38.6), and 440 before the spine closes (section 43). More than half the plan is spent before the architecture is known to carry real traffic, and contract v1 is frozen and published (section 17) before any of it.
 
 That is accepted, not overlooked, because the alternative is worse: a walking skeleton built before the schema is frozen would either freeze the schema by accident or be thrown away, and the schema is the one artifact no later work can correct. But it sits in direct tension with the Risks entry above — *when feedback is slow, an agent or a person writes assertions that are cheap to satisfy* — so the ordering carries three obligations rather than a hope:
 
@@ -299,7 +299,9 @@ The reference emits 75 telemetry events, attaches zero handlers, and contains on
 
 ## Open Questions
 
-None outstanding. All four questions previously recorded here are now resolved as decisions: HTTP/2 to clients (D16), the scope of further capabilities (D17), frame payload encoding (D18), and the v1 tunnel transport (D19).
+The four questions previously recorded here are resolved as decisions: HTTP/2 to clients (D16), the scope of further capabilities (D17), frame payload encoding (D18), and the v1 tunnel transport (D19). D16 opened one in their place.
+
+**Whether full gRPC at the ingress is still refused, and on what ground.** The refusal in `proposal.md` — Non-goals rested entirely on the edge: `grpc-status` travels as a trailer even on success, and a Plug-based edge cannot express one. D16 removes that edge. The terminator speaks HTTP/2 to clients, task 44.1 binds the client-edge trailer fixtures, and task 46.3 delivers a backend's trailer section to a client whose protocol can carry one instead of folding it into the header section — so the stated reason no longer holds. What is unanswered is whether any other ground survives (deadline propagation, bidirectional streaming, and the plain fact that no section of `tasks.md` builds an ingress gRPC path), or whether the refusal should be withdrawn and the work scheduled. It is recorded as open rather than quietly re-justified, because inventing a fresh reason for a standing refusal is how a documented refusal turns into a habit. Until it is settled the refusal stands on scope: nothing in this change builds it.
 
 Two items are deliberately left to be settled *inside* implementation rather than before it, because the specs are written to hold either way and neither moves the task breakdown:
 

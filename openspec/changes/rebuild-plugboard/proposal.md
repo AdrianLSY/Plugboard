@@ -28,7 +28,7 @@ Documented refusals, not omissions:
 - **NTLM / Negotiate to tenant backends.** Connection-bound authentication cannot work through a multiplexed tunnel.
 - **TLS passthrough.** Encrypted Client Hello encrypts the single field such a mode routes on.
 - **WebTransport in v1.** Designed for and reserved in the contract, shipped later as a separate HTTP/3 terminator that speaks the wire contract. Not a reason to make the tunnel QUIC.
-- **Full gRPC at the ingress** until a non-Plug HTTP/2 listener exists — `grpc-status` must be a trailer even on success, and no Plug-based edge can express that.
+- **Full gRPC at the ingress** in this change — no section of `tasks.md` builds an ingress gRPC path, and the gRPC-Web ↔ gRPC bridge sits in the sidecar, the one component adjacent to an HTTP/2 backend. The reason first given (`grpc-status` travels as a trailer even on success, which a Plug-based edge cannot express) was retired by D16, which replaces that edge with a contract-speaking terminator; whether the refusal survives on another ground is carried in `design.md` — Open Questions rather than re-argued here.
 
 ## Capabilities
 
@@ -66,7 +66,7 @@ None. This is a greenfield repository; `openspec/specs/` is empty and the refere
 ## Impact
 
 - **New repository layout**: contract, proxy, sidecar, conformance suite, and docs in one repo. No submodules.
-- **Runtime decision**: Elixir/Phoenix for the proxy, Go for the sidecar, with an optional Go HTTP/3 + WebTransport terminator later. Recorded with its reversal history in `design.md` — an earlier Rust recommendation was overturned when adversarial review found the recommended Rust QUIC stack cannot do WebTransport at all.
+- **Runtime decision**: Elixir/Phoenix for the proxy, Go for the sidecar, and a separate Go edge terminator that D16 places in v1 — it terminates HTTP/2 from clients first and gains HTTP/3 and WebTransport when those ship. Recorded with its reversal history in `design.md` — an earlier Rust recommendation was overturned when adversarial review found the recommended Rust QUIC stack cannot do WebTransport at all.
 - **Known runtime gap**: Bandit implements neither HTTP/3 nor RFC 8441 extended CONNECT. The second bites without WebTransport — behind an h2-terminating CDN, WebSocket upgrades arrive as extended CONNECT and fail. Tracked in `design.md` as the strongest surviving argument against the runtime choice.
 - **Process**: the development methodology is derived finding-by-finding from how the reference failed, not written from first principles. Documented in `docs/`.
 - **Dependencies**: no dependency, tool, or workflow is inherited from the reference without justification. Auto-merge of dependency updates is gated on `semver-patch`, and no wire-protocol pointer advances without a human.

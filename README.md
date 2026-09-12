@@ -170,9 +170,10 @@ maybe*:
 | Full gRPC at the ingress | `grpc-status` must travel as a trailer even on success. gRPC-Web *is* in scope; the bridge belongs in the sidecar. |
 | Response caching in v1 | No cache-key design, therefore no cache-poisoning surface. |
 
-**Deferred, not refused:** WebTransport (reserved in the contract, shipped later as a separate HTTP/3
-terminator), HTTP/3 at the edge, trailers, 1xx interim responses, Range/206 — all cheap later
-*because the frame types are reserved in v1*.
+**Deferred, not refused:** WebTransport (designed for, reserved in the contract as the one v1 frame
+type nothing uses yet, and carried later by the edge terminator) and HTTP/3 at the edge — cheap later
+*because that frame type is reserved in v1 and every edge protocol sits behind the contract*.
+Trailers, 1xx interim responses and Range/206 are **in v1**, not deferred.
 
 → [scope and refusals](docs/why/scope-refusals.md) · [protocol fidelity](docs/how/protocol-fidelity.md)
 

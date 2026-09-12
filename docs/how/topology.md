@@ -37,11 +37,12 @@ foot of it.
                                 v
                         tenant's backend
 
-   DEFERRED:  +--------------------------------------------------+
-              |  H3 / WEBTRANSPORT TERMINATOR  --  Go            |
+   IN V1:     +--------------------------------------------------+
+              |  EDGE TERMINATOR  --  Go                         |
               |  a CONTRACT SPEAKER, not a rewrite of the proxy. |
-              |  Add only when WebTransport or HTTP/2-to-client  |
-              |  forces it. Swappable, any language.             |
+              |  Fronts the CLIENT EDGE above: HTTP/2 from       |
+              |  clients in v1 (D16), because Bandit cannot.     |
+              |  H3 / WebTransport land on it later. Swappable.  |
               +--------------------------------------------------+
 ```
 

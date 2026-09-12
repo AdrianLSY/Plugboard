@@ -127,7 +127,7 @@ header-read. Every route carries a class, including an explicit `total = infinit
 **WebSocket session fidelity** — deferred 101, frame shape, strict ordering, application close codes.
 See [the three primitives](three-primitives.md).
 
-### Tier 3 — deferred, cheap later because the frame type exists
+### Tier 3 — v1 breadth, cheap because the primitive already carries it
 
 - **Trailer sections.** A distinct trailer frame after the last body frame, kept separate from headers.
   Constraints are tight and help: trailers cannot carry framing, auth or integrity fields, and
@@ -143,7 +143,9 @@ See [the three primitives](three-primitives.md).
   open-ended `Range: bytes=N-` into a large file is simultaneously the most common streaming
   interaction and the worst case for whole-response buffering.
 - **Conditional requests and 304**, `Content-Encoding` passthrough (the proxy should never
-  decompress — double-compression hazards), WHIP/WHEP, the Connect protocol.
+  decompress — double-compression hazards).
+- **WHIP/WHEP and the Connect protocol** — the two genuinely deferred items here, and neither needs
+  a frame type the contract does not already reserve.
 
 ## Per-family notes
 

@@ -15,7 +15,7 @@ Three claims hold the design together, and each has its own note:
 |---|---|---|
 | **what is carried** | Twelve named protocols are three transport primitives, and nine of the twelve are the same one. There is no protocol-specific code. | [three primitives](three-primitives.md) |
 | **how it is carried** | The unit on the wire is a frame carrying a stream id, not a message carrying a whole exchange — which deletes a multiplexer the previous attempt hand-built, and which is refused rather than degraded when a sidecar cannot back it. | [the tunnel](the-tunnel.md) |
-| **where it runs** | An Elixir proxy, a Go sidecar in the tenant's pods, a deferred Go terminator for HTTP/3 — with every edge protocol behind the versioned contract so a terminator is swappable. | [topology](topology.md) |
+| **where it runs** | An Elixir proxy, a Go sidecar in the tenant's pods, and a separate Go edge terminator from v1 — with every edge protocol behind the versioned contract so a terminator is swappable. | [topology](topology.md) |
 
 Read them in that order the first time. The middle one is the one that earns the reading: it is the
 claim the previous attempt got wrong, and its consequences reach every other component.

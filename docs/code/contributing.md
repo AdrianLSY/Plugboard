@@ -19,9 +19,12 @@ that serves contributors specifically.
   tells you when you are done" is the best-scoped, highest-status contribution an outside contributor
   can make, and it exists as a side effect of [`D23`](../decisions/d23-contract-first.md) — `D3` in the
   [superseded register](../decisions/superseded-register.md).
-- **Good first issues are the reserved-but-unimplemented frame types.** Trailers, 1xx interim responses,
-  Range — each is a bounded piece of work against an existing primitive with a conformance fixture
-  already written.
+- **Good first issues are the conformance fixtures.** Each is a bounded piece of work against an
+  existing primitive, and the corpus is written before the code it gates, so a fixture can land
+  ahead of the implementation it holds to account. Trailers, 1xx interim responses and Range are not
+  on that list — they are v1 work carrying their own task sections, not spare capacity. The one frame
+  type reserved and unimplemented at v1 is the datagram kind
+  ([`D2`](../decisions/d02-frame-shaped-tunnel.md)).
 - **`CONTRIBUTING.md` must exist.** The reference's README linked to it, and to `FUTURE_WORK.md`, and
   **both were dead links.** First impressions of a portfolio project are made of exactly this.
 

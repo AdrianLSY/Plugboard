@@ -56,10 +56,14 @@ Encrypted Client Hello (RFC 9849) encrypts the single field such a mode routes o
 
 ### Full gRPC at the ingress
 
-As distinct from gRPC-Web, which *is* in scope. `grpc-status` must travel as an HTTP trailer even on
-success, and `Plug.Conn` has no trailers API. Blocked before the tunnel is reached. The
-gRPC-Web ↔ gRPC bridge belongs **in the sidecar**, which is the only component adjacent to an HTTP/2
-backend — the same position Envoy's `grpc_web` filter occupies.
+As distinct from gRPC-Web, which *is* in scope. The gRPC-Web ↔ gRPC bridge belongs **in the sidecar**,
+the only component adjacent to an HTTP/2 backend — the same position Envoy's `grpc_web` filter
+occupies. The reason first given for the refusal — `grpc-status` travels as an HTTP trailer even on
+success, and `Plug.Conn` has no trailers API — was retired by
+[D16](../decisions/d16-http2-to-clients.md), which replaces the Plug edge with a contract-speaking
+terminator. What stands is a refusal of **scope**: no section of the plan builds an ingress gRPC
+path, and whether it survives on any other ground is carried as an open question in
+[the change's design register](../../openspec/changes/rebuild-plugboard/design.md).
 
 ### Caching
 
@@ -77,8 +81,9 @@ Sidecar selection is registry membership plus liveness, not active probing.
   be QUIC.
 - **HTTP/3 at the edge** for ordinary HTTP. Buys connection migration, 0-RTT, and no cross-request
   TCP head-of-line blocking. Requires zero tunnel change — it is a front-terminator decision.
-- **Trailers, 1xx interim responses, Range/206, WHIP/WHEP, the Connect protocol.** All cheap later
-  *because the frame types are reserved in v1*. See [Protocol fidelity](../how/protocol-fidelity.md).
+- **WHIP/WHEP and the Connect protocol.** Cheap later, and neither needs a frame type the contract
+  does not already reserve. Trailers, 1xx interim responses and Range/206 are *not* deferred — they
+  are v1 work. See [Protocol fidelity](../how/protocol-fidelity.md).
 
 The deferral of WebTransport is itself a decision on the record:
 [D26 — WebTransport is designed for, not shipped](../decisions/d26-webtransport-deferred.md). Which
