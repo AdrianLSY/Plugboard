@@ -1,10 +1,16 @@
 #!/usr/bin/env python3
-"""Gate: every convention reaches BOTH authoring channels, keyed on one enumeration.
+"""Gate: every convention reaches BOTH authoring channels, and they agree.
 
 Enforces docs/knowledge-base -- "Authoring guidance is applied at authoring
 time": the conventions are supplied where the author reads them rather than left
 to review, through two channels, keyed on one enumeration so a convention added
-to the gates without reaching both fails.
+to the gates without reaching both fails, and so that the two cannot state
+different conventions.
+
+## What it does not decide
+
+Whether a convention is the right convention, and whether an author read it. It
+decides that both channels carry every id and state the same thing for each.
 
 ## Why two channels rather than one
 
@@ -39,6 +45,13 @@ from _common import Report, load_manifest, main_guard, repo_root
 
 GATE_ID = "authoring-channels"
 RULE_NOTE = "docs/method/rules/authoring-channels.md"
+
+# The shape the planning-artifact channel states a convention in. Keyed on the id
+# so the statement and the gate can be compared against the single source rather
+# than merely looked for.
+CONVENTION_LINE = re.compile(
+    r"note convention \[([^\]]+)\]:\s*(.*?)\s*\(gate: ci/gates/([A-Za-z0-9_]+)\.py\)\s*$"
+)
 
 
 def run(scan_root: Path, report_only: bool) -> int:
@@ -98,6 +111,21 @@ def run(scan_root: Path, report_only: bool) -> int:
                     f"silently identical to no configuration at all"
                 )
 
+    # What each channel actually STATES, not merely which ids it mentions. The
+    # generated channel cannot drift -- ci/gates/index_drift.py pins it against a
+    # fresh regeneration -- so a disagreement is always the hand-maintained
+    # config's, and naming both channels is what lets the author see which.
+    stated: dict[str, tuple[str, str]] = {}
+    if delivered:
+        try:
+            guidance = json.loads(delivered)[1]
+        except (ValueError, IndexError):
+            guidance = []
+        for line in guidance:
+            m = CONVENTION_LINE.match(str(line).strip())
+            if m:
+                stated[m.group(1)] = (m.group(2), m.group(3))
+
     # Every convention reaches both channels, and names a gate that exists.
     gates = {p.stem for p in (scan_root / "ci" / "gates").glob("*.py")}
     missing_note = missing_cfg = 0
@@ -111,6 +139,27 @@ def run(scan_root: Path, report_only: bool) -> int:
                 f"convention '{cid}': the planning tool does not deliver it -- "
                 f"present in {cfg_rel} is not the same as reaching the author"
             )
+        elif cfg_text and cid not in stated:
+            report.fail(
+                f"convention '{cid}': {cfg_rel} delivers it in a form this gate cannot "
+                f"read against the source -- a line the comparison cannot parse is a "
+                f"statement nothing holds to {note_rel}; expected "
+                f"'note convention [{cid}]: <statement> (gate: ci/gates/<module>.py)'"
+            )
+        elif cfg_text:
+            statement, gate = stated[cid]
+            if statement != it["statement"]:
+                report.fail(
+                    f"convention '{cid}': the two channels state different conventions -- "
+                    f"{note_rel} carries {it['statement']!r} and {cfg_rel} delivers "
+                    f"{statement!r}; both are keyed on one enumeration, so they cannot disagree"
+                )
+            if gate != it["gate"]:
+                report.fail(
+                    f"convention '{cid}': the two channels name different gates -- "
+                    f"{note_rel} names 'ci/gates/{it['gate']}.py' and {cfg_rel} delivers "
+                    f"'ci/gates/{gate}.py'"
+                )
         if it.get("gate") not in gates:
             report.fail(
                 f"convention '{cid}': names gate 'ci/gates/{it.get('gate')}.py', "

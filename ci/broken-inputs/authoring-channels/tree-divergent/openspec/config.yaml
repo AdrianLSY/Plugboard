@@ -1,0 +1,23 @@
+schema: spec-driven
+
+context: |
+  A fixture tree whose two authoring channels state different conventions for one id.
+
+operations:
+  apply:
+    guidance:
+      - "note convention [capability-note]: Every capability has one concept note under the declared ceiling, linking its spec and its dependencies. (gate: ci/gates/capability_notes.py)"
+      - "note convention [cited-or-unverified]: Every claim carries a citation into a tracked file or an obtainable artifact, or an explicit Unverified marker. (gate: ci/gates/citations.py)"
+      - "note convention [classification]: Every spine or component note declares type, status and authority from the closed enumerations. (gate: ci/gates/frontmatter.py)"
+      - "note convention [currency]: A planned note links the work that builds it, and its marker is retired once its subject exists. (gate: ci/gates/currency.py)"
+      - "note convention [declared-roots]: Every tracked note lives under a declared governed root; an exempt root records what owns its files. (gate: ci/gates/note_roots.py)"
+      - "note convention [entry-routes]: An entry file routes, stays under its ceiling, and names nothing the repository does not contain. (gate: ci/gates/entry_points.py)"
+      - "note convention [generated-indexes]: An index is generated, tracked, and byte-identical to a fresh regeneration. Never hand-edit one. (gate: ci/gates/index_drift.py)"
+      - "note convention [links-resolve]: Every link resolves, anchors included. (gate: ci/gates/links.py)"
+      - "note convention [no-owned-behaviour]: A note never states behaviour a specification owns; no normative modal in the spine. Link the owner. (gate: ci/gates/citations.py)"
+      - "note convention [one-copy]: Requirement text has one copy. Link the specification rather than restating it. (gate: ci/gates/duplication.py)"
+      - "note convention [one-register]: One decision register. A change's own decisions carry a namespace; a retired identifier is never reused. (gate: ci/gates/decision_register.py)"
+      - "note convention [precedence-once]: The authority precedence is stated in exactly one location; every other note links it. (gate: ci/gates/precedence.py)"
+      - "note convention [reachable]: Every note is reachable by links from a declared entry point. (gate: ci/gates/reachability.py)"
+      - "note convention [relative-links]: Use whichever link style reads best; the gate is advisory. (gate: ci/gates/wikilinks.py)"
+      - "note convention [rule-names-gate]: Every rule note names its gate, or `planned`, or `none` (preference, quarantined). (gate: ci/gates/rule_gate_correspondence.py)"

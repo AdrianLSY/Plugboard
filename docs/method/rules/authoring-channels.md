@@ -11,7 +11,9 @@ authority: rationale
 Every convention is supplied where an author reads it, through two channels keyed on one
 enumeration: the planning tool's configuration for anyone authoring a proposal, specification,
 design or task list, and [a generated note](../conventions.md) the entry files link for anyone
-authoring a note. A convention added to the gates without reaching both fails.
+authoring a note. A convention added to the gates without reaching both fails, and so does a
+convention the two channels state differently: presence of an id in each channel is not agreement,
+and the generated channel cannot drift, so a disagreement is always the hand-maintained one's.
 
 ## Why two, and not the obvious one
 

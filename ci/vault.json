@@ -498,7 +498,7 @@
         "vaults, one per fixture. The isolation property that MATTERS is still",
         "checked: a fixture must not trip another PER-FILE gate, and every fixture",
         "must fail its own gate by its own logic (the neuter test).",
-        "The runner, correspondences and generators gates are added by harden-vault-harness: no fixture tree holds a workflow file, a rule index, a gate roster or a ci/gen tool, so each would otherwise fail on all 26 trees through the isolation check. The count is three, not the two that change's task 1.4 estimated; measured at task 4.",
+        "The runner, correspondences and generators gates are added by harden-vault-harness: no fixture tree holds a workflow file, a rule index, a gate roster or a ci/gen tool, so each would otherwise fail on all 27 trees through the isolation check. The count is three, not the two that change's task 1.4 estimated; measured at task 4.",
         "coverage is added for the same reason: its subject is the gate roster, so it invokes every gate-shaped module it finds. Two fixtures carry stray .py files under ci/gates for their own cases -- rule-gate-correspondence needs a gate naming no rule note, language-coverage needs Python present -- and neither is a gate roster. Running the isolation check over them reported two failures, neither a defect.",
         "fixture-declarations is added for the same reason: its subject is the whole violating-input set, so a minimal tree carrying one fixture of its own is not that set."
       ],

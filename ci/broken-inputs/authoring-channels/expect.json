@@ -49,6 +49,28 @@
         "convention 'rule-names-gate': the planning tool does not deliver it",
         "convention 'rule-names-gate': names gate 'ci/gates/rule_gate_correspondence.py', which the repository does not run"
       ]
+    },
+    "tree-divergent": {
+      "_comment": "The DISAGREEMENT scenario. Both channels carry all fifteen ids, so absence is not what this tree demonstrates -- one statement differs from the single source in ci/vault.json. This tree carries openspec/changes/divergence-probe/ because the gate reads the planning-artifact channel back THROUGH the tool, and the tool delivers nothing for a tree with no change to read a configuration for. The fifteen gate-name failures are the same unavoidable consequence of a fixture tree holding no ci/gates/ that the sibling tree emits.",
+      "violations": 16,
+      "cases": [
+        "convention 'capability-note': names gate 'ci/gates/capability_notes.py', which the repository does not run",
+        "convention 'cited-or-unverified': names gate 'ci/gates/citations.py', which the repository does not run",
+        "convention 'classification': names gate 'ci/gates/frontmatter.py', which the repository does not run",
+        "convention 'currency': names gate 'ci/gates/currency.py', which the repository does not run",
+        "convention 'declared-roots': names gate 'ci/gates/note_roots.py', which the repository does not run",
+        "convention 'entry-routes': names gate 'ci/gates/entry_points.py', which the repository does not run",
+        "convention 'generated-indexes': names gate 'ci/gates/index_drift.py', which the repository does not run",
+        "convention 'links-resolve': names gate 'ci/gates/links.py', which the repository does not run",
+        "convention 'no-owned-behaviour': names gate 'ci/gates/citations.py', which the repository does not run",
+        "convention 'one-copy': names gate 'ci/gates/duplication.py', which the repository does not run",
+        "convention 'one-register': names gate 'ci/gates/decision_register.py', which the repository does not run",
+        "convention 'precedence-once': names gate 'ci/gates/precedence.py', which the repository does not run",
+        "convention 'reachable': names gate 'ci/gates/reachability.py', which the repository does not run",
+        "convention 'relative-links': the two channels state different conventions",
+        "convention 'relative-links': names gate 'ci/gates/wikilinks.py', which the repository does not run",
+        "convention 'rule-names-gate': names gate 'ci/gates/rule_gate_correspondence.py', which the repository does not run"
+      ]
     }
   }
 }
