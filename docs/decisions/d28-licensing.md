@@ -27,8 +27,11 @@ specification projects that closed that gap reached for a specification instrume
 software licence. The gap is open here, recorded rather than papered over, and becomes live when
 `contract/` first ships files a third party embeds.
 
-`.claude/` is outside the grant. It is a vendored agent harness: the openspec skills declare a
-licence, and every other skill and slash command declares none — the defect
+`.claude/` is outside the grant, and the exclusion is stated in [`LICENSE`](../../LICENSE) itself
+rather than only in the notes: §4(d) of the Apache text says a `NOTICE` cannot modify the License, so
+an exclusion carried only there sits where the licence disclaims it. It is a vendored agent harness:
+the openspec skills declare a licence, and every other skill and slash command declares none — the
+defect
 [the supply-chain rule](../method/supply-chain.md) logs against the prior art, found in this tree
 while writing this decision. → [third-party notices](../../.claude/THIRD-PARTY-NOTICES.md)
 

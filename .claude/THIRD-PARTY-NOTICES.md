@@ -5,6 +5,16 @@ are a vendored agent harness: skills and slash commands authored elsewhere and c
 the Apache-2.0 grant to the work this repository authors, and this file records what is known about
 the rest.
 
+That exclusion is stated **in `LICENSE` itself**, above the Apache text, and not only here. Section
+4(d) of that text says a `NOTICE` file's contents "do not modify the License", so an exclusion living
+only in `NOTICE` would sit in the one place the licence disclaims as incapable of narrowing it. The
+Apache text below the scope line is byte-identical to the canonical version.
+
+> **Unverified.** Whether a licence detector still reports Apache-2.0 with that scope line present has
+> not been checked — `licensee` is not installed here. The line is 1.6% of the file, under the 98%
+> content threshold such tools commonly use, but the inference is not a measurement. — needs a run of
+> `licensee detect .`, or the repository's own language sidebar read after a push.
+
 `ci/vault.json` already declares `.claude` an exempt root for the note gates, on the ground that its
 "frontmatter keys and file layout are owned by the Claude Code loader and by vendored upstream
 skills". That exemption is about *classification*. This file is about *copyright*, which no gate
