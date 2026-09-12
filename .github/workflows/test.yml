@@ -70,17 +70,17 @@ jobs:
       - run: make -C proxy deps
       # One configuration for all three Go modules, at the repository root;
       # ci/gates/linter_config.py fails the build if a second copy appears.
-      - uses: golangci/golangci-lint-action@v6
+      - uses: golangci/golangci-lint-action@v9
         with:
           version: latest
           working-directory: sidecar
           args: --config ../.golangci.yml
-      - uses: golangci/golangci-lint-action@v6
+      - uses: golangci/golangci-lint-action@v9
         with:
           version: latest
           working-directory: terminator
           args: --config ../.golangci.yml
-      - uses: golangci/golangci-lint-action@v6
+      - uses: golangci/golangci-lint-action@v9
         with:
           version: latest
           working-directory: conformance
