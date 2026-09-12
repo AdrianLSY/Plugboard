@@ -14,7 +14,7 @@ the build today), **gate planned** (an obligation whose check is not built yet),
 (taste, quarantined, never a blocking objection).
 
 
-**50 rules** — 28 gated, 19 gate planned, 3 preference (6% unenforced).
+**50 rules** — 29 gated, 18 gate planned, 3 preference (6% unenforced).
 
 | rule | status | gate | note |
 |---|---|---|---|
@@ -45,6 +45,7 @@ the build today), **gate planned** (an obligation whose check is not built yet),
 | Reader settings are tracked; per-person state is not | **gated** | `ci/gates/reader_config.py` | [note](method/rules/reader-configuration.md) |
 | Relations are relative markdown links | **gated** | `ci/gates/wikilinks.py` | [note](method/rules/relative-markdown-links.md) |
 | Requirement text has one copy | **gated** | `ci/gates/duplication.py` | [note](method/rules/one-copy-of-requirement-text.md) |
+| The review obligations are stated in one location and enumerated | **gated** | `ci/gates/review_obligations.py` | [note](code/rules/review-obligations-single-sourced.md) |
 | There is exactly one decision register | **gated** | `ci/gates/decision_register.py` | [note](method/rules/decision-register.md) |
 | A body is octets end to end, and no character encoding is applied to it | **gate planned** | `—` | [note](code/banned-patterns/body-as-a-string.md) |
 | A failure message is a sentence naming the consequence, not a code | **preference** | `—` | [note](code/rules/preferences/failure-messages-are-sentences.md) |
@@ -67,4 +68,3 @@ the build today), **gate planned** (an obligation whose check is not built yet),
 | The conformance suite outranks any implementation's own tests | **gate planned** | `—` | [note](code/rules/conformance-suite-is-the-authority.md) |
 | The fast tier stays inside ten seconds, and its latency is treated as a defect class | **gate planned** | `—` | [note](code/rules/fast-tier-latency-budget.md) |
 | The method token passes through unread and unrewritten | **gate planned** | `—` | [note](code/banned-patterns/method-allowlists.md) |
-| The review obligations are stated in one location and enumerated | **gate planned** | `—` | [note](code/rules/review-obligations-single-sourced.md) |

@@ -320,11 +320,13 @@ your language; here is the suite that tells you when you are done."* Good first 
 be the reserved-but-unimplemented frame types, each a bounded piece of work against an existing
 primitive with a fixture already written.
 
-None of that exists yet. A `CONTRIBUTING.md` is itself an open task, and this README will not link to
-one before it is written — the reference attempt's README linked to two files that were dead links,
-and *first impressions of a portfolio project are made of exactly this*.
+None of that exists yet — there is no product code to contribute to. What does exist is
+[`CONTRIBUTING.md`](CONTRIBUTING.md), written before the code rather than after it, naming every item
+of the three review enumerations and linking each to the one place it is stated. The reference
+attempt's README linked to two files that were never written, and *first impressions of a portfolio
+project are made of exactly this*; this one links only what it contains, and a gate holds it to that.
 
-Until then: `make check` must be green, every claim carries a citation or an explicit `Unverified`
+Meanwhile: `make check` must be green, every claim carries a citation or an explicit `Unverified`
 marker, and [the conventions](docs/method/conventions.md) are generated from the same enumeration the
 gates key on, so the list you read and the list that fails you cannot diverge.
 

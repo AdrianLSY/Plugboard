@@ -1,19 +1,22 @@
 ---
 type: rule
-status: planned
+status: current
 authority: rationale
 ---
 
 # The review obligations are stated in one location and enumerated
 
-**Gate:** planned — the propagation check arrives with the artifact it checks, `CONTRIBUTING.md`
-([rebuild-plugboard task 1.3](../../../openspec/changes/rebuild-plugboard/tasks.md)).
+**Gate:** `ci/gates/review_obligations.py`
 
 Three enumerations — [the review checklist](../reviewing.md#the-review-checklist), [the
 change-description questions](../reviewing.md#the-change-description-questions) and [the set of
 blocking objections](../reviewing.md#blocking-objections) — are each stated in exactly one location,
 numbered so an item is cited by its number. Every other mention links to that anchor rather than
 carrying its own copy of the list.
+
+One artifact is required to *name* every item without restating it:
+[`CONTRIBUTING.md`](../../../CONTRIBUTING.md), which a contributor reads before they reach the spine.
+Adding an item to a canonical enumeration fails the build until that file names it.
 
 ## Why
 
@@ -31,21 +34,23 @@ One copy and a link has no drift to detect. That is why this rule is about locat
 wording: numbering exists so a reviewer can say "checklist item 4" and a contributor can find item 4,
 without a second list to disagree with the first.
 
-## Why this is filed as planned rather than gated
+## The checkable form is propagation
 
-The checkable form of the rule is propagation: adding an item to a canonical enumeration fails every
-artifact required to enumerate it until that artifact names the new item, and the failure lists each
-artifact still missing it. That check needs at least one artifact under the obligation to enumerate,
-and the artifact in question is `CONTRIBUTING.md` — which is not in this repository. The reference's
-README linked to a `CONTRIBUTING.md` that was never written; creating it is rebuild-plugboard task
-1.3, and this rule's gate is built with it.
+"Nobody copied the list" is not decidable over prose, and a check that tried would fire on every note
+that mentions a checklist. The other direction is decidable, and it is the one that fails in practice:
+an artifact required to enumerate the list falls behind it. So the gate derives each item's name from
+the canonical enumeration itself — leading bold, else leading link text, else the lead clause — and
+fails any required enumerator that does not carry it. A list that cannot silently fall behind has
+nothing to drift from.
 
-A gate written today would pass on every input, which is worse than no gate: it would read as
-enforcement over an unguarded obligation. So the obligation is recorded as planned, and the
-correspondence check refuses this note the moment it claims a gate that does not run —
-[every rule names its gate](rule-gate-correspondence.md).
+The item names are derived rather than declared for the same reason the rule exists: a list of them in
+`ci/vault.json` would be a second encoding of the enumeration, reappearing inside the check meant to
+prevent one.
 
-Until then the single-sourcing is a property a reader checks by hand, and a small one: the three
-enumerations live in [reviewing](../reviewing.md), and every artifact that needs one of them —
-[adding a feature](../adding-a-feature.md), [fixing a bug](../fixing-a-bug.md),
-[testing](../testing.md) — links into that note instead of listing items again.
+## What the gate does not reach
+
+Order, a stale entry the canonical list has since dropped, and whether the sentence an enumerator
+wraps a name in is true. A green run means no item is missing from a required enumerator — not that
+nothing anywhere carries a second copy. That residue is owned by review and by
+[one copy of requirement text](../../method/rules/one-copy-of-requirement-text.md), which decides
+copy-paste across the spine, the specifications and the component roots.

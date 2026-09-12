@@ -10,7 +10,11 @@ authority: rationale
 
 Each rule is stated in exactly one rule note, and that note names the gate enforcing it or carries
 the no-gate marker. Each gate names the rule note it enforces, and its failure output identifies
-that note. The correspondence is checked in both directions.
+that note. The correspondence is checked in both directions, and it is **one-to-one**: two gates
+naming one rule note fails, because one obligation with two enforcements is two checks that can
+disagree while each of them reports a pass. That is also the general form of "only one link gate
+exists in the repository", which
+[rebuild-plugboard task 1.4](../../../openspec/changes/rebuild-plugboard/tasks.md) asks for.
 
 ## Why
 

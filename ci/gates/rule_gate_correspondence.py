@@ -4,16 +4,22 @@
 Enforces docs/code-standards -- "Every rule names its gate, and every gate names
 its rule", plus "Unenforced rules are quarantined".
 
-Four cases, all four failing:
+Five cases, all five failing:
 
   1. A gate naming no rule note.
   2. A gate naming a rule note that does not exist.
   3. A rule note claiming a gate the repository does not run.
   4. A rule note that neither names a gate nor carries the no-gate marker.
+  5. Two gates naming ONE rule note. The correspondence is one-to-one in both
+     directions, so a second gate over one obligation is two enforcements that
+     can disagree -- and the failure is silent, because each of them passes.
+     rebuild-plugboard task 1.4 asks for exactly this assertion in its narrow
+     form ("only one link gate exists in the repository"); stating it over the
+     whole roster costs one dictionary and answers it for every rule.
 
 And one more, from the quarantine requirement:
 
-  5. An ungated rule sitting among the gated ones. An unenforced rule is not
+  6. An ungated rule sitting among the gated ones. An unenforced rule is not
      banned -- some genuinely are taste -- but it is held separately, marked as
      preference, and barred from being raised as a blocking objection.
 
@@ -87,7 +93,20 @@ def run(scan_root: Path, report_only: bool) -> int:
                 f"ci/gates/{stem}.py: names rule note '{rel}', which does not exist"
             )
 
-    # (3), (4) and (5): the note's side of the correspondence.
+    # (5) one rule, one gate -- the direction a per-gate loop cannot see.
+    owners: dict[str, list[str]] = {}
+    for stem, rel in claimed.items():
+        owners.setdefault(rel, []).append(stem)
+    for rel, stems in sorted(owners.items()):
+        if len(stems) > 1:
+            report.fail(
+                f"{rel}: named by {len(stems)} gates ("
+                + ", ".join(f"ci/gates/{s}.py" for s in sorted(stems))
+                + ") -- the correspondence is one-to-one, and two gates over one "
+                f"obligation is two enforcements that can disagree while both pass"
+            )
+
+    # (3), (4) and (6): the note's side of the correspondence.
     gated = ungated = planned = 0
     for rel, path in sorted(notes.items()):
         text = path.read_text(encoding="utf-8")

@@ -483,6 +483,7 @@
       "precedence",
       "reachability",
       "reader-config",
+      "review-obligations",
       "rule-gate-correspondence",
       "runner",
       "top-level-readmes",
@@ -503,7 +504,8 @@
         "The runner, correspondences and generators gates are added by harden-vault-harness: no fixture tree holds a workflow file, a rule index, a gate roster or a ci/gen tool, so each would otherwise fail on all 27 trees through the isolation check. The count is three, not the two that change's task 1.4 estimated; measured at task 4.",
         "coverage is added for the same reason: its subject is the gate roster, so it invokes every gate-shaped module it finds. Two fixtures carry stray .py files under ci/gates for their own cases -- rule-gate-correspondence needs a gate naming no rule note, language-coverage needs Python present -- and neither is a gate roster. Running the isolation check over them reported two failures, neither a defect.",
         "fixture-declarations is added for the same reason: its subject is the whole violating-input set, so a minimal tree carrying one fixture of its own is not that set.",
-        "top-level-readmes is added by rebuild-plugboard task 1.1 for the same reason: its subject is every top-level directory of a tree, and a minimal violating input has one or two of them with no README by construction. Running the isolation check over the other fixtures would have reported a failure on nearly every one, none of them a defect."
+        "top-level-readmes is added by rebuild-plugboard task 1.1 for the same reason: its subject is every top-level directory of a tree, and a minimal violating input has one or two of them with no README by construction. Running the isolation check over the other fixtures would have reported a failure on nearly every one, none of them a defect.",
+        "review-obligations is added by rebuild-plugboard task 1.3: its subject is one declared note and one declared enumerator at fixed paths, and no other fixture tree carries either, so it would fail on every one of them for the absence rather than for a defect."
       ],
       "gates": [
         "reachability",
@@ -526,7 +528,8 @@
         "generators",
         "coverage",
         "fixture-declarations",
-        "top-level-readmes"
+        "top-level-readmes",
+        "review-obligations"
       ]
     },
     "declared_vacuity": {
@@ -624,6 +627,36 @@
         ".github": "Workflow files read by the hosting service rather than by a person arriving at the directory. ci/gates/runner.py holds the one workflow this repository's obligations depend on.",
         ".obsidian": "Reader configuration owned by Obsidian and checked by ci/gates/reader_config.py. What it holds is a vault's settings, not a component's boundary."
       }
+    },
+    "review_obligations": {
+      "_comment": [
+        "Read by ci/gates/review_obligations.py. Three enumerations are stated once, in",
+        "`source`, and every artifact in `enumerators` names each of their items without",
+        "restating it. The ITEMS are not listed here on purpose: a declared copy of the",
+        "list would be the second encoding the rule exists to prevent, appearing inside",
+        "the check that enforces it. The gate derives each item's name from the source",
+        "note itself -- leading bold, else leading link text, else the lead clause.",
+        "`anchor` is the heading's generated anchor, carried so a failure hands over the",
+        "location rather than the heading text alone."
+      ],
+      "source": "docs/code/reviewing.md",
+      "enumerations": [
+        {
+          "heading": "The change-description questions",
+          "anchor": "the-change-description-questions"
+        },
+        {
+          "heading": "The review checklist",
+          "anchor": "the-review-checklist"
+        },
+        {
+          "heading": "Blocking objections",
+          "anchor": "blocking-objections"
+        }
+      ],
+      "enumerators": [
+        "CONTRIBUTING.md"
+      ]
     },
     "languages": {
       "_comment": [

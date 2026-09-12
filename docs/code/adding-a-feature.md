@@ -65,7 +65,7 @@ own verification** — a contributor followed it when all four hold:
 | named | provided by | what stands in today |
 |---|---|---|
 | a runnable `conformance/` suite | [rebuild-plugboard task 2.6](../../openspec/changes/rebuild-plugboard/tasks.md) | nothing — steps 2 and 3 are ordering claims until it lands. The component directories and their boundary notes arrived with task 1.1; they hold no source yet |
-| `make fmt`, `make lint`, `make test`, `make precommit` | [rebuild-plugboard task 1.7](../../openspec/changes/rebuild-plugboard/tasks.md) | `make check`, `make check-gates`, `make check-links` |
+| a component toolchain for `make fmt`, `make lint` and `make test` to dispatch to | [rebuild-plugboard task 2.2](../../openspec/changes/rebuild-plugboard/tasks.md) | the targets exist (task 1.7) and refuse by name for a component whose toolchain has not landed, so they report what is missing rather than passing over nothing. `make check`, `make check-gates` and `make check-links` run today |
 
 ## Why
 

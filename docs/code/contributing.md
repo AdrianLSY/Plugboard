@@ -25,7 +25,11 @@ that serves contributors specifically.
   on that list — they are v1 work carrying their own task sections, not spare capacity. The one frame
   type reserved and unimplemented at v1 is the datagram kind
   ([`D2`](../decisions/d02-frame-shaped-tunnel.md)).
-- **`CONTRIBUTING.md` must exist.** The reference's README linked to it, and to `FUTURE_WORK.md`, and
-  **both were dead links.** First impressions of a portfolio project are made of exactly this.
+- **[`CONTRIBUTING.md`](../../CONTRIBUTING.md) exists**, written before the code rather than after it.
+  The reference's README linked to it, and to `FUTURE_WORK.md`, and **both were dead links.** First
+  impressions of a portfolio project are made of exactly this. What keeps it from decaying into the
+  same thing is that it names every item of the three review enumerations and nothing else states
+  them, so a new item fails the build until it is named —
+  [the rule](rules/review-obligations-single-sourced.md).
 
 > Orientation, not behaviour. The specifications win.

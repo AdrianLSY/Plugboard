@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Gate: the documentation reflects the current state, in BOTH directions.
+r"""Gate: the documentation reflects the current state, in BOTH directions.
 
 Enforces docs/knowledge-base -- "The documentation reflects the current state",
 which states four checkable properties rather than an intention:

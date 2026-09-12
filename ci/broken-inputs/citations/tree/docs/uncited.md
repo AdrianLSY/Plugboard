@@ -10,6 +10,9 @@ The reference corrupts binary payloads at elsewhere/thing.ex:42, an artifact nob
 
 A request SHALL be refused when the sidecar cannot back it.
 
+The obtaining instructions are at docs/history/obtaining-the-reference.md:900 — a tracked file in
+this tree, and a line far past its end. The path resolves; the line does not.
+
 ## Controls below this line must not fail
 
 The audit cites reference/Plugboard/lib/proxy.ex:118, which is declared obtainable.

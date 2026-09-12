@@ -1,0 +1,21 @@
+#!/bin/sh
+# Refuse a push to the default branch. Installed by `make hooks`.
+#
+# The prior art pushed 119 commits straight to main, seventeen of them titled
+# "updated code". Branch protection on the forge is the authority; this is the
+# half that answers before the network call, and it is the only half that works
+# on a repository with no configured remote -- which is the state today.
+#
+# git passes each ref pair on stdin as: <local ref> <local sha> <remote ref> <remote sha>
+protected='refs/heads/main'
+status=0
+while read -r _local_ref _local_sha remote_ref _remote_sha; do
+	case "$remote_ref" in
+	"$protected")
+		echo "pre-push: refusing to push to $remote_ref -- main takes merges, not pushes." >&2
+		echo "          Open a pull request; see CONTRIBUTING.md." >&2
+		status=1
+		;;
+	esac
+done
+exit $status
