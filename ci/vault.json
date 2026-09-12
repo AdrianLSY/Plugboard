@@ -44,7 +44,8 @@
     "reference": "Read-only prior art, untracked by design (.gitignore). Cited by file:line only; obtaining instructions and pinned revisions live in the spine.",
     "graphify-out": "Generated code map. Layer 5 of the precedence order; regenerated from the AST, never hand-edited, and not part of the hand-written vault.",
     "node_modules": "Third-party dependency trees.",
-    ".git": "Version-control internals."
+    ".git": "Version-control internals.",
+    ".github": "Forge configuration: workflow files, the pull-request template and CODEOWNERS, whose location and format are owned by the hosting service. The template is nonetheless held byte-identical to the block stating it in docs/code/reviewing.md by ci/gates/review_obligations.py -- exempt from the vault's authoring obligations is not exempt from single-sourcing."
   },
   "scan_excludes": {
     "_comment": [
@@ -624,7 +625,6 @@
         "docs": "The spine is entered through its generated index at docs/index.md, which ci/gen/indexes.py produces and ci/gates/index_drift.py holds byte-identical to a fresh regeneration. A hand-written README beside it would be a second entry for one directory, which is exactly what the reachability rule exists to prevent.",
         "openspec": "Layout owned by the OpenSpec CLI: it reads openspec/config.yaml and writes the change directories beneath. This repository does not author that format, and a README here would describe a tool's tree back at it.",
         "ci": "The harness is described once, in docs/method/harness.md, and every gate's rule note is reachable from docs/rule-index.md. A second description sitting beside the gate modules is the copy that drifts -- the same reason a component README links its boundary note instead of restating it.",
-        ".github": "Workflow files read by the hosting service rather than by a person arriving at the directory. ci/gates/runner.py holds the one workflow this repository's obligations depend on.",
         ".obsidian": "Reader configuration owned by Obsidian and checked by ci/gates/reader_config.py. What it holds is a vault's settings, not a component's boundary."
       }
     },
@@ -656,7 +656,18 @@
       ],
       "enumerators": [
         "CONTRIBUTING.md"
-      ]
+      ],
+      "template": {
+        "_comment": [
+          "The pull-request template is STATED in the source note, inside the fenced",
+          "block under `heading`, and PUBLISHED at `path` where the forge reads it.",
+          "reviewing.md's own words: a template is the artifact most likely to be",
+          "copied and then left behind. So the published copy is held byte-identical",
+          "to the block that states it, and editing either alone fails."
+        ],
+        "heading": "PR template",
+        "path": ".github/pull_request_template.md"
+      }
     },
     "languages": {
       "_comment": [

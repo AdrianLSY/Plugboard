@@ -15,8 +15,11 @@
 3. `docs/code/reviewing.md` carries no *Blocking objections* heading. `ci/vault.json` declares it a
    canonical enumeration, so either the note was reorganised and the check quietly stopped covering
    it, or the declaration is stale. Either way the answer is a failure, not silence.
+4. `docs/code/reviewing.md` carries no fenced block under a *PR template* heading, so the file the
+   forge serves as the template is stated nowhere. Same shape as case 3, different artifact: the
+   published template is held byte-identical to the block stating it, in both directions.
 
-## The third case, and why it is not here
+## The remaining case, and why it is not here
 
 The gate also fails a declared enumerator that does not exist. Demonstrating it needs the fixture to
 omit `CONTRIBUTING.md`, and the tree would then have nothing for cases 1 and 2 to fire against —
@@ -30,4 +33,4 @@ check that reported every item as missing would emit four violations here, and t
 
 ## Expected
 
-Exit 1, three violations.
+Exit 1, four violations.

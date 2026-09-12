@@ -1,0 +1,7 @@
+{
+  "_why": "The template as the forge serves it: every box empty. This is the case task 1.5 names -- a body with none ticked must be refused, because an unanswered section is not an answer of 'none'.",
+  "check": "wire-contract-impact",
+  "body": "## What breaks if this is wrong?\n\n## Wire contract impact\n- [ ] None\n- [ ] Additive (new optional field / reserved frame type now used)\n- [ ] **BREAKING** -- requires version bump + capability flag\n\n## Tests\nName the specific wrong implementation each new test would reject.\n\n## Checklist\n- [ ] Fast suite passes locally (no Postgres required)\n- [ ] Conformance suite passes\n- [ ] No new `async: false` without a comment saying why\n- [ ] Read against every item of the review checklist (docs/code/reviewing.md#the-review-checklist)\n- [ ] No blocking objection stands (docs/code/reviewing.md#blocking-objections)\n- [ ] Docs updated, or \"docs: n/a\" with a reason\n",
+  "changed": [],
+  "expect": "fail"
+}

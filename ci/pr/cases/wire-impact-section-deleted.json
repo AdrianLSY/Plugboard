@@ -1,0 +1,7 @@
+{
+  "_why": "Deleting the section is the way around a check that only looks inside it. Refused for the same reason.",
+  "check": "wire-contract-impact",
+  "body": "## What breaks if this is wrong?\n\nNothing; it is a typo fix.\n",
+  "changed": [],
+  "expect": "fail"
+}

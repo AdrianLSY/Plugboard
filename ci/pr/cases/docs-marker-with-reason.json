@@ -1,0 +1,9 @@
+{
+  "_why": "The marker satisfies the check when it carries a reason. CI decides presence; docs/method/documentation-rules.md gives correctness to the reviewer.",
+  "check": "docs-touched",
+  "body": "## What breaks if this is wrong?\n\nNothing visible.\n\ndocs: n/a -- renames an unexported helper inside one module; no documented behaviour changes.\n",
+  "changed": [
+    "sidecar/internal/dial.go"
+  ],
+  "expect": "pass"
+}

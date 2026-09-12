@@ -1,0 +1,21 @@
+# Paths a person reviews, whoever opened the pull request.
+#
+# The set is the wire contract and the suite that is its authority. Everything
+# here is either the schema itself, generated from it, or the thing that decides
+# whether an implementation speaks it -- and version skew makes all of it
+# irreversible: a tenant's sidecar is upgraded on the tenant's schedule or never
+# (docs/why/version-skew.md).
+#
+# !! THE HANDLE BELOW IS A PLACEHOLDER AND MUST BE REPLACED. !!
+# GitHub silently ignores a CODEOWNERS line naming an account that cannot be
+# found -- no error, no warning, and the rule simply does not apply. A file in
+# this state looks exactly like protection and is none, which is why
+# rebuild-plugboard task 1.9 is not complete until a real owner is substituted
+# and a bot-authored pull request touching contract/ is observed to be blocked.
+
+/contract/        @OWNER-HANDLE-REPLACE-ME
+/conformance/     @OWNER-HANDLE-REPLACE-ME
+
+# Generated codecs: the paths land with rebuild-plugboard section 11, and this
+# entry is extended to name them then. Listing a path that does not exist yet
+# would be a rule over nothing.

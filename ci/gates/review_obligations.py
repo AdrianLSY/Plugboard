@@ -23,6 +23,10 @@ Three cases, all three failing:
      the declaration outlived its subject, or the note was reorganised and the
      check quietly stopped covering it.
   3. A declared enumerator that does not exist.
+  4. The published pull-request template differing from the fenced block that
+     states it in the source note, in either direction. reviewing.md's own words:
+     a template is "the artifact most likely to be copied and then left behind",
+     and the forge reads its copy, not the note's.
 
 ## What an item's NAME is, and why it is derived rather than declared
 
@@ -71,18 +75,46 @@ def _normalise(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip().casefold()
 
 
+def _fenced(section: list[str]) -> str | None:
+    """The first fenced block's contents, with a trailing newline."""
+    opener = next((i for i, l in enumerate(section) if l.startswith("```")), None)
+    if opener is None:
+        return None
+    closer = next(
+        (i for i in range(opener + 1, len(section)) if section[i].startswith("```")), None
+    )
+    if closer is None:
+        return None
+    return "\n".join(section[opener + 1:closer]) + "\n"
+
+
 def _section(lines: list[str], heading: str) -> list[str] | None:
-    """The lines under `heading`, up to the next heading of the same or higher level."""
+    """The lines under `heading`, up to the next heading of the same or higher level.
+
+    Fence-aware in both passes. The pull-request template is a fenced block whose
+    own content opens with `## What breaks if this is wrong?`, so a scan that read
+    `#` at the left margin as a heading ended the section on the template's first
+    line and reported the block absent.
+    """
+    fence = False
     for index, line in enumerate(lines):
+        if line.startswith("```"):
+            fence = not fence
+            continue
+        if fence:
+            continue
         m = HEADING.match(line)
         if not m or m.group(2) != heading:
             continue
         level = len(m.group(1))
-        out = []
+        out, inner = [], False
         for follow in lines[index + 1:]:
-            m2 = HEADING.match(follow)
-            if m2 and len(m2.group(1)) <= level:
-                break
+            if follow.startswith("```"):
+                inner = not inner
+            elif not inner:
+                m2 = HEADING.match(follow)
+                if m2 and len(m2.group(1)) <= level:
+                    break
             out.append(follow)
         return out
     return None
@@ -153,6 +185,32 @@ def run(scan_root: Path, report_only: bool) -> int:
             )
             continue
         bodies[rel] = _normalise(path.read_text(encoding="utf-8"))
+
+    # (4) the published template against the block that states it.
+    template = {k: v for k, v in cfg.get("template", {}).items() if not k.startswith("_")}
+    if template:
+        heading, rel = template["heading"], template["path"]
+        report.examine(f"template {rel}")
+        section = _section(lines, heading)
+        stated = _fenced(section) if section is not None else None
+        if stated is None:
+            report.fail(
+                f"{source_rel}: no fenced block under '{heading}' -- it is where "
+                f"{rel} is stated, and the forge reads {rel}"
+            )
+        else:
+            published = scan_root / rel
+            if not published.is_file():
+                report.fail(
+                    f"{rel}: the pull-request template the forge reads is absent, "
+                    f"while {source_rel} states one under '{heading}'"
+                )
+            elif published.read_text(encoding="utf-8") != stated:
+                report.fail(
+                    f"{rel}: differs from the block stating it at "
+                    f"{source_rel} '{heading}' -- one of the two was edited alone, "
+                    f"and the forge serves this one"
+                )
 
     total = 0
     for entry in declared:

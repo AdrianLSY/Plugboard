@@ -1,0 +1,19 @@
+# Dependency updates. docs/method/supply-chain.md states the policy; this is the
+# configuration that performs it.
+#
+# One ecosystem is declared, because one is present. Hex and Go modules arrive
+# with proxy/mix.exs and sidecar/go.mod (rebuild-plugboard tasks 2.1 and 2.3);
+# declaring a directory Dependabot cannot find produces a configuration error on
+# every run, and a configuration erroring quietly is indistinguishable from one
+# that is working.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+    commit-message:
+      prefix: "deps"

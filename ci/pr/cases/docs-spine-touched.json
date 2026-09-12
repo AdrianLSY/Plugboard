@@ -1,0 +1,10 @@
+{
+  "_why": "The ordinary satisfying case: the behaviour and its documentation land together.",
+  "check": "docs-touched",
+  "body": "## What breaks if this is wrong?\n\nThe mount projection.\n",
+  "changed": [
+    "proxy/lib/plugboard/mounts.ex",
+    "docs/how/topology.md"
+  ],
+  "expect": "pass"
+}

@@ -1,0 +1,10 @@
+{
+  "_why": "Task 1.10's first verification: a change touching contract/ with neither a spine edit nor a marker is refused.",
+  "check": "docs-touched",
+  "body": "## What breaks if this is wrong?\n\nThe frame kind register gains an entry.\n",
+  "changed": [
+    "contract/kinds.yml",
+    "conformance/cases/frame_kinds_test.go"
+  ],
+  "expect": "fail"
+}

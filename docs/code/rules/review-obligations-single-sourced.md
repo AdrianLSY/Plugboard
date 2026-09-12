@@ -18,6 +18,13 @@ One artifact is required to *name* every item without restating it:
 [`CONTRIBUTING.md`](../../../CONTRIBUTING.md), which a contributor reads before they reach the spine.
 Adding an item to a canonical enumeration fails the build until that file names it.
 
+One artifact is required to *reproduce* a block exactly: the pull-request template the forge serves,
+[`.github/pull_request_template.md`](../../../.github/pull_request_template.md), held byte-identical
+to the fenced block stating it in [reviewing](../reviewing.md#pr-template). The two directions differ
+because the artifacts differ — a contributor guide names a list, a forge template *is* the file — and
+reviewing's own words are that a template is the artifact most likely to be copied and then left
+behind.
+
 ## Why
 
 A checklist is the kind of text that gets pasted into whatever artifact needs it next — a

@@ -1,0 +1,9 @@
+{
+  "_why": "The template's own checklist line carries the marker and enough words after it to clear the reason floor, so a body left exactly as the forge served it satisfied this check while touching contract/. The template is a PROMPT and never an answer, so its verbatim lines are ignored. Found by adding this case, not by reading the regex.",
+  "check": "docs-touched",
+  "body": "## What breaks if this is wrong?\n\n## Wire contract impact\n- [ ] None\n- [ ] Additive (new optional field / reserved frame type now used)\n- [ ] **BREAKING** -- requires version bump + capability flag\n\n## Tests\nName the specific wrong implementation each new test would reject.\n\n## Checklist\n- [ ] Fast suite passes locally (no Postgres required)\n- [ ] Conformance suite passes\n- [ ] No new `async: false` without a comment saying why\n- [ ] Read against every item of the review checklist (docs/code/reviewing.md#the-review-checklist)\n- [ ] No blocking objection stands (docs/code/reviewing.md#blocking-objections)\n- [ ] Docs updated, or \"docs: n/a\" with a reason\n",
+  "changed": [
+    "contract/kinds.yml"
+  ],
+  "expect": "fail"
+}

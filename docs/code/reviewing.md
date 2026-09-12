@@ -62,8 +62,12 @@ Name the specific wrong implementation each new test would reject.
 - [ ] Docs updated, or "docs: n/a" with a reason
 ```
 
-The template's four headings are [the four questions above](#the-change-description-questions), in
-the order a body answers them; its checklist points at the two enumerations below rather than
+The block above is the statement; [`.github/pull_request_template.md`](../../.github/pull_request_template.md)
+is the copy the forge serves, held byte-identical to it by
+[`ci/gates/review_obligations.py`](../../ci/gates/review_obligations.py) in both directions — editing
+either alone fails. The template's four headings are
+[the four questions above](#the-change-description-questions), in the order a body answers them;
+its checklist points at the two enumerations below rather than
 repeating their items, because a template is the artifact most likely to be copied and then left
 behind. The standard the *Tests* answer is judged against is
 [mutation thinking](testing.md#mutation-thinking-as-the-review-standard). That each of the three

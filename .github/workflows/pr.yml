@@ -1,0 +1,49 @@
+# The checks whose subject is the pull request rather than the tree.
+#
+# `check.yml` runs `make check`, and every vault gate decides a property of a
+# directory. These two cannot: one reads the description, the other reads the set
+# of paths the change touched. Neither exists outside a forge, so neither is a
+# vault gate and `make check-gates` does not cover them -- which is why the first
+# step here is the checks' own self-test against recorded cases. A check that has
+# stopped deciding fails the pull request that revealed it.
+#
+# The body reaches the script through the environment and never through the shell
+# command line. A pull-request body is attacker-controlled text; interpolating it
+# into `run:` is script injection with extra steps.
+name: pull request
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened, ready_for_review]
+
+jobs:
+  description:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # `docs-touched` compares base...head, so both must be reachable.
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: the checks are demonstrated to decide before they are trusted
+        run: python3 ci/pr/checks.py --self-test
+
+      - name: record the description
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: printf '%s' "$PR_BODY" > "$RUNNER_TEMP/body.md"
+
+      - name: wire contract impact is answered
+        run: python3 ci/pr/checks.py --check wire-contract-impact --body "$RUNNER_TEMP/body.md"
+
+      - name: documentation lands with the behaviour, or the omission is stated
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          python3 ci/pr/checks.py --check docs-touched \
+            --body "$RUNNER_TEMP/body.md" \
+            --base "origin/$BASE_REF" --head HEAD

@@ -1,0 +1,49 @@
+# Unattended dependency advances, and the two things that stop them.
+#
+# 1. PATCH ONLY. `version-update:semver-patch` and nothing else. A minor bump is
+#    a behaviour change somebody should read, and the prior art's submodule sync
+#    workflow auto-committed unreviewed protocol pointer updates onto the
+#    parent's default branch -- the failure this whole policy exists to prevent.
+#
+# 2. NOTHING TOUCHING contract/. The wire schema is the one artifact no later
+#    release can correct, so it never advances without a person. CODEOWNERS asks
+#    for the review; this refuses the merge, because a rule enforced in one place
+#    is a rule with one way around it.
+#
+# `pull_request_target` is required for the token to be able to merge, so this
+# workflow NEVER checks out the pull request's code and never runs it. The diff
+# is read through the API.
+name: dependabot auto-merge
+
+on: pull_request_target
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - id: meta
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: refuse any unattended advance touching the contract
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          if gh pr diff --name-only "$PR_URL" | grep -q '^contract/'; then
+            echo "::error::this pull request touches contract/; the wire schema does not advance unattended"
+            exit 1
+          fi
+
+      - name: merge, patch updates only
+        if: steps.meta.outputs.update-type == 'version-update:semver-patch'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: gh pr merge --auto --squash "$PR_URL"

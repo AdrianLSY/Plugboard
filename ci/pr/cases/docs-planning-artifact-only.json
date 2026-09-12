@@ -1,0 +1,9 @@
+{
+  "_why": "Task 1.10's second verification: a change touching only a planning artifact triggers nothing, so it passes with no spine edit and no marker. openspec/ is a declared planning directory, not a component root.",
+  "check": "docs-touched",
+  "body": "## What breaks if this is wrong?\n\nA task's wording.\n",
+  "changed": [
+    "openspec/changes/rebuild-plugboard/tasks.md"
+  ],
+  "expect": "pass"
+}

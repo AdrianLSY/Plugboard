@@ -1,0 +1,9 @@
+{
+  "_why": "A bare marker is the box-ticking the rule exists to refuse, so it is refused as if absent.",
+  "check": "docs-touched",
+  "body": "## What breaks if this is wrong?\n\nNothing.\n\ndocs: n/a\n",
+  "changed": [
+    "proxy/lib/plugboard/router.ex"
+  ],
+  "expect": "fail"
+}

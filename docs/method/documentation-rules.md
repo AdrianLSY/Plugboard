@@ -29,7 +29,10 @@ most valuable thing in the repository. The lesson is **the docs must be falsifia
    anyway, because a rule with no gate is a wish.
 4. **The gate:** a PR touching the wire contract, a public API, or a documented behaviour and *not*
    touching docs must say `docs: n/a` with a reason. CI checks for the marker's presence, not its
-   correctness — the reviewer checks correctness.
+   correctness — the reviewer checks correctness. It is
+   [`ci/pr/checks.py`](../../ci/pr/checks.py), keyed on the component set and the spine declared in
+   `ci/vault.json` rather than on a path list of its own, and run by
+   [the pull-request workflow](../../.github/workflows/pr.yml).
 5. **Record deliberate omissions next to the code.** `router.ex:47-49` is the standard: a security
    control dropped, with the reason. That comment is more valuable than the 60 KB README.
 6. **`docs/` is for orientation and rationale; the contract is for behaviour.** When they disagree, the
