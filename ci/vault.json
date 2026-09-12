@@ -620,6 +620,24 @@
           "ci/**/*.py"
         ]
       },
+      "_source_extensions_comment": [
+        "The second route to 'a language is present', and the one that makes",
+        "this gate's FIRST case reachable at all. Iterating source_globs alone",
+        "cannot find a language nobody has declared yet: `present` would be a",
+        "subset of what is already registered, so 'introducing a language",
+        "without its conventions fails' could only ever fire for a language",
+        "somebody had already registered a glob for -- and whoever remembers",
+        "the glob remembers the note. Elixir and Go land with rebuild-plugboard",
+        "task 1.1, which is exactly when the rule has to bite, so the",
+        "enumeration names them now. Admitting a further language is a",
+        "deliberate edit here rather than a silent pass."
+      ],
+      "source_extensions": {
+        ".py": "python",
+        ".ex": "elixir",
+        ".exs": "elixir",
+        ".go": "go"
+      },
       "exclude": [
         "ci/broken-inputs"
       ]

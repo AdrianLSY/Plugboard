@@ -50,6 +50,7 @@ def run(scan_root: Path, report_only: bool) -> int:
     manifest = load_manifest(repo_root())
     cfg = manifest["code_standards"]["languages"]
     globs = {k: v for k, v in cfg["source_globs"].items() if not k.startswith("_")}
+    exts = {k: v for k, v in cfg.get("source_extensions", {}).items() if not k.startswith("_")}
     excl = tuple(cfg.get("exclude", []))
     ndir = cfg["note_dir"]
     report = Report(GATE_ID, RULE_NOTE)
@@ -63,6 +64,21 @@ def run(scan_root: Path, report_only: bool) -> int:
         ]
         if hits:
             present[lang] = len(hits)
+
+    # The second route in, and the one that makes the FIRST case reachable.
+    # Iterating the declared globs alone cannot find a language nobody has
+    # declared: `present` would be a subset of what is already registered, so
+    # "introducing a language without its conventions fails" could only ever
+    # fire for a language somebody had already added a glob for. Extensions
+    # close that, so tracked Elixir or Go with no conventions note fails the
+    # day it lands rather than the day someone also remembers the manifest.
+    ext_counts: dict[str, int] = {}
+    for rel in files:
+        lang = exts.get(Path(rel).suffix)
+        if lang:
+            ext_counts[lang] = ext_counts.get(lang, 0) + 1
+    for lang, n in sorted(ext_counts.items()):
+        present.setdefault(lang, n)
 
     notes = {
         p.stem: p for p in sorted((scan_root / ndir).glob("*.md")) if p.stem != "index"
@@ -81,8 +97,8 @@ def run(scan_root: Path, report_only: bool) -> int:
                 f"source -- describing a language the repository does not contain"
             )
 
-        for _subject in present:
-            report.examine(_subject)
+    for _subject in sorted(present):
+        report.examine(_subject)
     report.coverage(
         covered=sorted(present) or ["(no tracked source)"],
         excluded=[*excl, *sorted(set(globs) - set(present))],
