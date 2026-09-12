@@ -7,6 +7,13 @@
         "CONTRIBUTING.md: does not cite 'checklist item 1'",
         "CONTRIBUTING.md: does not cite 'blocking objection 3'"
       ]
+    },
+    "tree-structure": {
+      "violations": 2,
+      "cases": [
+        "docs/code/reviewing.md: 'The review checklist' opens 2 sections",
+        "CONTRIBUTING.md: cites the 'Blocking objections' items but carries no link to reviewing.md#blocking-objections"
+      ]
     }
   }
 }

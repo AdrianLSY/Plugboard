@@ -3,9 +3,14 @@
 Exercises [`ci/gates/review_obligations.py`](../../gates/review_obligations.py), which enforces
 [the review obligations are stated in one location and enumerated](../../../docs/code/rules/review-obligations-single-sourced.md).
 
-## Violations
+## Two trees
 
-**Three** violations, exit 1 — one per canonical enumeration.
+`tree/` holds the **propagation** failures — an item stated canonically and never carried across.
+`tree-structure/` holds the **structural** ones, where nothing is missing from the enumeration but the
+relationship between the two artifacts is broken. They are separate because a tree carrying both
+would let a fix to either appear to work.
+
+## `tree/` — three violations, exit 1, one per canonical enumeration
 
 1. `CONTRIBUTING.md` cites `change-description question 1` where the canonical note states two.
 2. It cites checklist items 2 through 10 and omits **item 1**, where the canonical note states ten.
@@ -36,11 +41,27 @@ The second is why a fenced sample sits inside the review-checklist section here.
 without masking, that block alone fails the gate, and the failure arrives through `Report.fail()` — so
 the meta gate's neuter test passes and proves nothing about it.
 
+## `tree-structure/` — two violations, exit 1
+
+Its `CONTRIBUTING.md` cites **every** item of every enumeration, so no propagation case fires. What
+is wrong is structural:
+
+1. The canonical note states `### The review checklist` **twice** — a two-item stub under Pull
+   requests, then the real three-item list. A first-match search reads the stub as the enumeration and
+   passes an artifact citing two items; the gate refuses the repeat instead of choosing between them.
+2. Its `CONTRIBUTING.md` names the blocking objections with **no link** to the note that owns them.
+   The rule is that every other mention links rather than copies, so the link is half the obligation
+   and the citations are the other half.
+
+Case 1 is the one that was silently wrong: before the gate counted occurrences, this exact tree
+exited 0.
+
 ## Runs
 
 | command | expected |
 |---|---|
 | `python3 ci/gates/review_obligations.py --root ci/broken-inputs/review-obligations/tree` | exit 1, three violations |
+| `python3 ci/gates/review_obligations.py --root ci/broken-inputs/review-obligations/tree-structure` | exit 1, two violations |
 | `python3 ci/gates/review_obligations.py` | exit 0 against the declared canonical note and `CONTRIBUTING.md` |
 
 ## Not violations here

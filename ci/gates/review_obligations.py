@@ -8,8 +8,14 @@ location and enumerated":
     to carry that obligation;
   * an item present in the canonical note and absent from an obliged artifact
     fails, naming the artifact, the enumeration and the item;
+  * each obliged artifact links to the anchor that owns each enumeration, because
+    the rule is that every other mention LINKS rather than copies -- the link is
+    half the obligation and the citations are the other half;
   * a canonical enumeration that yields no items fails, because a heading that
-    stopped matching would otherwise silently discharge the whole obligation.
+    stopped matching would otherwise silently discharge the whole obligation;
+  * a heading that opens more than one section fails rather than resolving to the
+    first, because a canonical enumeration stated twice is not canonical and the
+    earlier of the two would otherwise be checked against.
 
 ## Why propagation rather than wording
 
@@ -34,6 +40,10 @@ Whether the label an artifact puts beside a number is a good summary of the item
 That is wording, and wording is deliberately not this rule's subject: one copy
 and a link has no drift to detect, which is the whole reason the enumerations are
 single-sourced. A label that misleads is a review comment, not a build failure.
+
+Nor whether the anchor a link names resolves. ci/gates/links.py already resolves
+every anchor in every tracked note, so a link to a heading that does not exist
+fails there; checking it twice would be a second encoding of one property.
 
 ## Why the items are read rather than declared
 
@@ -104,24 +114,53 @@ def cites(text: str, citation: str) -> bool:
     test would read an artifact that cites only item 10 as having cited item 1.
     The trailing digit is refused rather than a full word boundary, so a citation
     followed by punctuation, a pipe or a line end still counts.
+
+    Whitespace inside the citation matches any run of whitespace, because markdown
+    renders a line break inside a paragraph as a space: an artifact that wraps
+    'checklist item 3' across two lines has cited item 3, and a matcher that said
+    otherwise would report a defect the reader cannot see.
     """
-    return re.search(re.escape(citation) + r"(?!\d)", text, re.I) is not None
+    pattern = r"\s+".join(re.escape(w) for w in citation.split()) + r"(?!\d)"
+    return re.search(pattern, text, re.I) is not None
 
 
-def section(body: str, heading: str) -> str:
-    """The text under `heading`, up to the next heading of the same or higher level.
+def sections(body: str, heading: str) -> list[str]:
+    """Every section this heading opens, in document order.
 
-    Matched on the heading TEXT rather than on a declared level, so promoting or
-    demoting the section does not silently empty it -- the empty-section case
-    below is what catches a heading that stopped matching altogether.
+    Each runs to the next heading of the same or higher level. Matched on the
+    heading TEXT rather than on a declared level, so promoting or demoting the
+    section does not silently empty it.
+
+    A LIST rather than the first match, because the first match is the wrong
+    answer when there are two: a plausible edit -- an 'in brief' summary under
+    Pull requests reusing the heading 'The review checklist' -- would put a
+    two-item stub ahead of the canonical nine, and the gate would read the stub
+    as the enumeration and pass an artifact citing two items. The caller refuses
+    a repeated heading rather than picking one, because a canonical enumeration
+    stated twice is not canonical, which is the whole subject of this rule.
     """
-    m = re.search(rf"^(#{{1,6}})\s+{re.escape(heading)}\s*$", body, re.M)
-    if not m:
-        return ""
-    level = len(m.group(1))
-    rest = body[m.end() :]
-    nxt = re.search(rf"^#{{1,{level}}}\s+\S", rest, re.M)
-    return rest[: nxt.start()] if nxt else rest
+    out: list[str] = []
+    for m in re.finditer(rf"^(#{{1,6}})\s+{re.escape(heading)}\s*$", body, re.M):
+        level = len(m.group(1))
+        rest = body[m.end() :]
+        nxt = re.search(rf"^#{{1,{level}}}\s+\S", rest, re.M)
+        out.append(rest[: nxt.start()] if nxt else rest)
+    return out
+
+
+def links_to(text: str, basename: str, anchor: str) -> bool:
+    """Whether `text` carries a markdown link to that anchor of the canonical note.
+
+    Matched on the note's BASENAME rather than a full path, so an artifact at the
+    repository root and one nested in the vault both satisfy it with the correct
+    relative path for where they sit. That the anchor RESOLVES is not checked
+    here -- ci/gates/links.py already resolves every anchor in every tracked note,
+    so a link naming a heading that does not exist fails there. This gate checks
+    only that the link is present.
+    """
+    return re.search(
+        r"\]\([^)]*" + re.escape(basename) + r"#" + re.escape(anchor) + r"\)", text
+    ) is not None
 
 
 def run(scan_root: Path, report_only: bool) -> int:
@@ -158,10 +197,35 @@ def run(scan_root: Path, report_only: bool) -> int:
                 f"gate passing"
             )
 
+    basename = canonical_rel.rsplit("/", 1)[-1]
+
     for key, spec in sorted(enums.items()):
         heading = spec["heading"]
         form = spec["citation"]
-        items = [int(n) for n in ITEM.findall(section(body, heading))]
+        opened = sections(body, heading)
+
+        if len(opened) > 1:
+            report.fail(
+                f"{canonical_rel}: '{heading}' opens {len(opened)} sections -- a "
+                f"canonical enumeration stated twice is two enumerations, and this "
+                f"gate would otherwise read whichever came first and check an "
+                f"obliged artifact against a stub"
+            )
+            continue
+
+        # Every obliged artifact links to the anchor that owns the enumeration;
+        # the rule is that every other mention links rather than copies, so the
+        # link is half the obligation and the citations are the other half.
+        for rel, text in sorted(texts.items()):
+            if text is not None and not links_to(text, basename, key):
+                report.fail(
+                    f"{rel}: cites the '{heading}' items but carries no link to "
+                    f"{basename}#{key} -- an enumeration named without a link to "
+                    f"the note that owns it is the second copy this rule exists to "
+                    f"prevent"
+                )
+
+        items = [int(n) for n in ITEM.findall(opened[0])] if opened else []
 
         if not items:
             report.fail(
