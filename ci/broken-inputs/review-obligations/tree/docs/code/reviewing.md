@@ -6,8 +6,7 @@ authority: rationale
 
 # Reviewing a change
 
-The canonical note, reduced to the three enumerations this fixture exercises. Each holds one item
-more than the accompanying `CONTRIBUTING.md` cites, which is the drift the gate exists to catch.
+The canonical note, reduced to the three enumerations this fixture exercises.
 
 ### The change-description questions
 
@@ -16,9 +15,25 @@ more than the accompanying `CONTRIBUTING.md` cites, which is the drift the gate 
 
 ### The review checklist
 
+Ten items, so that the obliged artifact can cite item 10 while omitting item 1 — the prefix collision
+a raw substring test reads as satisfied.
+
 1. **Does the body survive?**
 2. **Are headers still an ordered list of pairs?**
 3. **Does the method pass through unmodified?**
+4. **Does it stream, or does it aggregate?**
+5. **Does the test prove the thing?**
+6. **Is the mutation authorized in its signature?**
+7. **Is the queue bounded?**
+8. **Is the error typed?**
+9. **Does it change how a gate finds its subjects?**
+10. **A tenth, so nine is not the highest number here.**
+
+A fenced sample follows. Its numbered line is an example, not an eleventh item:
+
+```text
+11. an example numbered line, inside a fence
+```
 
 ### Blocking objections
 

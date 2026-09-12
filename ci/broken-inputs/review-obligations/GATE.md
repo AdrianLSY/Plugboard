@@ -8,7 +8,7 @@ Exercises [`ci/gates/review_obligations.py`](../../gates/review_obligations.py),
 **Three** violations, exit 1 — one per canonical enumeration.
 
 1. `CONTRIBUTING.md` cites `change-description question 1` where the canonical note states two.
-2. It cites `checklist item 1` and `checklist item 2` where the canonical note states three.
+2. It cites checklist items 2 through 10 and omits **item 1**, where the canonical note states ten.
 3. It cites `blocking objection 1` and `blocking objection 2` where the canonical note states three.
 
 One per enumeration rather than three against one, because a gate that resolved only the first
@@ -19,6 +19,22 @@ in every set it claims to cover.
 The declared counts are *this fixture's* tree, not the repository's: the gate reads the item numbers
 from whichever `docs/code/reviewing.md` it is pointed at, so a cardinal here would say nothing about
 the real note.
+
+## Two regressions this tree also locks
+
+The shape of case 2 is deliberate, and so is the fenced sample in the canonical note. Each traps a
+soundness defect the gate actually had, and each moves the violation count in a **different**
+direction — so `ci/gates/fixture_declarations.py` refuses either regression against the declared
+three, without this fixture needing a case that asserts a pass.
+
+| regression | what it was | count becomes |
+|---|---|---|
+| the citation test reverts to a raw substring | `checklist item 1` is a prefix of `checklist item 10`, so an artifact citing only item 10 read as having cited item 1 | **2** — item 1 falsely satisfied |
+| fenced regions stop being masked | a numbered line in a code sample became a phantom item, and the gate demanded a citation for an item no enumeration states | **4** — phantom item 11 |
+
+The second is why a fenced sample sits inside the review-checklist section here. It is not decoration:
+without masking, that block alone fails the gate, and the failure arrives through `Report.fail()` — so
+the meta gate's neuter test passes and proves nothing about it.
 
 ## Runs
 

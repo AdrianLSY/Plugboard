@@ -4,7 +4,7 @@
       "violations": 3,
       "cases": [
         "CONTRIBUTING.md: does not cite 'change-description question 2'",
-        "CONTRIBUTING.md: does not cite 'checklist item 3'",
+        "CONTRIBUTING.md: does not cite 'checklist item 1'",
         "CONTRIBUTING.md: does not cite 'blocking objection 3'"
       ]
     }

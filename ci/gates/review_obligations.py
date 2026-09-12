@@ -57,6 +57,56 @@ RULE_NOTE = "docs/code/rules/review-obligations-single-sourced.md"
 # A top-level ordered-list item: "1. ", "12. " at the start of a line.
 ITEM = re.compile(r"^(\d+)\.\s", re.M)
 
+_FENCE = re.compile(r"^\s{0,3}(`{3,}|~{3,})")
+
+
+def mask_fences(text: str) -> str:
+    """Blank every fenced line, keeping the line count.
+
+    A numbered line inside a code sample is an example, not an item of an
+    enumeration, and a heading inside one does not open a section. Without this,
+    a fenced example added to the canonical note invents a phantom item and the
+    gate demands a citation for something no enumeration states -- a failure
+    through Report.fail(), so the meta gate's neuter test cannot catch it, and
+    one whose subject is a code sample rather than this rule.
+
+    Four sibling gates mask fences for the same reason -- citations, duplication,
+    links and reachability -- each with its own copy. A fifth copy is taken here
+    rather than hoisting a shared helper into ci/gates/_common.py: that module is
+    imported by every gate and is the harness's weakest-protected surface, which
+    is why checklist item 9 exists at all. Refactoring it is not this gate's
+    subject, and doing it here would be the change that item warns about.
+    """
+    out: list[str] = []
+    fence: str | None = None
+    for line in text.splitlines():
+        m = _FENCE.match(line)
+        token = m.group(1) if m else None
+        if fence is None:
+            if token:
+                fence = token
+                out.append("")
+                continue
+        else:
+            # A closing fence is the same character, at least as long.
+            if token and token[0] == fence[0] and len(token) >= len(fence):
+                fence = None
+            out.append("")
+            continue
+        out.append(line)
+    return "\n".join(out)
+
+
+def cites(text: str, citation: str) -> bool:
+    """Whether `text` cites exactly this item, and not a longer-numbered one.
+
+    'checklist item 1' is a prefix of 'checklist item 10', so a plain substring
+    test would read an artifact that cites only item 10 as having cited item 1.
+    The trailing digit is refused rather than a full word boundary, so a citation
+    followed by punctuation, a pipe or a line end still counts.
+    """
+    return re.search(re.escape(citation) + r"(?!\d)", text, re.I) is not None
+
 
 def section(body: str, heading: str) -> str:
     """The text under `heading`, up to the next heading of the same or higher level.
@@ -92,7 +142,7 @@ def run(scan_root: Path, report_only: bool) -> int:
         )
         return report.finish(report_only=report_only)
 
-    body = canonical.read_text(encoding="utf-8")
+    body = mask_fences(canonical.read_text(encoding="utf-8"))
 
     # Read each obliged artifact once; an absent one fails against every
     # enumeration at once rather than once per item.
@@ -100,7 +150,7 @@ def run(scan_root: Path, report_only: bool) -> int:
     for rel in obliged:
         report.examine(rel)
         path = scan_root / rel
-        texts[rel] = path.read_text(encoding="utf-8") if path.is_file() else None
+        texts[rel] = mask_fences(path.read_text(encoding="utf-8")) if path.is_file() else None
         if texts[rel] is None:
             report.fail(
                 f"{rel}: declared to carry the review obligations and absent -- "
@@ -125,9 +175,7 @@ def run(scan_root: Path, report_only: bool) -> int:
         for rel, text in sorted(texts.items()):
             if text is None:
                 continue
-            missing = [
-                n for n in items if form.format(n=n).lower() not in text.lower()
-            ]
+            missing = [n for n in items if not cites(text, form.format(n=n))]
             for n in missing:
                 report.fail(
                     f"{rel}: does not cite '{form.format(n=n)}' -- "
