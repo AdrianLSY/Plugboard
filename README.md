@@ -335,4 +335,15 @@ specification it points at is simply wrong.
 
 ---
 
-*No `LICENSE` file yet, so default copyright applies.*
+## Licence
+
+[Apache-2.0](LICENSE) — the work this repository authors: the notes, the sixteen specifications, the
+gate harness, and the component directories when they exist. Contributions arrive under the same terms
+by §5 of that licence, which does not depend on this repository living on GitHub. The name is not part
+of the grant: §6 conveys no trademark rights, so *Plugboard* stays governed separately from the code.
+
+`.claude/` is excluded. It is a vendored agent harness this repository did not author: six of its
+thirty-one skills declare a licence, and the other twenty-five plus all six slash commands declare
+none — [stated, not papered over](.claude/THIRD-PARTY-NOTICES.md).
+
+→ [why Apache-2.0, and the alternative it beat](docs/decisions/d28-licensing.md)

@@ -35,5 +35,6 @@ Generated index of the notes in `docs/decisions/`.
 - [D25 — Positioning: multi-tenant platform ingress](d25-positioning.md)
 - [D26 — WebTransport is designed for, not shipped](d26-webtransport-deferred.md)
 - [D27 — Observability before the hot path](d27-observability-first.md)
+- [D28 — Licensing: Apache-2.0 over the authored tree](d28-licensing.md)
 - [Decisions in force](in-force.md)
 - [The superseded decision register](superseded-register.md)

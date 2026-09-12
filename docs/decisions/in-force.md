@@ -6,7 +6,7 @@ authority: none
 
 # Decisions in force
 
-Twenty-two decisions govern this system. Each entry below is a short note saying what the decision
+Each entry below is a short note saying what the decision
 settles; the full rationale and the alternatives considered live in
 [the register](../../openspec/changes/rebuild-plugboard/design.md), which wins wherever a note and it
 disagree.
@@ -40,6 +40,7 @@ thing to know before reopening anything.
 | `D25` | Positioning: multi-tenant platform ingress | [note](d25-positioning.md) |
 | `D26` | WebTransport is designed for, not shipped | [note](d26-webtransport-deferred.md) |
 | `D27` | Observability before the hot path | [note](d27-observability-first.md) |
+| `D28` | Licensing: Apache-2.0 over the authored tree | [note](d28-licensing.md) |
 
 ## Retired identifiers
 

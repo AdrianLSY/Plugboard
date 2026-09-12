@@ -34,5 +34,5 @@ register wins.
 | the frame vocabulary, or why there is no correlation-id map | [the tunnel](the-tunnel.md) |
 | what the edge owns and never relays, or why Elixir and Go | [topology](topology.md) |
 | what must survive a round trip, tier by tier, and per protocol family | [protocol fidelity](protocol-fidelity.md) |
-| the twenty-two decisions in force, and the one that was overturned | [decisions in force](../decisions/in-force.md) |
+| the decisions in force, and the one that was overturned | [decisions in force](../decisions/in-force.md) |
 | the behaviour itself, which no note here owns | [the specifications](../../openspec/changes/rebuild-plugboard/specs/tunnel/wire-contract/spec.md) |

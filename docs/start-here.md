@@ -80,7 +80,7 @@ and no firewall change. That is the product.
 | 6 | [Protocol fidelity](how/protocol-fidelity.md) | When implementing anything that carries traffic. What must survive a round trip, in three tiers. |
 | 7 | [Reference audit](history/reference-audit.md) | Before reusing anything from the prior art. What failed and why, with citations. |
 | 8 | [Carry-forward](history/carry-forward.md) | When you are about to write something the reference already got right. |
-| 9 | [Decisions in force](decisions/in-force.md) | When you disagree with a decision. Twenty-two entries, the retired identifiers, and the collision table. |
+| 9 | [Decisions in force](decisions/in-force.md) | When you disagree with a decision. Every decision in force, the retired identifiers, and the collision table. |
 | 10 | [Reviewing](code/reviewing.md) · [Testing](code/testing.md) · [Contributing](code/contributing.md) | Before opening a PR, writing a test, or picking up a first issue. |
 | 11 | [Documentation rules](method/documentation-rules.md) · [Harness](method/harness.md) · [Supply chain](method/supply-chain.md) | Before bumping a doc, changing agent instructions, or adding a dependency. |
 | 12 | [Threat model](how/threat-model.md) | Before touching anything that carries traffic, holds a key, or accepts a hostname. Adversary, asset, control, and who owns it — with the gaps named. |
