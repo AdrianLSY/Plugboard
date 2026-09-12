@@ -218,8 +218,11 @@ where a false claim is guaranteed to be read first*.
 
 ## Run it yourself
 
-Requirements: **Python 3** (standard library only — no dependencies, no lockfile) and a full-history
-clone. [OpenSpec](openspec/config.yaml) is needed only for the two planning commands.
+Requirements: **Python 3** (standard library only — no dependencies, no lockfile), a full-history
+clone, and [OpenSpec](openspec/config.yaml) `1.13.0` on `PATH`
+(`npm install -g @fission-ai/openspec@1.13.0`). The gates are standard-library Python, but one of
+them reads the conventions back *through* the planning tool rather than out of the file, so
+`make check` needs it too — not only the two planning commands.
 
 ```bash
 make check          # every vault gate; the one command CI runs

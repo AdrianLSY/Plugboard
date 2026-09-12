@@ -33,6 +33,19 @@ jobs:
         with:
           python-version: '3.12'
 
+      # ci/gates/authoring_channels.py reads the conventions back THROUGH the
+      # planning tool rather than out of the file, because an unparseable
+      # config makes openspec warn and ignore it -- a state identical to an
+      # empty one unless something asks the tool. So `make check` needs the
+      # binary, and a runner without it fails four blocking gates. Pinned,
+      # not floating: docs/method/supply-chain.md gates dependency movement on
+      # semver-patch, and a planning tool that changes its JSON shape under CI
+      # is the same silent-drift class the gate itself exists to catch.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm install -g @fission-ai/openspec@1.13.0
+
       # The aggregating target. It enumerates every gate it ran, so the inventory
       # is a build output rather than a prose count.
       - run: make check

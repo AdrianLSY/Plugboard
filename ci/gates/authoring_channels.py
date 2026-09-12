@@ -54,6 +54,23 @@ CONVENTION_LINE = re.compile(
 )
 
 
+def _openspec(scan_root: Path, *args: str) -> str | None:
+    """Run the planning tool in `scan_root`; None when it is not installed.
+
+    Absence is returned rather than raised so the caller can report it as a
+    failure naming the tool. A traceback names a Python file; the fact a
+    contributor needs is that a binary is missing. It is never a pass: an
+    absent tool delivers no conventions, which is indistinguishable from a
+    config that delivers none -- the exact state this gate exists to catch.
+    """
+    try:
+        return subprocess.run(
+            ["openspec", *args], capture_output=True, text=True, cwd=str(scan_root)
+        ).stdout
+    except FileNotFoundError:
+        return None
+
+
 def run(scan_root: Path, report_only: bool) -> int:
     manifest = load_manifest(repo_root())
     items = {k: v for k, v in manifest["conventions"]["items"].items() if not k.startswith("_")}
@@ -83,19 +100,26 @@ def run(scan_root: Path, report_only: bool) -> int:
     # than a second parser would be.
     delivered = ""
     if cfg_text:
-        listing = subprocess.run(
-            ["openspec", "list", "--json"], capture_output=True, text=True, cwd=str(scan_root)
-        ).stdout
+        listing = _openspec(scan_root, "list", "--json")
+        if listing is None:
+            report.fail(
+                "the planning tool `openspec` is not on PATH -- this gate reads "
+                "the conventions back THROUGH the tool, so an absent binary "
+                "delivers nothing and is silently identical to a config that "
+                "delivers nothing, which is the state this gate exists to catch. "
+                "Install it with `npm install -g @fission-ai/openspec` (README.md "
+                "names the version CI pins)"
+            )
+            listing = ""
         change = None
         try:
             change = json.loads(listing[listing.index("{"):])["changes"][0]["name"]
         except Exception:
             change = None
         if change:
-            got = subprocess.run(
-                ["openspec", "instructions", "apply", "--change", change, "--json"],
-                capture_output=True, text=True, cwd=str(scan_root),
-            ).stdout
+            got = _openspec(
+                scan_root, "instructions", "apply", "--change", change, "--json"
+            ) or ""
             try:
                 d = json.loads(got[got.index("{"):])
                 delivered = json.dumps(
