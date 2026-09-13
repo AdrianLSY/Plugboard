@@ -104,7 +104,9 @@ Dependency and vulnerability scanning is the neighbouring concern and is owned e
 - **A tracked key file whose first line is the delimiter.** The marker is read on the finding's line
   and the line above, so a PEM file can carry one — RFC 7468 §5.2 allows explanatory text before the
   encapsulation boundary, and `ci/broken-inputs/secret-scan/tree-marker/fixtures/rotated-tls.pem` is
-  the case that shows it parsing and being suppressed — while an OpenSSH-format private key cannot.
+  the case that shows the marker being suppressed — while an OpenSSH-format private key cannot carry
+  one at all. The fixture demonstrating it holds placeholder base64 rather than a key, so the
+  parse half of the claim is verified against a generated key and not against the fixture.
   A tracked OpenSSH key fixture therefore needs a declared path scope in `ci/vault.json`, on the
   precedent [binary-asset provenance](binary-assets-carry-provenance.md) sets. The gate does not
   invent that manifest key ahead of the first fixture that needs it.

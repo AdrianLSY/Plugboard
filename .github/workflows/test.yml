@@ -100,6 +100,16 @@ jobs:
           args: --config ../.golangci.yml
       - run: make -C proxy lint
 
+      # The six planted violations of rebuild-plugboard task 2.2, one per lint
+      # command, each proven to be refused by that command alone. It pairs to a
+      # SCRIPT rather than to a gate module -- declared in ci/vault.json
+      # gate_policy.script_paired_inputs -- because it starts six external
+      # processes against a copied tree, which `make check` must not do. This job
+      # already sets up Elixir and runs `make -C proxy deps`, which is exactly
+      # what it needs. Without this step the demonstration re-runs only when
+      # somebody types it, and ci/make/elixir.mk changed under it once already.
+      - run: python3 ci/proxy-tooling-check.py
+
   # The gating tests: written before the code they gate, red on purpose, and held
   # to a recorded baseline so a permanent red does not make every change
   # unmergeable -- and so a gate that turns green is an event somebody has to

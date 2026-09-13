@@ -80,11 +80,20 @@ def run(scan_root: Path, report_only: bool) -> int:
                         source="scan", scan_root=scan_root)
         return report.finish(report_only=report_only)
 
+    read, skipped = [], []
     for d in sorted(p for p in fixtures.iterdir() if p.is_dir()):
         gid = d.name
         module = scan_root / "ci" / "gates" / (gid.replace("-", "_") + ".py")
         if not module.is_file() or module.stem.startswith("_"):
+            # A directory pairing to a SCRIPT rather than a gate module, declared
+            # in ci/vault.json gate_policy.script_paired_inputs. It is skipped
+            # here and must therefore be reported as EXCLUDED: naming it among
+            # the covered set was this gate's own coverage line asserting a reach
+            # the run did not have, which is the defect
+            # docs/method/rules/coverage-is-an-assertion.md exists for.
+            skipped.append(gid)
             continue
+        read.append(gid)
         decl_path = d / "expect.json"
         trees = sorted(p for p in d.glob("tree*") if p.is_dir())
 
@@ -170,9 +179,9 @@ def run(scan_root: Path, report_only: bool) -> int:
                     )
 
     report.coverage(
-        covered=sorted({p.name for p in fixtures.iterdir() if p.is_dir()}),
-        excluded=sorted(NOT_A_GATE),
-        kind="violating tree",
+        covered=sorted(read),
+        excluded=sorted([*NOT_A_GATE, *(f"{g} (script-paired, not a gate module)" for g in skipped)]),
+        kind="violating tree or declared invocation",
         source="scan",
         scan_root=scan_root,
     )

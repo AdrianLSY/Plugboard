@@ -16,7 +16,6 @@ Generated index of the notes in `docs/code/rules/`.
 - [A gating test written before its subject is recorded red, and the red is a debt](a-red-gate-is-a-recorded-debt.md)
 - [Five defect classes are banned by name, and checked](banned-defect-classes.md)
 - [A committed binary states where it came from and on what terms](binary-assets-carry-provenance.md)
-- [Every component is stamped from one place, and reports what it was stamped with](build-provenance-from-one-place.md)
 - [A component's boundary is stated once](component-boundary-stated-once.md)
 - [The conformance suite outranks any implementation's own tests](conformance-suite-is-the-authority.md)
 - [Ten identical non-comment lines in two places is a duplication failure](duplication-threshold.md)

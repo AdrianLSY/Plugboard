@@ -499,9 +499,7 @@
       "note-roots",
       "out-of-scope",
       "owned-behaviour",
-      "parity",
       "precedence",
-      "provenance",
       "reachability",
       "reader-config",
       "review-obligations",
@@ -532,9 +530,7 @@
         "top-level-readmes is added by rebuild-plugboard task 1.1 for the same reason: its subject is every top-level directory of a tree, and a minimal violating input has one or two of them with no README by construction. Running the isolation check over the other fixtures would have reported a failure on nearly every one, none of them a defect.",
         "review-obligations is added for the same reason: its subject is the canonical review note and the artifacts declared to enumerate it, and no fixture tree holds either, so it reports the canonical note absent on every other tree. Its own fixture carries both, so the neuter test and the per-file isolation check still bind.",
         "test-tiers is added by rebuild-plugboard task 2.7: its subjects are the shared make includes and the top-level Makefile at fixed paths, none of which any other fixture tree carries, so it would fail on every one of them for absence rather than for a defect.",
-        "expected-outcomes is added by rebuild-plugboard task 4.5: its subject is ci/expected-outcomes.json at a fixed path, which no other fixture tree carries, so it would fail on every one of them for absence rather than for a defect.",
-        "parity is added by rebuild-plugboard task 3.11: its subjects are the declared make includes and the tracked workflows at fixed paths, none of which a minimal violating input carries, so it would fail on every other tree for absence rather than for a defect.",
-        "provenance is added by rebuild-plugboard task 3.13: its subjects are the declared components and the shared make fragments at fixed paths, and a minimal input carrying a component skeleton with no ci/make fails it for absence rather than for a defect -- linter-config's two trees do exactly that."
+        "expected-outcomes is added by rebuild-plugboard task 4.5: its subject is ci/expected-outcomes.json at a fixed path, which no other fixture tree carries, so it would fail on every one of them for absence rather than for a defect."
       ],
       "gates": [
         "reachability",
@@ -560,9 +556,7 @@
         "top-level-readmes",
         "review-obligations",
         "test-tiers",
-        "expected-outcomes",
-        "parity",
-        "provenance"
+        "expected-outcomes"
       ]
     },
     "declared_vacuity": {
@@ -590,6 +584,12 @@
         "subject": "the lint recipe of ci/make/elixir.mk, reached as `make -C proxy lint`",
         "task": "rebuild-plugboard task 2.2",
         "why_not_a_gate": "Six external processes against a copied tree, six times over -- about fifty seconds warm. A gate's subject is a property of the tree and it starts no process."
+      },
+      "ci/broken-inputs/recording-origin": {
+        "checked_by": "conformance/recorder/discriminates_test.go, in the integration tier",
+        "subject": "the assertion suite conformance/recorder exports, proven to REJECT a deliberately map-backed recorder",
+        "task": "rebuild-plugboard task 4.2",
+        "why_not_a_gate": "Its own Go module with a replace directive, compiled and run. ci/broken-inputs is a declared scan exclusion, so nothing there is reachable from a component's build and the proof has to be pulled in from the other side."
       }
     }
   },
@@ -1051,191 +1051,6 @@
       "branches": "a branch filter lets work on an unlisted branch skip every gate",
       "branches-ignore": "the same filter, inverted",
       "continue-on-error": "a non-zero exit that does not fail the job is a gate that cannot refuse"
-    }
-  },
-  "parity": {
-    "_comment": [
-      "The obligations this repository enforces in TWO places, and where each of",
-      "the two invocations lives. Read by ci/gates/parity.py (which compares the",
-      "two argvs) and ci/parity.py (which runs both against a broken input).",
-      "Neither argv is written down here. An entry names the two SITES; the flags",
-      "are read out of the tree, because a declaration holding a copy of the",
-      "expected flags is a third encoding and the third encoding is the one that",
-      "goes stale without anybody noticing -- which is the defect the whole check",
-      "is named after: the prior art ran `mix compile --warning-as-errors`",
-      "locally, singular and therefore inert, and the plural flag in CI.",
-      "An obligation enforced in ONE place is deliberately not a subject here.",
-      "The python3 harness scripts CI runs directly (ci/pr/checks.py,",
-      "ci/expected-outcomes.py) have no local make counterpart by design, so they",
-      "are not dual-invocation obligations and `tools` does not watch python3."
-    ],
-    "tools": {
-      "_comment": [
-        "The per-component CHECKING tools -- the ones the shared make includes own",
-        "and that a workflow could re-encode with its own spelling. A direct",
-        "invocation of one of these in a tracked workflow must be claimed by an",
-        "obligation below, or ci/gates/parity.py refuses: that is the clause that",
-        "stops `obligations` from becoming a roster nobody updates."
-      ],
-      "mix": {
-        "why": "the Elixir build tool; every proxy obligation routes through ci/make/elixir.mk",
-        "subcommands": [
-          "compile",
-          "format",
-          "credo",
-          "dialyzer",
-          "sobelow",
-          "deps.audit",
-          "test"
-        ]
-      },
-      "go": {
-        "why": "the Go toolchain; every Go obligation routes through ci/make/go.mk. `install` is absent on purpose -- that is how a runner OBTAINS a tool, not a second encoding of a check.",
-        "subcommands": [
-          "test",
-          "vet",
-          "fmt",
-          "generate"
-        ]
-      },
-      "golangci-lint": {
-        "why": "the one Go linter, configured once at .golangci.yml",
-        "subcommands": [
-          "run"
-        ]
-      }
-    },
-    "ci_workflows": [
-      ".github/workflows/check.yml",
-      ".github/workflows/test.yml",
-      ".github/workflows/pr.yml",
-      ".github/workflows/dco.yml",
-      ".github/workflows/dependabot-auto-merge.yml",
-      ".github/workflows/scheduled.yml"
-    ],
-    "normalisation": {
-      "_comment": [
-        "How two argvs are made comparable. Declared rather than decided in the",
-        "gate: every one of these turns a difference that is not a difference into",
-        "equality, and a normalisation nobody can see is an exemption."
-      ],
-      "value_flags": [
-        "--config",
-        "-C"
-      ],
-      "path_flags": [
-        "--config"
-      ],
-      "implicit_positional": {
-        "_comment": "A tool whose absent positional means this. golangci-lint with no path argument lints ./... , so the action step and the make recipe are the same invocation.",
-        "golangci-lint run": "./..."
-      }
-    },
-    "obligations": {
-      "vault-gates": {
-        "obligation": "every blocking vault gate refuses, on a commit and on a pull request",
-        "tool": "python3 ci/run-gates.py",
-        "local": {
-          "makefile": "Makefile",
-          "target": "check"
-        },
-        "ci": {
-          "workflow": ".github/workflows/check.yml",
-          "reaches": {
-            "makefile": "Makefile",
-            "target": "check"
-          }
-        },
-        "rejects": null,
-        "why_no_input": "Its broken input is a whole malformed vault, and running it is the 86-second aggregating target -- ci/parity.py must not nest the command that would invoke it. ci/gates/meta.py already proves every gate fails on its own violating input."
-      },
-      "fast-tier-budget": {
-        "obligation": "the fast tier runs under the declared wall-clock budget",
-        "tool": "python3 ci/fast-tier.py",
-        "local": {
-          "makefile": "Makefile",
-          "target": "test-fast"
-        },
-        "ci": {
-          "workflow": ".github/workflows/test.yml",
-          "reaches": {
-            "makefile": "Makefile",
-            "target": "test-fast"
-          }
-        },
-        "rejects": null,
-        "why_no_input": "Its broken input is a suite that is too slow, so the input is elapsed time rather than a tree. ci/fast-tier.py prints the elapsed time on every run including a passing one."
-      },
-      "elixir-warnings-are-errors": {
-        "obligation": "a compiler warning in the Elixir component fails the build",
-        "tool": "mix compile",
-        "local": {
-          "makefile": "proxy/Makefile",
-          "target": "lint"
-        },
-        "ci": {
-          "workflow": ".github/workflows/test.yml",
-          "reaches": {
-            "makefile": "proxy/Makefile",
-            "target": "lint"
-          }
-        },
-        "rejects": "ci/broken-inputs/parity/inputs/elixir-warnings-are-errors"
-      },
-      "elixir-format": {
-        "obligation": "unformatted Elixir source fails the build",
-        "tool": "mix format",
-        "local": {
-          "makefile": "proxy/Makefile",
-          "target": "lint"
-        },
-        "ci": {
-          "workflow": ".github/workflows/test.yml",
-          "reaches": {
-            "makefile": "proxy/Makefile",
-            "target": "lint"
-          }
-        },
-        "rejects": "ci/broken-inputs/parity/inputs/elixir-format"
-      },
-      "go-lint": {
-        "obligation": "the one Go linter runs over every Go module with the one configuration",
-        "tool": "golangci-lint run",
-        "local": {
-          "makefile": "sidecar/Makefile",
-          "target": "lint"
-        },
-        "ci": {
-          "workflow": ".github/workflows/test.yml",
-          "action": "golangci/golangci-lint-action",
-          "argv_from": "args",
-          "implicit": [
-            "run"
-          ]
-        },
-        "rejects": "ci/broken-inputs/parity/inputs/go-lint",
-        "why_two_encodings": "The only obligation whose CI side does NOT route through the shared make include: the hosting service's action caches the linter, so it is invoked with its own args. Two independent encodings of one obligation is exactly the condition the parity check exists for, and it is why this entry is the one that would catch a drifted flag without running anything."
-      }
-    },
-    "schedule": {
-      "_comment": [
-        "rebuild-plugboard task 3.12. A gate broken by a change ELSEWHERE is found",
-        "without a change to the gate, so the meta-check and the parity check run",
-        "on an interval as well as on change. The triggers are declared here so a",
-        "dropped one is a gate failure rather than a silent window."
-      ],
-      "workflow": ".github/workflows/scheduled.yml",
-      "not_in_runner_workflows": "Deliberately NOT added to runner.workflows: that list's subject is the workflows that run the vault gates over the TREE, and a second entry there would make ci/gates/runner.py and this gate two enforcements of one obligation. The clauses runner.forbidden_clauses names are still refused on this file -- ci/gates/parity.py reads them from that same declaration, so there is one copy of the list and two subjects.",
-      "cron": "17 4 * * *",
-      "triggers": [
-        "schedule",
-        "push",
-        "pull_request"
-      ],
-      "invokes": [
-        "make check-gates",
-        "python3 ci/parity.py"
-      ]
     }
   },
   "generators": {

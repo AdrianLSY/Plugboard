@@ -66,7 +66,10 @@ included.
 `fixtures/rotated-tls.pem` is also the fixture that pins **which half of the key-file case works**.
 The marker is read on the finding's line and the line above, so a file whose first line *is* the
 delimiter has nowhere to put one. A PEM file does: RFC 7468 §5.2 allows explanatory text before the
-encapsulation boundary, so the marker sits above `-----BEGIN …-----` and the file still parses. An
+encapsulation boundary, so the marker sits above `-----BEGIN …-----` and a **real** key with that
+comment above it still parses — confirmed with `openssl pkey -noout` on a generated key, not on this
+fixture, whose payload is placeholder base64 and therefore parses as nothing. A fixture carrying a
+parseable private key would be the thing the gate exists to refuse. An
 OpenSSH-format private key does not tolerate that text, so a tracked OpenSSH key fixture needs a
 declared path scope in `ci/vault.json` on the precedent `ci/gates/binary_assets.py` sets. This gate
 does not invent that key for itself; the change that lands the first one declares it.

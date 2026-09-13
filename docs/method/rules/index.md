@@ -29,7 +29,6 @@ Generated index of the notes in `docs/method/rules/`.
 - [Every note carries a classification](note-classification.md)
 - [Every tracked note lives under a declared root](note-roots.md)
 - [Requirement text has one copy](one-copy-of-requirement-text.md)
-- [An obligation enforced in two places is enforced by one invocation](one-obligation-one-invocation.md)
 - [A published enumeration and the computed one are reconciled](one-set-one-encoding.md)
 - [An artifact declared out of scope stays byte-unchanged](out-of-scope-byte-unchanged.md)
 - [Every note is reachable from an entry point](reachability.md)

@@ -95,7 +95,9 @@ that reason rather than described as entropy.
 One escape this gate cannot offer is the file that IS a key. The marker is read
 on the finding's line and the line above, so a key fixture can carry it only as
 a line before the delimiter -- which a PEM reader tolerates (RFC 7468 allows
-text before the encapsulation boundary, and `openssl pkey` reads such a file)
+text before the encapsulation boundary, and `openssl pkey` reads such a file --
+verified against a generated key, not against this gate's fixture, whose payload
+is placeholder base64 on purpose)
 and an OpenSSH-format private key does not (`ssh-keygen -y` answers "invalid
 format"). A tracked OpenSSH key fixture therefore needs a declared path scope in
 ci/vault.json, on the precedent ci/gates/binary_assets.py sets, and this gate

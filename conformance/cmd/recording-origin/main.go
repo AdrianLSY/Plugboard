@@ -29,25 +29,12 @@ import (
 	"plugboard/conformance/recorder"
 )
 
-// banner is what this instrument says about itself before it says what it was
-// built from. It reports its provenance for the same reason the suite does, from
-// the same stamp and the same recipe (ci/make/go.mk): a recorded exchange is
-// evidence, and evidence carrying no account of the instrument that took it is
-// an anecdote. startupReport and the stamp it renders are generated into
-// build_stamp.go by `make stamp`.
-const banner = "plugboard recording-origin: reads HTTP/1.1 off the socket, decodes nothing"
-
 func main() {
 	listen := flag.String("listen", "127.0.0.1:0", "address to listen on")
 	recordDir := flag.String("record-dir", "", "directory to write one file per exchange into")
 	readyFile := flag.String("ready-file", "", "file to write the bound address into once listening")
 	emitBytes := flag.Int("emit-bytes", 0, "respond with this many octets of recorder.Pattern")
 	flag.Parse()
-
-	// stderr, because stdout carries the bound address a caller may read.
-	if _, err := fmt.Fprintln(os.Stderr, startupReport(banner)); err != nil {
-		os.Exit(1)
-	}
 
 	if err := run(*listen, *recordDir, *readyFile, *emitBytes); err != nil {
 		fmt.Fprintf(os.Stderr, "recording-origin: %v\n", err)

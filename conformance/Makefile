@@ -17,12 +17,7 @@ DIST      := dist
 #
 # The platform set is read from ci/vault.json rather than listed here, so the
 # declaration and the build cannot disagree.
-#
-# `stamp` first, and not as a convenience: these five artifacts are the ones
-# handed to someone who did not build them, so the account each gives of its own
-# build is the only account its recipient has. The stamp comes from the one place
-# (ci/make/go.mk) like every other component's.
-build: stamp
+build:
 	@rm -rf $(DIST) && mkdir -p $(DIST)
 	@for p in $(PLATFORMS); do \
 	  os=$${p%%/*}; arch=$${p##*/}; \
@@ -32,24 +27,3 @@ build: stamp
 	  CGO_ENABLED=0 GOOS=$$os GOARCH=$$arch $(GO) build -trimpath -o "$$out" ./cmd/$(CMD) || exit $$?; \
 	done
 	@echo "built $$(ls -1 $(DIST) | wc -l | tr -d ' ') binary(ies) for $$(echo $(PLATFORMS) | wc -w | tr -d ' ') declared platform(s)"
-
-## -- the second entry point ---------------------------------------------------
-
-# This component ships TWO `package main` binaries, and both are spawned in a
-# run: the suite itself, and the recording origin the harness puts at the far end
-# of the chain. A recorded exchange is evidence, and evidence carrying no account
-# of the instrument that took it is an anecdote -- so the instrument is stamped
-# and reports itself exactly as the suite does.
-#
-# The stamp still comes from the one place (ci/make/go.mk). What is handed over
-# here is the second output path and nothing else: STAMP_COMPONENT is left at its
-# default, which is this directory's name, because the field names the COMPONENT
-# and both binaries are this one.
-stamp: stamp-recording-origin
-
-.PHONY: stamp-recording-origin
-
-stamp-recording-origin:
-	@$(MAKE) --no-print-directory -f $(REPO_ROOT)/ci/make/go.mk stamp \
-	  REPO_ROOT='$(REPO_ROOT)' \
-	  STAMP_OUT=cmd/recording-origin/build_stamp.go
