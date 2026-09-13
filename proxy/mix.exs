@@ -30,8 +30,11 @@ defmodule Plugboard.MixProject do
     ]
   end
 
+  # `mod:` exists so that there IS a startup: rebuild-plugboard task 3.13 asks
+  # each component to report the build it is at startup, and a library with no
+  # application callback has nowhere to do that. It supervises nothing yet.
   def application do
-    [extra_applications: [:logger]]
+    [extra_applications: [:logger], mod: {Plugboard.Application, []}]
   end
 
   # Quality tooling only. No runtime dependency is added before the code that

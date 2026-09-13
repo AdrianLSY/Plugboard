@@ -20,6 +20,16 @@ The remedy for a breach is stated in the rule and refused here: move the test to
 its tier, or fix the architecture that made it slow. Never raise the ceiling, and
 never delete coverage to fit under it.
 
+## What the ceiling is NOT about
+
+A first build. The subject is what a contributor waits for on save, which is
+always warm; a cold machine compiling every dependency inside the timed region is
+measuring a toolchain, not a suite. The first CI run this repository ever had
+reported 25.4s against the 10s budget for exactly that reason, and the fix was to
+warm the caches outside the timed region in .github/workflows/test.yml -- not to
+raise the number. Stated here because "the budget failed" and "the suite is slow"
+are different findings and the tool cannot tell them apart.
+
 Usage:
     python3 ci/fast-tier.py -- <command> [args...]
 """

@@ -1,0 +1,79 @@
+{
+  "_comment": [
+    "What each planted violation does to `make -C proxy lint`, machine-readable,",
+    "for the reason ci/broken-inputs/*/expect.json gives everywhere else: prose in",
+    "GATE.md is not a declaration, and a count or a case stated only in prose",
+    "drifts the moment a tool is configured differently.",
+    "`tool` is the mix task the input exists to provoke, and it is matched against",
+    "the lint recipe in ci/make/elixir.mk rather than against a list here -- a tool",
+    "added to lint with no input naming it fails.",
+    "`fails` is the EXACT set of lint commands expected to fail on this tree. Five",
+    "of the six are singletons, which is the property this whole directory exists",
+    "to demonstrate: the tool refuses, and the other five stay blind. `tool` has to",
+    "be IN `fails`: without that the pairing is a label, and swapping two trees'",
+    "`tool` fields changed nothing measured while unbinding both tools from the",
+    "inputs that name them.",
+    "`case` is a substring the failing tool's own output has to carry, so a tool",
+    "exiting non-zero for an unrelated reason is not read as a demonstration. It is",
+    "required, because a tree with no `case` accepts any non-zero exit at all, and",
+    "it has to be absent from what the same tool says about a CLEAN copy -- a case",
+    "the tool prints either way separates nothing from nothing.",
+    "`plants` is the exact set of files the tree lays over proxy/, checked in both",
+    "directions -- a declared file that is absent planted nothing, and a file in",
+    "the tree that is undeclared changes the copy in a way nothing asserts about.",
+    "`why_not_alone` is required per tool in `fails` other than `tool`, and is a",
+    "`because` plus a `forced_by` citation -- a file and a string in it that the",
+    "check looks up. A sentence alone would license an arbitrarily large declared",
+    "failing set for the price of writing one.",
+    "`derived_from` marks a fixture file that EXTENDS a real one and must still",
+    "contain it, so drift in the real file is named rather than inferred."
+  ],
+  "checked_by": "ci/proxy-tooling-check.py",
+  "trees": {
+    "tree-compile": {
+      "tool": "compile",
+      "fails": ["compile", "dialyzer"],
+      "case": "variable \"value\" is unused",
+      "why_not_alone": {
+        "dialyzer": {
+          "because": "`mix dialyzer` builds the project before it analyses it, and mix.exs sets warnings_as_errors in every environment, so a compile-warning plant fails Dialyzer before analysis starts. Half of that is decidable here and is the half `forced_by` cites; the other half is dialyxir's own build-then-analyse behaviour, which was measured rather than read. Measured too: the other four tools stay silent on this tree. Recorded rather than engineered around -- the alternative is a warning Dialyzer does not trigger on, which would be a fixture shaped by the check instead of by the tool.",
+          "forced_by": {
+            "proxy/mix.exs": "elixirc_options: [warnings_as_errors: true]"
+          }
+        }
+      },
+      "plants": ["lib/compile_violation.ex"]
+    },
+    "tree-format": {
+      "tool": "format",
+      "fails": ["format"],
+      "case": "mix format failed due to --check-formatted",
+      "plants": ["lib/format_violation.ex"]
+    },
+    "tree-credo": {
+      "tool": "credo",
+      "fails": ["credo"],
+      "case": "Functions should have a @spec type specification.",
+      "plants": ["lib/credo_violation.ex"]
+    },
+    "tree-dialyzer": {
+      "tool": "dialyzer",
+      "fails": ["dialyzer"],
+      "case": "The @spec for the function does not match the success typing",
+      "plants": ["lib/dialyzer_violation.ex"]
+    },
+    "tree-sobelow": {
+      "tool": "sobelow",
+      "fails": ["sobelow"],
+      "case": "RCE.CodeModule: Code Execution in",
+      "plants": ["lib/sobelow_violation.ex"]
+    },
+    "tree-deps-audit": {
+      "tool": "deps-audit",
+      "fails": ["deps-audit"],
+      "case": "GHSA-2q6v-32mr-8p8x",
+      "plants": ["mix.lock"],
+      "derived_from": {"mix.lock": "proxy/mix.lock"}
+    }
+  }
+}

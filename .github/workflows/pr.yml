@@ -19,6 +19,12 @@ on:
 jobs:
   description:
     runs-on: ubuntu-latest
+    # A bot does not write the template, so it cannot answer questions the
+    # template asks. Dependabot's control is dependabot-auto-merge.yml, which
+    # advances patch bumps only and refuses anything touching contract/ --
+    # a narrower gate than this one, not a weaker one. Stated here because an
+    # exemption nobody can see is an exemption nobody reviews.
+    if: github.event.pull_request.user.login != 'dependabot[bot]'
     steps:
       - uses: actions/checkout@v4
         with:

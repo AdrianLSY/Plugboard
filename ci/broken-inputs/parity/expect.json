@@ -1,0 +1,32 @@
+{
+  "_comment": "What ci/gates/parity.py emits against each tree here. Machine-readable because prose in GATE.md is not a declaration: a stated count nothing checks drifts the moment a case is added.",
+  "trees": {
+    "tree": {
+      "violations": 5,
+      "cases": [
+        "elixir-format: proxy/Makefile:lint invokes no `mix format`",
+        "go-lint: the two invocations of `golangci-lint run` differ",
+        ".github/workflows/test.yml:mix format --check-formatted: invokes the checking tool `mix` directly",
+        ".github/workflows/scheduled.yml: invokes `make check-gates` only under a condition",
+        ".github/workflows/scheduled.yml: does not invoke `python3 ci/parity.py` -- no step's `run:` body executes it"
+      ]
+    },
+    "tree2": {
+      "violations": 5,
+      "cases": [
+        "elixir-warnings-are-errors: .github/workflows/test.yml invokes no `mix compile` at the declared site",
+        "elixir-format: .github/workflows/test.yml invokes no `mix format` at the declared site",
+        "fast-tier-budget: .github/workflows/test.yml invokes no `python3 ci/fast-tier.py` at the declared site",
+        "go-lint: .github/workflows/test.yml invokes no `golangci-lint run` at the declared site",
+        ".github/workflows/scheduled.yml: declared as the recurring runner and absent"
+      ]
+    }
+  },
+  "invocations": [
+    {
+      "_why": "The report-only mode every gate takes. Declared because GATE.md shows it, and a demonstration the repository documents and never performs is the case ci/gates/fixture_declarations.py exists for.",
+      "args": ["--report-only"],
+      "exit": 0
+    }
+  ]
+}

@@ -14,13 +14,14 @@ the build today), **gate planned** (an obligation whose check is not built yet),
 (taste, quarantined, never a blocking objection).
 
 
-**54 rules** — 43 gated, 8 gate planned, 3 preference (5% unenforced).
+**57 rules** — 46 gated, 8 gate planned, 3 preference (5% unenforced).
 
 | rule | status | gate | note |
 |---|---|---|---|
 | A cited artifact is obtainable | **gated** | `ci/gates/citations.py` | [note](method/rules/citations.md) |
 | A committed binary states where it came from and on what terms | **gated** | `ci/gates/binary_assets.py` | [note](code/rules/binary-assets-carry-provenance.md) |
 | A component's boundary is stated once | **gated** | `ci/gates/component_boundaries.py` | [note](code/rules/component-boundary-stated-once.md) |
+| A credential is absent from the tree, and absent from the range under review | **gated** | `ci/gates/secret_scan.py` | [note](code/rules/no-credential-in-tree-or-history.md) |
 | A function is at most 60 non-comment lines | **gated** | `ci/gates/size_ceilings.py` | [note](code/rules/function-size-ceiling.md) |
 | A gate's reported coverage is an assertion about the run | **gated** | `ci/gates/coverage.py` | [note](method/rules/coverage-is-an-assertion.md) |
 | A gating test written before its subject is recorded red, and the red is a debt | **gated** | `ci/gates/expected_outcomes.py` | [note](code/rules/a-red-gate-is-a-recorded-debt.md) |
@@ -36,11 +37,13 @@ the build today), **gate planned** (an obligation whose check is not built yet),
 | A wire error is a typed code, and no term rendering crosses the wire | **gated** | `ci/gates/banned_patterns.py` | [note](code/banned-patterns/inspect-on-a-wire-payload.md) |
 | An artifact declared out of scope stays byte-unchanged | **gated** | `ci/gates/out_of_scope.py` | [note](method/rules/out-of-scope-byte-unchanged.md) |
 | An entry file routes, stays small, and names nothing absent | **gated** | `ci/gates/entry_points.py` | [note](method/rules/entry-files-route.md) |
+| An obligation enforced in two places is enforced by one invocation | **gated** | `ci/gates/parity.py` | [note](method/rules/one-obligation-one-invocation.md) |
 | Authority precedence | **gated** | `ci/gates/precedence.py` | [note](method/authority-precedence.md) |
 | Conventions reach both authoring channels | **gated** | `ci/gates/authoring_channels.py` | [note](method/rules/authoring-channels.md) |
 | Currency runs in both directions | **gated** | `ci/gates/currency.py` | [note](method/rules/currency-both-directions.md) |
 | Every blocking gate runs without a person's initiative | **gated** | `ci/gates/runner.py` | [note](method/rules/the-gates-actually-run.md) |
 | Every capability has a concept note | **gated** | `ci/gates/capability_notes.py` | [note](method/rules/capability-notes.md) |
+| Every component is stamped from one place, and reports what it was stamped with | **gated** | `ci/gates/provenance.py` | [note](code/rules/build-provenance-from-one-place.md) |
 | Every gate is demonstrated to fail | **gated** | `ci/gates/meta.py` | [note](method/rules/gates-are-demonstrated-to-fail.md) |
 | Every link resolves, anchors included | **gated** | `ci/gates/links.py` | [note](method/rules/link-resolution.md) |
 | Every note carries a classification | **gated** | `ci/gates/frontmatter.py` | [note](method/rules/note-classification.md) |

@@ -1,0 +1,3 @@
+# The one linter configuration, present so that this fixture demonstrates the
+# provenance gate and not the linter-config one.
+version: "2"

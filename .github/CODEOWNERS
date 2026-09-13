@@ -6,15 +6,14 @@
 # irreversible: a tenant's sidecar is upgraded on the tenant's schedule or never
 # (docs/why/version-skew.md).
 #
-# !! THE HANDLE BELOW IS A PLACEHOLDER AND MUST BE REPLACED. !!
-# GitHub silently ignores a CODEOWNERS line naming an account that cannot be
-# found -- no error, no warning, and the rule simply does not apply. A file in
-# this state looks exactly like protection and is none, which is why
-# rebuild-plugboard task 1.9 is not complete until a real owner is substituted
-# and a bot-authored pull request touching contract/ is observed to be blocked.
+# The owner is the account the repository belongs to, confirmed against the
+# remote: git@github.com:AdrianLSY/Plugboard.git, and against `gh auth status`.
+# That check matters more than it looks -- GitHub silently ignores a CODEOWNERS
+# line naming an account it cannot resolve. No error, no warning, the rule simply
+# does not apply, and the file then looks exactly like protection and is none.
 
-/contract/        @OWNER-HANDLE-REPLACE-ME
-/conformance/     @OWNER-HANDLE-REPLACE-ME
+/contract/        @AdrianLSY
+/conformance/     @AdrianLSY
 
 # Generated codecs: the paths land with rebuild-plugboard section 11, and this
 # entry is extended to name them then. Listing a path that does not exist yet

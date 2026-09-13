@@ -1,0 +1,33 @@
+{
+  "_comment": "What this gate emits against each tree here. Machine-readable because prose in GATE.md is not a declaration: a stated count nothing checks drifts the moment a case is added. The negative controls are load-bearing for this gate in particular -- the counts below are what proves the planted values fire and the vendor's published example, the ${VARIABLE} reference, the commit SHA and the name-keyed values do not.",
+  "trees": {
+    "tree": {
+      "_why": "One planted value per shape the gate anchors on, beside five negative controls that a scanner built out of entropy would report and this one does not. The run also prints `placeholders skipped: 2`, which is the vendor's own published example key pair being dropped.",
+      "violations": 4,
+      "cases": [
+        "config/service.conf:3: an aws-access-key-id in a tracked file",
+        "config/service.conf:4: an aws-secret-access-key in a tracked file",
+        "deploy/tunnel.key:1: a private-key-block in a tracked file",
+        "ops/restore.sh:6: a url-embedded-password in a tracked file"
+      ]
+    },
+    "tree-marker": {
+      "_why": "The in-file `not-a-live-credential:` escape, which is the weakest exclusion in this repository and therefore the one with the most conditions on it. Five files, three of which are REFUSALS: a bare marker, a reason of prose naming no day, and a day that has not arrived. Two are honoured and the run names both with their path, line, shape, fingerprint and reason -- `suppressed by marker: 2`, followed by one line each. A count with no locations tells a reader of a green run that something is silenced and not which file.",
+      "violations": 3,
+      "cases": [
+        "fixtures/current.token:5: a github-token in a tracked file",
+        "fixtures/promised.token:6: a github-token in a tracked file",
+        "fixtures/undated.token:8: a github-token in a tracked file"
+      ]
+    }
+  },
+  "invocations": [
+    {
+      "_why": "The second subject is the commit range under review, and a fixture tree cannot hold commits -- a nested repository would be a gitlink, which this repository forbids. So the range cases are built in a temporary repository: a credential introduced and then deleted inside the range fails, a range excluding that commit passes, an unresolved range is reported as unresolved rather than as clean, a tracked credential fails on its own, a credential written by a MERGE's own resolution fails, and an honoured marker is PRINTED with its path and line rather than only counted. Exit 0 means the gate behaved as the rule requires. This is the one gate whose runner must be able to create a commit.",
+      "args": [
+        "--self-test"
+      ],
+      "exit": 0
+    }
+  ]
+}

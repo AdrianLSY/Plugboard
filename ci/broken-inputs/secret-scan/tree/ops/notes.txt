@@ -1,0 +1,18 @@
+Negative controls. Nothing in this file is reported, and each line is here
+because a scanner built out of entropy rather than out of issuer prefixes
+reports all of them.
+
+The dump was taken at commit 6f1c0b7a4d93e8552ab10c47fe9d3b6e81a0c2df and
+verified against the manifest. That is forty characters of base64 alphabet on a
+line that does not name the field AWS names, so the unprefixed rule does not
+admit it.
+
+The manifest digest is sha256:Zm9ydHlmb3VyY2hhcmFjdGVyc29mYmFzZTY0ZGlnZXN0PQ==
+which is longer than forty and is not a credential either.
+
+    token = "changeme"
+    api_key = "set this before deploying"
+
+Both of those are values keyed on a secret-sounding NAME. Nothing here decides
+by name: that rule needs the configuration schema to say which items are secret,
+and the schema is rebuild-plugboard task 5.2's.

@@ -1,0 +1,27 @@
+{
+  "_comment": "What this gate emits against each tree here. Machine-readable because prose in GATE.md is not a declaration: a stated count nothing checks drifts the moment a case is added.",
+  "trees": {
+    "tree": {
+      "violations": 3,
+      "cases": [
+        "sidecar: sidecar/Makefile asks version control what this build is",
+        "sidecar: its entry point (sidecar/cmd/telephone/main.go) never calls startupReport",
+        "sidecar: no test under it calls startupReport"
+      ]
+    },
+    "tree2": {
+      "violations": 1,
+      "cases": [
+        "two builds of one revision differing by one modified file both reported tree=clean"
+      ]
+    },
+    "tree3": {
+      "violations": 3,
+      "cases": [
+        "ci/make/go.mk: declares no `stamp` target",
+        "ci/make/elixir.mk: declares no `stamp` target",
+        "ci/make/elixir.mk: computes provenance itself rather than delegating to ci/make/go.mk"
+      ]
+    }
+  }
+}
