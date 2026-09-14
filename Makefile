@@ -25,8 +25,14 @@
 # reconciles the two rather than trusting either.
 BUDGET_TOOL := ci/fast-tier.py
 COMPONENTS := $(shell python3 -c "import json;print(' '.join(c for c in json.load(open('ci/vault.json'))['code_standards']['components']['candidates'] if not c.startswith('_')))")
+# Declared as having no toolchain to dispatch to, with a reason and an ending
+# condition in ci/vault.json. Printed rather than refused -- and an entry whose
+# component HAS grown a Makefile is a declaration that outlived its reason, so
+# that fails.
+NO_TOOLCHAIN := $(shell python3 -c "import json;print(' '.join(c for c in json.load(open('ci/vault.json'))['code_standards']['components'].get('no_toolchain',{}) if not c.startswith('_')))")
 PRESENT    := $(strip $(foreach c,$(COMPONENTS),$(if $(wildcard $(c)/Makefile),$(c),)))
-ABSENT     := $(filter-out $(PRESENT),$(COMPONENTS))
+ABSENT     := $(filter-out $(PRESENT) $(NO_TOOLCHAIN),$(COMPONENTS))
+STALE_DECL := $(strip $(foreach c,$(NO_TOOLCHAIN),$(if $(wildcard $(c)/Makefile),$(c),)))
 
 help:                 ## list the targets
 	@grep -hE '^[a-z-]+:.*##' $(MAKEFILE_LIST) | sed 's/:.*##/\t/' | expand -t24
@@ -48,9 +54,10 @@ check-gates:          ## the meta-check: every gate proven to fail on its own in
 ## -- per component ----------------------------------------------------------
 
 components:           ## which components dispatch today, and which do not
-	@echo "declared : $(COMPONENTS)"
-	@echo "present  : $(if $(PRESENT),$(PRESENT),none)"
-	@echo "absent   : $(if $(ABSENT),$(ABSENT),none)"
+	@echo "declared     : $(COMPONENTS)"
+	@echo "present      : $(if $(PRESENT),$(PRESENT),none)"
+	@echo "no toolchain : $(if $(NO_TOOLCHAIN),$(NO_TOOLCHAIN),none)  (declared in ci/vault.json, with the condition that ends it)"
+	@echo "absent       : $(if $(ABSENT),$(ABSENT),none)"
 
 # One recipe, six targets. `dispatch` runs the named target in every present
 # component and then refuses if any declared component could not be reached --
@@ -61,6 +68,15 @@ define dispatch
 	  echo "==> $$c: $(1)"; \
 	  $(MAKE) --no-print-directory -C $$c $(1) || exit $$?; \
 	done
+	@for c in $(NO_TOOLCHAIN); do \
+	  echo "make $(1): $$c/ is declared as having no toolchain, so nothing ran for it. ci/vault.json code_standards.components.no_toolchain says why, and what ends the declaration."; \
+	done
+	@if [ -n "$(STALE_DECL)" ]; then \
+	  for c in $(STALE_DECL); do \
+	    echo "make $(1): $$c/ is declared as having no toolchain in ci/vault.json AND has a Makefile -- the declaration has outlived its reason; remove it" >&2; \
+	  done; \
+	  exit 1; \
+	fi
 	@if [ -n "$(ABSENT)" ]; then \
 	  for c in $(ABSENT); do \
 	    echo "make $(1): $$c/ has no Makefile, so nothing ran for it -- it is a declared component whose toolchain has not landed (see openspec/changes/rebuild-plugboard/tasks.md section 2)" >&2; \

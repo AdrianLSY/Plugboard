@@ -13,6 +13,13 @@ GO        ?= go
 GOLANGCI  ?= golangci-lint
 VAULT     := $(REPO_ROOT)/ci/vault.json
 LINT_CFG  := $(REPO_ROOT)/.golangci.yml
+# The tiers behind build tags are linted too. Without these, code compiled only
+# under `gating` or `integration` is invisible to the linter: its helpers read as
+# unused, and -- the half that matters -- the tiers go UNLINTED while the target
+# reports green. CI hit the first symptom; this target had the same blind spot and
+# had apparently never been run. The same list belongs in the workflow's action
+# args, and does.
+LINT_TAGS := gating,integration
 
 .PHONY: fmt lint test test-fast test-integration test-conformance gen dev
 
@@ -26,7 +33,7 @@ lint:
 	  echo "           tool is absent reports green over an unlinted module:" >&2; \
 	  echo "           go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest" >&2; \
 	  exit 1; }
-	$(GOLANGCI) run --config $(LINT_CFG) ./...
+	$(GOLANGCI) run --config $(LINT_CFG) --build-tags $(LINT_TAGS) ./...
 
 # -race is not a flag a contributor is asked to remember. It IS the invocation:
 # rebuild-plugboard task 2.5, and there is no target here that runs `go test`

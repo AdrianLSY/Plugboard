@@ -656,7 +656,21 @@
         "terminator",
         "conformance"
       ],
-      "boundary_dir": "docs/code/boundaries"
+      "boundary_dir": "docs/code/boundaries",
+      "no_toolchain": {
+        "_comment": [
+          "A declared component with no fmt/lint/test toolchain to dispatch to, with the",
+          "reason and the condition that ends the declaration. The top-level Makefile",
+          "prints these rather than refusing, and refuses any OTHER component that has no",
+          "Makefile -- so an absent toolchain nobody decided about is still loud. Once the",
+          "named condition holds while the entry is still here, the declaration has",
+          "outlived its reason."
+        ],
+        "contract": {
+          "reason": "It holds the versioned wire schema and the codecs generated from it -- registers, vectors, a changelog. There is no source of its own to format, lint or test; what checks it is the conformance suite, which is its own component.",
+          "ends_with": "contract/Makefile existing, which is the signal that it grew a toolchain after all"
+        }
+      }
     },
     "conformance": {
       "_comment": [
