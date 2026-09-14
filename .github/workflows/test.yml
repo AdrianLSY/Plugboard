@@ -87,17 +87,26 @@ jobs:
         with:
           version: latest
           working-directory: sidecar
-          args: --config ../.golangci.yml
+          # The same tags `make -C <component> lint` uses. Without them the
+          # gating and integration tiers are not compiled, their helpers read
+          # as unused, and -- worse -- the tiers go unlinted entirely.
+          args: --config ../.golangci.yml --build-tags gating,integration
       - uses: golangci/golangci-lint-action@v9
         with:
           version: latest
           working-directory: terminator
-          args: --config ../.golangci.yml
+          # The same tags `make -C <component> lint` uses. Without them the
+          # gating and integration tiers are not compiled, their helpers read
+          # as unused, and -- worse -- the tiers go unlinted entirely.
+          args: --config ../.golangci.yml --build-tags gating,integration
       - uses: golangci/golangci-lint-action@v9
         with:
           version: latest
           working-directory: conformance
-          args: --config ../.golangci.yml
+          # The same tags `make -C <component> lint` uses. Without them the
+          # gating and integration tiers are not compiled, their helpers read
+          # as unused, and -- worse -- the tiers go unlinted entirely.
+          args: --config ../.golangci.yml --build-tags gating,integration
       - run: make -C proxy lint
 
       # The six planted violations of rebuild-plugboard task 2.2, one per lint

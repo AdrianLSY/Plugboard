@@ -157,11 +157,18 @@ def run(scan_root: Path, report_only: bool) -> int:
                     f"declares an exit status"
                 )
             report.examine(f"{gid} {' '.join(args)}")
-            code, _ = run_module(module, args)
+            code, output = run_module(module, args)
             if code != inv.get("exit"):
+                # The invocation's OWN output is carried into the failure. Without
+                # it this gate reports one line -- "exited 1, declared 0" -- and
+                # the reason stays wherever the run happened. A declared
+                # invocation that fails only on the runner is then undiagnosable
+                # from a work tree, which is the state the secret-scan self-test
+                # spent a CI cycle in.
+                tail = "\n      ".join(output.strip().splitlines()[-25:])
                 report.fail(
                     f"ci/broken-inputs/{gid}/: `{' '.join(args)}` exited {code}, "
-                    f"declared {inv.get('exit')}"
+                    f"declared {inv.get('exit')}. It said:\n      {tail}"
                 )
 
         # (5) a flag the note demonstrates and the declaration omits.
