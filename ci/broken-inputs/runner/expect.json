@@ -1,7 +1,7 @@
 {
   "trees": {
     "tree": {
-      "violations": 9,
+      "violations": 10,
       "cases": [
         ".github/workflows/check.yml: carries `branches:`",
         ".github/workflows/check.yml: carries `continue-on-error:`",
@@ -11,7 +11,8 @@
         "Makefile `check`: a recipe line swallows failure with `-@python3 ci/run-gates.py || true`",
         ".github/workflows/dependabot-auto-merge.yml: no runner configuration at a path ci/vault.json declares",
         ".github/workflows/pr.yml: no runner configuration at a path ci/vault.json declares",
-        ".github/workflows/test.yml: no runner configuration at a path ci/vault.json declares"
+        ".github/workflows/test.yml: no runner configuration at a path ci/vault.json declares",
+        ".github/workflows/security.yml: no runner configuration at a path ci/vault.json declares"
       ]
     }
   }

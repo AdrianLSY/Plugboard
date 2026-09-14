@@ -507,6 +507,7 @@
       "rule-gate-correspondence",
       "runner",
       "secret-scan",
+      "security-scan",
       "size-ceilings",
       "test-hygiene",
       "test-tiers",
@@ -531,7 +532,8 @@
         "top-level-readmes is added by rebuild-plugboard task 1.1 for the same reason: its subject is every top-level directory of a tree, and a minimal violating input has one or two of them with no README by construction. Running the isolation check over the other fixtures would have reported a failure on nearly every one, none of them a defect.",
         "review-obligations is added for the same reason: its subject is the canonical review note and the artifacts declared to enumerate it, and no fixture tree holds either, so it reports the canonical note absent on every other tree. Its own fixture carries both, so the neuter test and the per-file isolation check still bind.",
         "test-tiers is added by rebuild-plugboard task 2.7: its subjects are the shared make includes and the top-level Makefile at fixed paths, none of which any other fixture tree carries, so it would fail on every one of them for absence rather than for a defect.",
-        "expected-outcomes is added by rebuild-plugboard task 4.5: its subject is ci/expected-outcomes.json at a fixed path, which no other fixture tree carries, so it would fail on every one of them for absence rather than for a defect."
+        "expected-outcomes is added by rebuild-plugboard task 4.5: its subject is ci/expected-outcomes.json at a fixed path, which no other fixture tree carries, so it would fail on every one of them for absence rather than for a defect.",
+        "security-scan is added by rebuild-plugboard task 3.4: its subject is one declared workflow file at a fixed path, which no other fixture tree carries, so it would fail on every one of them for absence rather than for a defect."
       ],
       "gates": [
         "reachability",
@@ -557,7 +559,8 @@
         "top-level-readmes",
         "review-obligations",
         "test-tiers",
-        "expected-outcomes"
+        "expected-outcomes",
+        "security-scan"
       ]
     },
     "declared_vacuity": {
@@ -1085,6 +1088,15 @@
         ],
         "invokes_aggregating_target": false,
         "why_these_triggers": "pull_request_target is required for the token to be able to merge. The workflow never checks out the pull request's code and reads its diff through the API instead, which is what makes that trigger safe here."
+      },
+      ".github/workflows/security.yml": {
+        "required_triggers": [
+          "push",
+          "pull_request",
+          "schedule"
+        ],
+        "invokes_aggregating_target": false,
+        "why_these_triggers": "Both change-driven events, plus a weekly cron: a vulnerability is published against code that has not changed, so a scan bound only to change finds it only when somebody happens to edit a file."
       }
     },
     "forbidden_clauses": {
@@ -1104,6 +1116,48 @@
       "names. The set is reconciled against the directory by the runner-workflows",
       "correspondence, so adding a workflow without declaring it fails by name."
     ]
+  },
+  "security_scan": {
+    "_comment": [
+      "Read by ci/gates/security_scan.py. The scanners task 3.4 names, each with the",
+      "text that must appear in a position the runner EXECUTES -- a step's `run:` body",
+      "or its `uses:` reference, never its `name:`. An earlier version of this gate",
+      "matched the whole step block and reported four of four invoked against a",
+      "workflow whose every step was `echo skipping`; that version was reverted."
+    ],
+    "workflow": ".github/workflows/security.yml",
+    "required_triggers": [
+      "push",
+      "pull_request",
+      "schedule"
+    ],
+    "scanners": {
+      "govulncheck": {
+        "side": "Go",
+        "invocation": "govulncheck ./...",
+        "why": "Reachability-aware: it reports a vulnerability only where the vulnerable symbol is actually called, so its findings are the ones worth acting on."
+      },
+      "trivy": {
+        "side": "Go and Elixir dependencies",
+        "invocation": "aquasecurity/trivy-action",
+        "required_settings": [
+          "severity: HIGH,CRITICAL",
+          "exit-code: '1'",
+          "skip-dirs: ci/broken-inputs"
+        ],
+        "why": "The manifest scanner across both ecosystems. ci/broken-inputs is skipped because the violating input for `mix deps.audit` pins plug 1.3.0 with two HIGH advisories on purpose -- scanning it fails every push over the very defect the fixture exists to be."
+      },
+      "sobelow": {
+        "side": "Elixir",
+        "invocation": "mix sobelow --exit",
+        "why": "The static analyser for the Elixir side. --exit is what makes it refuse rather than report."
+      },
+      "deps.audit": {
+        "side": "Elixir",
+        "invocation": "mix deps.audit",
+        "why": "Advisory matching against proxy/mix.lock."
+      }
+    }
   },
   "generators": {
     "_comment": [

@@ -19,6 +19,7 @@ Generated index of the notes in `docs/method/rules/`.
 - [A gate's reported coverage is an assertion about the run](coverage-is-an-assertion.md)
 - [Currency runs in both directions](currency-both-directions.md)
 - [There is exactly one decision register](decision-register.md)
+- [A declared scanner is invoked where the runner executes, not where a reader looks](declared-scanners-are-invoked.md)
 - [An entry file routes, stays small, and names nothing absent](entry-files-route.md)
 - [A violating input states the failure it produces](fixtures-declare-their-failure.md)
 - [Every gate is demonstrated to fail](gates-are-demonstrated-to-fail.md)

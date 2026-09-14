@@ -1,0 +1,33 @@
+# A violating security workflow: one case per thing the gate decides.
+name: security
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  go:
+    runs-on: ubuntu-latest
+    steps:
+      # Named, never executed -- the case that defeated the reverted version of
+      # this gate, which matched the whole step block including `name:`.
+      - name: govulncheck ./... (disabled while we triage)
+        run: echo skipping
+
+  dependencies:
+    runs-on: ubuntu-latest
+    steps:
+      # Invoked, and without the settings that make it refuse: no severity floor,
+      # no non-zero exit, and the fixture directory not skipped.
+      - uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: .
+
+  elixir:
+    runs-on: ubuntu-latest
+    steps:
+      - name: mix sobelow --exit
+        run: cd proxy && mix sobelow --exit
+      - name: mix deps.audit
+        run: cd proxy && mix deps.audit
