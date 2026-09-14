@@ -278,7 +278,8 @@
       "D25",
       "D26",
       "D27",
-      "D28"
+      "D28",
+      "D29"
     ],
     "retired": {
       "_comment": [
@@ -590,6 +591,12 @@
         "subject": "the assertion suite conformance/recorder exports, proven to REJECT a deliberately map-backed recorder",
         "task": "rebuild-plugboard task 4.2",
         "why_not_a_gate": "Its own Go module with a replace directive, compiled and run. ci/broken-inputs is a declared scan exclusion, so nothing there is reachable from a component's build and the proof has to be pulled in from the other side."
+      },
+      "ci/broken-inputs/go-tooling": {
+        "checked_by": "ci/go-tooling-check.py",
+        "subject": "the checking commands in ci/make/go.mk's recipes, reached as `make -C <component> lint` and `make test`",
+        "task": "rebuild-plugboard tasks 3.2 and 3.3, and the violations task 2.3 verified by hand",
+        "why_not_a_gate": "It builds and runs four Go modules, twice over. A gate's subject is a property of the tree and it starts no process."
       }
     }
   },
@@ -1056,6 +1063,28 @@
         ],
         "invokes_aggregating_target": false,
         "why_these_triggers": "The subject is the set of commits a pull request proposes, which a push event does not define. Declared so the narrower trigger is a decision rather than an omission."
+      },
+      ".github/workflows/test.yml": {
+        "required_triggers": [
+          "push",
+          "pull_request"
+        ],
+        "invokes_aggregating_target": false,
+        "why_these_triggers": "The three test tiers and the linter. Their subject is the tree, so every event that changes it must run them -- the same argument check.yml makes, for a different obligation."
+      },
+      ".github/workflows/pr.yml": {
+        "required_triggers": [
+          "pull_request"
+        ],
+        "invokes_aggregating_target": false,
+        "why_these_triggers": "Its two checks read the pull request's body and its changed-path set. A push event defines neither, so the narrower trigger is a decision rather than an omission."
+      },
+      ".github/workflows/dependabot-auto-merge.yml": {
+        "required_triggers": [
+          "pull_request_target"
+        ],
+        "invokes_aggregating_target": false,
+        "why_these_triggers": "pull_request_target is required for the token to be able to merge. The workflow never checks out the pull request's code and reads its diff through the API instead, which is what makes that trigger safe here."
       }
     },
     "forbidden_clauses": {
@@ -1065,7 +1094,16 @@
       "branches": "a branch filter lets work on an unlisted branch skip every gate",
       "branches-ignore": "the same filter, inverted",
       "continue-on-error": "a non-zero exit that does not fail the job is a gate that cannot refuse"
-    }
+    },
+    "_workflows_comment": [
+      "EVERY tracked workflow, not only the one that runs the gates. ci/gates/runner.py",
+      "checks each declared file for the forbidden clauses and for its own triggers, so a",
+      "workflow that is not declared is one whose path filters, branch filters and",
+      "continue-on-error nothing looks at. Three of the five were undeclared until",
+      "rebuild-plugboard task 3.1 was settled, which is exactly the blind spot that task",
+      "names. The set is reconciled against the directory by the runner-workflows",
+      "correspondence, so adding a workflow without declaring it fails by name."
+    ]
   },
   "generators": {
     "_comment": [
@@ -1117,6 +1155,20 @@
           "path": "gate_policy.blocking",
           "members": "gate ids this manifest classifies as blocking"
         }
+      },
+      "runner-workflows": {
+        "subject": "which workflow files the forge runs, against which ones ci/gates/runner.py holds to the forbidden clauses",
+        "computed": {
+          "kind": "workflow_files",
+          "path": ".github/workflows",
+          "members": "every .yml under .github/workflows -- what the forge will actually run"
+        },
+        "published": {
+          "kind": "manifest_keys",
+          "path": "runner.workflows",
+          "members": "the workflows ci/vault.json declares, which is the set ci/gates/runner.py examines"
+        },
+        "why": "runner.py checks path filters, branch filters and continue-on-error only on DECLARED workflows. An undeclared one is a blocking job whose refusal-defeating clauses nothing reads. Three of five workflows sat in that state -- test.yml, pr.yml and dependabot-auto-merge.yml -- and the gate was green throughout, because a set nobody reconciles is a set nobody checks. This pair is the general answer to rebuild-plugboard task 3.1: the roster, the paired violating input and the obligation are each already discovered or single-sourced; the INVOCATIONS were not, and a workflow file's format is owned by the hosting service so one of the two encodings cannot simply be deleted."
       }
     },
     "retired": {

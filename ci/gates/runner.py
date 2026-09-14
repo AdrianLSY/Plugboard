@@ -55,10 +55,32 @@ def uncommented(text: str) -> str:
     return "\n".join(l for l in text.splitlines() if not l.lstrip().startswith("#"))
 
 
-def trigger_block(body: str) -> str:
-    """The `on:` mapping, up to the next top-level key."""
+def triggers(body: str) -> set[str]:
+    """Every event name under `on:`, in all three spellings GitHub accepts.
+
+    A mapping:            on:\n  push:\n  pull_request:
+    A bare scalar:        on: pull_request_target
+    An inline sequence:   on: [push, pull_request]
+
+    All three are valid and this gate met the second one the day a fourth
+    workflow was declared -- it recognised only the mapping, so a workflow that
+    DID carry its declared trigger was reported as missing it. A gate that
+    refuses a correct spelling is one that gets argued with and then switched
+    off, which is the failure this whole harness is arranged against.
+
+    Parsed by regex rather than by a YAML library because ci/gates is standard
+    library only: a gate with a dependency can stop running without failing.
+    """
     m = re.search(r"^on:\s*$(.*?)(?=^\S)", body, re.M | re.S)
-    return m.group(1) if m else ""
+    if m:
+        return set(re.findall(r"^\s+([a-z_]+)\s*:", m.group(1), re.M))
+    m = re.search(r"^on:\s*(.+?)\s*$", body, re.M)
+    if not m:
+        return set()
+    rest = m.group(1)
+    if rest.startswith("["):
+        return {t.strip().strip("'\"") for t in rest.strip("[]").split(",") if t.strip()}
+    return {rest.strip()}
 
 
 def run(scan_root: Path, report_only: bool) -> int:
@@ -92,9 +114,9 @@ def run(scan_root: Path, report_only: bool) -> int:
 
         # (3) the triggers this workflow declares for itself, and -- for the one
         # that runs the gates -- the aggregating target.
-        triggers = trigger_block(body)
+        declared_on = triggers(body)
         for want in spec["required_triggers"]:
-            if not re.search(rf"^\s+{re.escape(want)}\s*:", triggers, re.M):
+            if want not in declared_on:
                 report.fail(
                     f"{rel}: does not trigger on `{want}` -- a runner that misses one "
                     f"of the events it declares leaves that event unchecked"

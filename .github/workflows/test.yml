@@ -113,6 +113,9 @@ jobs:
       # what it needs. Without this step the demonstration re-runs only when
       # somebody types it, and ci/make/elixir.mk changed under it once already.
       - run: python3 ci/proxy-tooling-check.py
+      # The Go half of the same obligation: one violating module per checking
+      # command, each proven to be refused by that command. Tasks 3.2 and 3.3.
+      - run: python3 ci/go-tooling-check.py
 
   # The gating tests: written before the code they gate, red on purpose, and held
   # to a recorded baseline so a permanent red does not make every change

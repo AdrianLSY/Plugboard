@@ -1,0 +1,29 @@
+{
+  "_comment": "What each violating Go module is refused by. Machine-readable because prose in GATE.md is not a declaration. `tool` must appear in `fails` -- the Elixir checker's review found that a roster keyed on the label alone passes when two trees' labels are swapped.",
+  "trees": {
+    "tree-gofmt": {
+      "tool": "golangci-lint",
+      "fails": ["golangci-lint"],
+      "case": "File is not properly formatted",
+      "why": "Task 3.2's Go half. gofmt is reached through golangci-lint's formatter rather than through `go fmt`, which rewrites the file and therefore checks nothing."
+    },
+    "tree-errcheck": {
+      "tool": "golangci-lint",
+      "fails": ["golangci-lint"],
+      "case": "(errcheck)",
+      "why": "Task 2.3's planted unchecked type assertion, committed rather than verified by hand. errcheck runs with check-type-assertions."
+    },
+    "tree-gocyclo": {
+      "tool": "golangci-lint",
+      "fails": ["golangci-lint"],
+      "case": "(gocyclo)",
+      "why": "Task 2.3's planted 20-complexity function against the ceiling of 15."
+    },
+    "tree-race": {
+      "tool": "go-test-race",
+      "fails": ["go-test-race"],
+      "case": "DATA RACE",
+      "why": "Task 2.5: -race is the invocation, not a flag to remember. Two goroutines write one variable with no synchronisation."
+    }
+  }
+}

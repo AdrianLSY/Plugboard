@@ -327,6 +327,46 @@ The reference emits 75 telemetry events, attaches zero handlers, and contains on
 
 **The harness is not covered.** Writing this decision surfaced a vendored agent harness under `.claude/` that this repository did not author: the openspec skills declare `license: MIT` and `author: openspec` in their own frontmatter, and every other skill directory and slash command declares no licence, no copyright holder and no source URL. The per-path breakdown is [in the notices file](../../../.claude/THIRD-PARTY-NOTICES.md) and is not restated here, because a count written in two places is one that rots in one of them. `ci/vault.json` already exempts `.claude` from the note gates on the ground that upstream owns its format, but that exemption is about classification and settles nothing about copyright, and no gate looks at this. Extending a blanket Apache-2.0 claim over them would reproduce the exact finding the supply-chain rule logs against the reference — "85 JPEGs of unestablished origin under a blanket MIT claim with no attribution" — inside the repository that logs it. So the grant is scoped and the gap is recorded, which is the refuse-never-degrade posture applied to a licence claim. The scope statement sits in `LICENSE` above the Apache text, which is left byte-identical below it. It is not carried by `NOTICE` alone: §4(d) of the Apache text states that a NOTICE file's contents "do not modify the License", so an exclusion living only there would be in the one place the licence disclaims as incapable of narrowing it. What that costs is that `LICENSE` is no longer byte-identical as a whole file, and a licence detector keying on total content may report it as unrecognised — 1.6% added against a threshold commonly set at 98%, which is an argument and not a measurement until someone runs the detector.
 
+### D29 · No gate manifest. The roster is discovered; the INVOCATIONS are reconciled
+
+**Decided**, settling task 3.1, which asked for `ci/gates.yml` "enumerating every gate a merge or
+release depends on, with each entry naming the obligation it enforces, its invocations, and its paired
+broken input".
+
+**The manifest is refused.** Three of those four fields are already single-sourced, and a file
+restating them would be the second encoding this repository spends most of its gates refusing:
+
+| the field | where it already lives |
+|---|---|
+| the roster | `ci/gates/*.py`, discovered by `ci/run-gates.py`. `ci/vault.json` says why in its own words: "a declared roster is a second encoding of what the tree states". |
+| the paired broken input | `ci/broken-inputs/<gate-id>/`, bound by naming rule and enforced by `ci/gates/meta.py`. |
+| the obligation | each module's `RULE_NOTE`, reconciled against `docs/rule-index.md` by `ci/gates/rule_gate_correspondence.py`. |
+
+**The fourth field was real.** Task 3.1's own verification clause names its subject and it is not the
+gate modules: *"a check that fails if any CI **job** enforces an obligation absent from the manifest"*.
+Invocations live in workflow files, and three of the five — `test.yml`, `pr.yml` and
+`dependabot-auto-merge.yml` — were undeclared. `ci/gates/runner.py` checks path filters, branch
+filters and `continue-on-error` only on what `runner.workflows` declares, so those three ran as
+blocking jobs with their refusal-defeating clauses read by nothing, and every gate was green
+throughout.
+
+**What was built instead.** All five workflows are declared with their required triggers and a stated
+reason, and a new `runner-workflows` correspondence reconciles that declaration against the directory
+in both directions: a workflow file nobody declared fails by name, and a declaration whose file is
+gone fails too. Both demonstrated.
+
+**Why this one could not be solved by deleting an encoding**, which is the remedy everywhere else
+here. A workflow file's format is owned by the hosting service. The declaration cannot move into it
+and it cannot move into the declaration, so two encodings are forced — and the answer for a forced
+pair is to reconcile it, which is exactly what `ci/gates/correspondences.py` exists for. It held one
+pair before this and now holds two.
+
+*Alternative considered:* write `ci/gates.yml` as asked and accept the duplication, on the grounds
+that an explicit manifest is easier to read than a discovery rule. Rejected: the manifest would have
+to be maintained by hand against four things that already know their own answer, and a stale entry in
+it would be indistinguishable from a correct one — which is the defect the roster was made
+discoverable to avoid.
+
 ## Open Questions
 
 The four questions previously recorded here are resolved as decisions: HTTP/2 to clients (D16), the scope of further capabilities (D17), frame payload encoding (D18), and the v1 tunnel transport (D19). D16 opened one in their place.

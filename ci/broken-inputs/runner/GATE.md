@@ -36,3 +36,16 @@ was named in no gate at all: a branch filter and a `continue-on-error:` could be
 
 An absent configuration. It is checked, and planting it would stop the run before reaching the four
 clause cases, which are this fixture's subject.
+
+## The three undeclared-workflow cases, added by task 3.1
+
+`ci/vault.json` declares five workflows since D29 settled task 3.1, and this tree carries two. The
+other three are therefore reported as declared-but-absent — which is the same case the tree already
+demonstrated for one file, now demonstrated for the set.
+
+That is the point of the case rather than an accident of the fixture. `ci/gates/runner.py` checks the
+forbidden clauses ONLY on declared workflows, so an undeclared one is a blocking job whose path
+filters, branch filters and `continue-on-error` nothing reads. Three of the repository's five were in
+exactly that state until D29. The reverse direction — a workflow file that exists and is declared
+nowhere — is held by the `runner-workflows` correspondence in `ci/gates/correspondences.py`, because
+this gate is keyed on the declaration and cannot see a file the declaration omits.
