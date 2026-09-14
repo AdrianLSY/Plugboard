@@ -9,9 +9,14 @@ package main
 import (
 	"fmt"
 	"os"
+
+	"plugboard/conformance/internal/buildstamp"
 )
 
 func main() {
+	if _, err := fmt.Fprintln(os.Stdout, buildstamp.Line()); err != nil {
+		os.Exit(1)
+	}
 	if _, err := fmt.Fprintln(os.Stdout, "plugboard conformance suite: no cases yet"); err != nil {
 		os.Exit(1)
 	}

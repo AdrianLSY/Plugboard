@@ -15,4 +15,21 @@ defmodule Plugboard do
   """
   @spec banner() :: String.t()
   def banner, do: "plugboard proxy: no contract implementation yet"
+
+  @doc """
+  What this component reports at startup: its identity and the four provenance
+  fields, from the one place that computes them (`ci/stamp.py`).
+
+  A function rather than a module attribute so `ci/provenance-check.py` can assert
+  the REPORTED value against a commit and a tree status it reads from git itself.
+  An earlier attempt built its expectation out of the same stamp it compared
+  against, which passes over a blank stamp and over the wrong component name.
+  """
+  @spec provenance_line() :: String.t()
+  def provenance_line do
+    stamp = Plugboard.BuildStamp.stamp()
+
+    "#{Plugboard.BuildStamp.component()} version=#{stamp["version"]} " <>
+      "commit=#{stamp["commit"]} tree=#{stamp["tree"]} built=#{stamp["built_at"]}"
+  end
 end

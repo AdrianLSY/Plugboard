@@ -21,10 +21,18 @@ a module is the same defect with a shorter commute.
 ## The price of the second pass, stated
 
 Blanking identifiers can match two blocks that share only a shape -- ten lines of
-struct fields, a decision table. That is a false positive, and it is the cost of
-catching a rename. It is reported as its own kind so a reviewer can tell the two
-apart at a glance rather than by reading both sites, and the remedy for a genuine
-shape collision is to say so in review rather than to widen the window.
+struct fields, a decision table, or the import block and `func main` opening that
+Go requires of every command. That is a false positive, and it is the cost of
+catching a rename.
+
+Saying so "in review" is not a record. A judgement made once in a pull request is
+invisible to the next reader and to the next run, so the gate stayed red or the
+window got widened, and widening is how a threshold dies. A shape collision is
+therefore DECLARED, in ci/vault.json, naming both files and the reason -- and the
+declaration is held in BOTH directions: a declared pair that has stopped colliding
+fails as stale, so an exemption cannot outlive the shape that earned it.
+
+Only the renamed pass can be declared. A verbatim copy is never a shape.
 
 ## What it does not decide
 
@@ -103,6 +111,14 @@ def run(scan_root: Path, report_only: bool) -> int:
     manifest = load_manifest(repo_root())
     cfg = config(manifest)
     size = cfg["duplicate_lines"]
+    declared = {
+        frozenset(e["sites"]): e
+        for e in cfg.get("shape_collisions", []) if isinstance(e, dict)
+    }
+    #: How many colliding regions each declared pair is allowed. An exemption at
+    #: file level would hide a REAL copy made between those two files later; a
+    #: count means growth reopens the question.
+    seen: dict[frozenset, int] = {}
     report = Report(GATE_ID, RULE_NOTE)
 
     files = sources(scan_root, cfg, manifest)
@@ -139,11 +155,40 @@ def run(scan_root: Path, report_only: bool) -> int:
         if len(sites) > 1 and not continues(kept, sites, size) \
                 and not _already(sites, verbatim_regions):
             kept.append(sites)
+            pair = frozenset(s.rpartition(":")[0] for s in sites)
+            if pair in declared:
+                seen[pair] = seen.get(pair, 0) + 1
+                if seen[pair] <= declared[pair]["regions"]:
+                    continue
             report.fail(
                 f"{sites[0]}: {size} lines identical to {', '.join(sites[1:])} once "
                 f"identifiers are set aside -- a renamed copy is a copy. If the two "
                 f"genuinely only share a shape, say so in review; widening the "
                 f"window is not the remedy"
+            )
+
+    for pair, entry in sorted(declared.items(), key=lambda kv: sorted(kv[0])):
+        # A declaration names files by path. A miniature violating-input tree
+        # contains none of them, so there is nothing there to be stale about --
+        # without this, every fixture under ci/broken-inputs/ trips this gate and
+        # the meta-check rightly calls each of them ambiguous.
+        if not all((scan_root / s).is_file() for s in pair):
+            continue
+        found, allowed = seen.get(pair, 0), entry["regions"]
+        if found == allowed:
+            continue
+        names = " and ".join(sorted(pair))
+        if found < allowed:
+            report.fail(
+                f"{names}: declared {allowed} colliding region(s), found {found} "
+                f"-- the declaration outlived the shape that earned it. Reason "
+                f"given was \"{entry['reason'][:60]}...\"; delete or lower it"
+            )
+        else:
+            report.fail(
+                f"{names}: declared {allowed} colliding region(s), found {found}. "
+                f"The extra one is not covered by the declaration -- a shape was "
+                f"exempted, and something has since been COPIED between these two"
             )
 
     report.coverage(
@@ -155,7 +200,9 @@ def run(scan_root: Path, report_only: bool) -> int:
     )
     print(
         f"  files: {len(files)} | windows: {len(verbatim)} verbatim, {len(renamed)} "
-        f"identifier-blanked | threshold: {size} consecutive non-comment lines"
+        f"identifier-blanked | threshold: {size} consecutive non-comment lines | "
+        f"declared shape collisions: {sum(seen.values())}/"
+        f"{sum(e['regions'] for e in declared.values())}"
     )
     return report.finish(report_only=report_only)
 

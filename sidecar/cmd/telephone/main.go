@@ -11,10 +11,15 @@ import (
 	"fmt"
 	"os"
 
+	"plugboard/sidecar/internal/buildstamp"
+
 	"plugboard/sidecar/internal/tunnel"
 )
 
 func main() {
+	if _, err := fmt.Fprintln(os.Stdout, buildstamp.Line()); err != nil {
+		os.Exit(1)
+	}
 	if _, err := fmt.Fprintln(os.Stdout, tunnel.Banner()); err != nil {
 		os.Exit(1)
 	}

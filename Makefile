@@ -85,6 +85,9 @@ define dispatch
 	fi
 endef
 
+stamp:                ## regenerate every component's build-provenance source
+	$(call dispatch,stamp)
+
 warm:                 ## populate every build cache the tiers use, running no test
 	$(call dispatch,warm)
 

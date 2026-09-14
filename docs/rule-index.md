@@ -14,7 +14,7 @@ the build today), **gate planned** (an obligation whose check is not built yet),
 (taste, quarantined, never a blocking objection).
 
 
-**57 rules** — 46 gated, 8 gate planned, 3 preference (5% unenforced).
+**58 rules** — 47 gated, 8 gate planned, 3 preference (5% unenforced).
 
 | rule | status | gate | note |
 |---|---|---|---|
@@ -40,6 +40,7 @@ the build today), **gate planned** (an obligation whose check is not built yet),
 | An entry file routes, stays small, and names nothing absent | **gated** | `ci/gates/entry_points.py` | [note](method/rules/entry-files-route.md) |
 | An obligation enforced in two places is enforced the same way in both | **gated** | `ci/gates/parity.py` | [note](method/rules/one-obligation-one-invocation.md) |
 | Authority precedence | **gated** | `ci/gates/precedence.py` | [note](method/authority-precedence.md) |
+| Build provenance is derived in one place, and read everywhere else | **gated** | `ci/gates/provenance.py` | [note](code/rules/build-provenance-from-one-place.md) |
 | Conventions reach both authoring channels | **gated** | `ci/gates/authoring_channels.py` | [note](method/rules/authoring-channels.md) |
 | Currency runs in both directions | **gated** | `ci/gates/currency.py` | [note](method/rules/currency-both-directions.md) |
 | Every blocking gate runs without a person's initiative | **gated** | `ci/gates/runner.py` | [note](method/rules/the-gates-actually-run.md) |

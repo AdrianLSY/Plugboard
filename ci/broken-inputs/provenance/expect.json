@@ -1,0 +1,23 @@
+{
+  "_comment": "What this gate emits against each tree here. Machine-readable because prose in GATE.md is not a declaration: a stated count nothing checks drifts the moment a case is added.",
+  "trees": {
+    "tree-second-derivation": {
+      "violations": 1,
+      "cases": [
+        "sidecar/cmd/telephone/main.go: runs `exec.Command`, `os/exec`, `git`"
+      ]
+    },
+    "tree-one-place-gutted": {
+      "violations": 1,
+      "cases": [
+        "ci/stamp.py: no longer derives git, subprocess"
+      ]
+    },
+    "tree-uninvoked": {
+      "violations": 1,
+      "cases": [
+        "ci/make/go.mk: never invokes `ci/stamp.py --component`"
+      ]
+    }
+  }
+}

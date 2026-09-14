@@ -502,6 +502,7 @@
       "owned-behaviour",
       "parity",
       "precedence",
+      "provenance",
       "reachability",
       "reader-config",
       "review-obligations",
@@ -535,7 +536,8 @@
         "test-tiers is added by rebuild-plugboard task 2.7: its subjects are the shared make includes and the top-level Makefile at fixed paths, none of which any other fixture tree carries, so it would fail on every one of them for absence rather than for a defect.",
         "expected-outcomes is added by rebuild-plugboard task 4.5: its subject is ci/expected-outcomes.json at a fixed path, which no other fixture tree carries, so it would fail on every one of them for absence rather than for a defect.",
         "security-scan is added by rebuild-plugboard task 3.4: its subject is one declared workflow file at a fixed path, which no other fixture tree carries, so it would fail on every one of them for absence rather than for a defect.",
-        "parity is added by rebuild-plugboard task 3.11: its subjects are the shared make includes and the workflows at fixed paths, none of which a minimal violating input carries, so it would fail on every other tree for absence rather than for a defect."
+        "parity is added by rebuild-plugboard task 3.11: its subjects are the shared make includes and the workflows at fixed paths, none of which a minimal violating input carries, so it would fail on every other tree for absence rather than for a defect.",
+        "provenance is added by rebuild-plugboard task 3.13: its subjects are the one place and the component files at fixed paths, none of which a minimal violating input carries, so it would fail on every other tree for absence rather than a defect."
       ],
       "gates": [
         "reachability",
@@ -563,7 +565,8 @@
         "test-tiers",
         "expected-outcomes",
         "security-scan",
-        "parity"
+        "parity",
+        "provenance"
       ]
     },
     "declared_vacuity": {
@@ -798,7 +801,18 @@
           "reason": "The harness itself. Task 3.5 asks for the ceilings in 'both languages', meaning the two the components are written in, and four gate modules are over 300 non-comment lines today (ci/gates/out_of_scope.py at 442, links.py 340, wikilinks.py 305, citations.py 301). Holding the harness to its own ceiling is right and is a separate piece of work from building the gate.",
           "ends_with": "a change that splits those four modules, recorded in docs/method/follow-ups.md"
         }
-      }
+      },
+      "shape_collisions": [
+        {
+          "_comment": "Read by ci/gates/code_duplication.py, RENAMED pass only. Held in both directions: a pair that stops colliding fails as stale.",
+          "sites": [
+            "conformance/cmd/conformance/main.go",
+            "terminator/cmd/terminator/main.go"
+          ],
+          "regions": 1,
+          "reason": "Go boilerplate, not a copy: `package main`, an import block, and a `func main` that writes two lines to stdout. Every Go command in this repository has that shape because the language requires it. There is no logic here to extract -- the one thing these mains genuinely shared, the provenance line, HAS been extracted into the generated buildstamp package, which is what left the boilerplate exposed."
+        }
+      ]
     },
     "no_repair": {
       "_comment": [
@@ -1235,6 +1249,47 @@
         "make check-gates",
         "python3 ci/gates/parity.py"
       ]
+    }
+  },
+  "provenance": {
+    "_comment": [
+      "Read by ci/gates/provenance.py. Keyed on EXECUTION, not on command spelling:",
+      "the first attempt matched `git rev-parse` and friends as substrings, and the",
+      "spelling the one place actually uses -- _git(\"rev-parse\", \"HEAD\") -- defeated",
+      "it, so it passed over the very tree it governed. A second derivation must run",
+      "a subprocess; there is no other route from Go, Elixir or make to git."
+    ],
+    "one_place": "ci/stamp.py",
+    "fields": [
+      "version",
+      "commit",
+      "tree",
+      "built_at"
+    ],
+    "one_place_markers": [
+      "subprocess",
+      "git"
+    ],
+    "executes": [
+      "exec.Command",
+      "os/exec",
+      "System.cmd",
+      "Port.open",
+      "git"
+    ],
+    "subject_files": [
+      "ci/make/go.mk",
+      "ci/make/elixir.mk",
+      "proxy/lib/plugboard.ex",
+      "proxy/mix.exs",
+      "sidecar/cmd/telephone/main.go",
+      "terminator/cmd/terminator/main.go",
+      "conformance/cmd/conformance/main.go"
+    ],
+    "called_as": {
+      "_comment": "Build files that must GENERATE a stamp, and the invocation that does it.",
+      "ci/make/go.mk": "ci/stamp.py --component",
+      "ci/make/elixir.mk": "ci/stamp.py --component"
     }
   },
   "generators": {

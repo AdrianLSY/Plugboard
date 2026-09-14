@@ -5,3 +5,4 @@
 /priv/plts/
 *.ez
 erl_crash.dump
+lib/plugboard/build_stamp.ex

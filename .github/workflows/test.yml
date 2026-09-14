@@ -40,6 +40,20 @@ jobs:
       # run and fails above the budget declared in ci/vault.json.
       - run: make test-fast
 
+      # Every component started, and the provenance line it prints compared
+      # against a commit and a tree status read from git INDEPENDENTLY -- not
+      # rebuilt out of the stamp under test, which is a comparison that cannot
+      # fail. Task 3.13. It runs here because this job already has both
+      # toolchains and has just run `make warm`, which generates the stamps.
+      #
+      # It is outside the timed region above: this starts four processes and its
+      # subject is correctness, not latency.
+      #
+      # The dirty-marker probe reports INCONCLUSIVE on an already-dirty tree,
+      # which is what a working copy usually is -- so a runner, whose checkout is
+      # clean, is the only place that half of the check actually runs.
+      - run: python3 ci/provenance-check.py
+
   integration:
     runs-on: ubuntu-latest
     services:
