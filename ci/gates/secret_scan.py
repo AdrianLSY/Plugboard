@@ -694,24 +694,40 @@ _PLANTED_AWS = "AKIA" + "3MJ7X2QF5RLDN4TW"
 _PLANTED_GITHUB = "ghp_" + "0Vv7QeR2kLm9XbTn4CsD8JyH6WgZaP1uE3Ff"
 
 
-def _git_build(root: Path, *args: str) -> int:
+#: Passed to EVERY git invocation that builds a scenario, not only to `commit`.
+#: _git_build blanks the global AND system config on purpose -- the scenario must
+#: not inherit the running user's settings -- which leaves the scratch repository
+#: with no identity at all. `git merge` wants one before it will begin, so on a
+#: machine where git could not guess one the merge never started, the follow-up
+#: commit had a single parent, and the merge case silently tested nothing. It
+#: failed on a CI runner and passed on the author's machine, which is the whole
+#: argument for putting it here rather than at one call site.
+_IDENTITY = (
+    "-c", "user.name=gate",
+    "-c", "user.email=gate@invalid",
+    "-c", "commit.gpgsign=false",
+)
+
+
+def _git_build(root: Path, *args: str) -> tuple[int, str]:
+    """(exit status, combined output) -- the output is kept so a scenario that
+    fails to build can say what git said, instead of only that it did."""
     env = {
         **os.environ,
         "GIT_CONFIG_GLOBAL": os.devnull,
         "GIT_CONFIG_SYSTEM": os.devnull,
     }
-    return subprocess.run(
-        ["git", "-C", str(root), *args], capture_output=True, check=False, env=env
-    ).returncode
+    done = subprocess.run(
+        ["git", "-C", str(root), *_IDENTITY, *args],
+        capture_output=True, check=False, env=env,
+    )
+    return done.returncode, (done.stdout + done.stderr).decode("utf-8", "replace").strip()
 
 
 def _commit(root: Path, message: str) -> int:
-    if _git_build(root, "add", "-A") != 0:
+    if _git_build(root, "add", "-A")[0] != 0:
         return 1
-    return _git_build(
-        root, "-c", "user.name=gate", "-c", "user.email=gate@invalid",
-        "-c", "commit.gpgsign=false", "commit", "-q", "-m", message,
-    )
+    return _git_build(root, "commit", "-q", "-m", message)[0]
 
 
 def _head(root: Path) -> str:
@@ -744,16 +760,19 @@ def _merge_case(root: Path) -> list[str]:
     problems: list[str] = []
     root.mkdir(parents=True)
     (root / "deploy.env").write_text("baseline\n", encoding="utf-8")
-    if _git_build(root, "init", "-q", "-b", "scratch") != 0 or _commit(root, "baseline"):
+    if _git_build(root, "init", "-q", "-b", "scratch")[0] != 0 or _commit(root, "baseline"):
         return ["could not build the merge scenario (see the dependency note above)"]
     baseline = _head(root)
     for branch, body in (("side", "SIDE=1\n"), ("scratch", "TRUNK=1\n")):
-        if _git_build(root, "checkout", "-q", *(["-b"] if branch == "side" else []), branch):
+        if _git_build(root, "checkout", "-q", *(["-b"] if branch == "side" else []), branch)[0]:
             return [f"could not build the merge scenario: checkout {branch}"]
         (root / "deploy.env").write_text(body, encoding="utf-8")
         if _commit(root, f"{branch} edit"):
             return [f"could not build the merge scenario: commit on {branch}"]
-    _git_build(root, "merge", "--no-commit", "--no-ff", "side")  # conflicts, by design
+    # Conflicts, by design. The status is deliberately not checked -- a conflict
+    # IS the scenario -- but the output is kept, because the one thing that can go
+    # wrong here is the merge never starting.
+    _merge_said = _git_build(root, "merge", "--no-commit", "--no-ff", "side")[1]
     (root / "deploy.env").write_text(
         f"AWS_ACCESS_KEY_ID={_PLANTED_AWS}\n", encoding="utf-8"
     )
@@ -767,6 +786,7 @@ def _merge_case(root: Path) -> list[str]:
     parents = _git(root, "rev-list", "--parents", "-n", "1", merge)[1].decode().split()
     if len(parents) < 3:
         problems.append(
+            f"git said {_merge_said!r} -- and "
             "the scenario's merge commit has fewer than two parents, so this case "
             "is not testing a merge at all -- the git that built it resolved the "
             "branches some other way"
@@ -852,7 +872,7 @@ def _self_test() -> int:
         (root / "deploy" / "notes.txt").write_text("baseline\n", encoding="utf-8")
         # A branch name no BASE_REFS entry matches, so the unresolved-range case
         # below is testing what it claims rather than an empty range.
-        if _git_build(root, "init", "-q", "-b", "scratch") != 0 or _commit(root, "baseline"):
+        if _git_build(root, "init", "-q", "-b", "scratch")[0] != 0 or _commit(root, "baseline"):
             print(
                 f"[FAIL] {GATE_ID} --self-test: could not build the scenario. This "
                 f"is the one gate whose runner must be able to CREATE A COMMIT: it "
