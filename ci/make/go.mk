@@ -21,10 +21,20 @@ LINT_CFG  := $(REPO_ROOT)/.golangci.yml
 # args, and does.
 LINT_TAGS := gating,integration
 
-.PHONY: fmt lint test test-fast test-integration test-conformance gen dev
+.PHONY: fmt warm lint test test-fast test-integration test-conformance gen dev
 
 fmt:
 	$(GO) fmt ./...
+
+# Populate every build cache the tiers use, WITHOUT running a test. It sits here
+# rather than in the workflow because the workflow restating a tier's invocation
+# is a second encoding: `-race` was missing from the restatement and the fast
+# tier's budget spent three CI rounds measuring instrumented compilation.
+# `-run '^$$'` matches no test, so this compiles and runs nothing.
+warm:
+	$(GO) build ./...
+	$(GO) test -race -run '^$$' ./... >/dev/null
+	$(GO) vet -tags $(LINT_TAGS) ./... >/dev/null 2>&1 || true
 
 lint:
 	@command -v $(GOLANGCI) >/dev/null 2>&1 || { \

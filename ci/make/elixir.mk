@@ -9,7 +9,7 @@
 MIX       ?= mix
 REPO_ROOT ?= ..
 
-.PHONY: fmt lint test test-fast test-integration test-conformance gen dev deps require-mix
+.PHONY: fmt warm lint test test-fast test-integration test-conformance gen dev deps require-mix
 
 require-mix:
 	@command -v $(MIX) >/dev/null 2>&1 || { \
@@ -20,6 +20,12 @@ require-mix:
 
 deps: require-mix
 	$(MIX) deps.get
+
+# BOTH environments. `mix compile` warms dev; `mix test` then compiles
+# MIX_ENV=test from nothing, which is what the fast tier's budget was measuring.
+warm: require-mix
+	$(MIX) compile
+	MIX_ENV=test $(MIX) compile
 
 fmt: require-mix
 	$(MIX) format

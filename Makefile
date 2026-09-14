@@ -85,6 +85,9 @@ define dispatch
 	fi
 endef
 
+warm:                 ## populate every build cache the tiers use, running no test
+	$(call dispatch,warm)
+
 fmt:                  ## format every present component; fail naming any absent one
 	$(call dispatch,fmt)
 
