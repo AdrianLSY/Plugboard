@@ -500,6 +500,7 @@
       "note-roots",
       "out-of-scope",
       "owned-behaviour",
+      "parity",
       "precedence",
       "reachability",
       "reader-config",
@@ -533,7 +534,8 @@
         "review-obligations is added for the same reason: its subject is the canonical review note and the artifacts declared to enumerate it, and no fixture tree holds either, so it reports the canonical note absent on every other tree. Its own fixture carries both, so the neuter test and the per-file isolation check still bind.",
         "test-tiers is added by rebuild-plugboard task 2.7: its subjects are the shared make includes and the top-level Makefile at fixed paths, none of which any other fixture tree carries, so it would fail on every one of them for absence rather than for a defect.",
         "expected-outcomes is added by rebuild-plugboard task 4.5: its subject is ci/expected-outcomes.json at a fixed path, which no other fixture tree carries, so it would fail on every one of them for absence rather than for a defect.",
-        "security-scan is added by rebuild-plugboard task 3.4: its subject is one declared workflow file at a fixed path, which no other fixture tree carries, so it would fail on every one of them for absence rather than for a defect."
+        "security-scan is added by rebuild-plugboard task 3.4: its subject is one declared workflow file at a fixed path, which no other fixture tree carries, so it would fail on every one of them for absence rather than for a defect.",
+        "parity is added by rebuild-plugboard task 3.11: its subjects are the shared make includes and the workflows at fixed paths, none of which a minimal violating input carries, so it would fail on every other tree for absence rather than for a defect."
       ],
       "gates": [
         "reachability",
@@ -560,7 +562,8 @@
         "review-obligations",
         "test-tiers",
         "expected-outcomes",
-        "security-scan"
+        "security-scan",
+        "parity"
       ]
     },
     "declared_vacuity": {
@@ -1097,6 +1100,15 @@
         ],
         "invokes_aggregating_target": false,
         "why_these_triggers": "Both change-driven events, plus a weekly cron: a vulnerability is published against code that has not changed, so a scan bound only to change finds it only when somebody happens to edit a file."
+      },
+      ".github/workflows/scheduled.yml": {
+        "required_triggers": [
+          "schedule",
+          "push",
+          "pull_request"
+        ],
+        "invokes_aggregating_target": false,
+        "why_these_triggers": "The interval is the point -- it finds a gate broken by a change elsewhere. Push and pull_request are kept as well so a change to the scheduled runner itself is checked by the runner it changes."
       }
     },
     "forbidden_clauses": {
@@ -1157,6 +1169,72 @@
         "invocation": "mix deps.audit",
         "why": "Advisory matching against proxy/mix.lock."
       }
+    }
+  },
+  "parity": {
+    "_comment": [
+      "Read by ci/gates/parity.py. The obligations enforced in TWO independently",
+      "written invocations, and where each is written. Neither argv is copied here --",
+      "both are read out of the tree, because a declaration holding the expected flags",
+      "would be a THIRD encoding, and the third is the one that goes stale unnoticed.",
+      "An obligation whose CI side routes through the same make target a contributor",
+      "runs is ONE encoding reached from two places: declared single_encoding so it is",
+      "reported as out of scope rather than silently dropped."
+    ],
+    "normalisation": {
+      "_comment": "Differences that are not differences. Every one is declared: a normalisation nobody can see is an exemption.",
+      "value_flags": [
+        "--build-tags"
+      ],
+      "path_flags": [
+        "--config"
+      ]
+    },
+    "obligations": {
+      "go-lint": {
+        "obligation": "the one Go linter runs over every Go module with the one configuration",
+        "local": {
+          "makefile": "ci/make/go.mk",
+          "recipe_pattern": "^\\t\\$\\(GOLANGCI\\) run (?P<argv>.*)$"
+        },
+        "ci": {
+          "workflow": ".github/workflows/test.yml",
+          "argv_pattern": "--config \\S+\\.golangci\\.yml[^\\n]*"
+        },
+        "implicit_ci": [],
+        "why_two_encodings": "The only obligation whose CI side does not route through the shared make include: golangci/golangci-lint-action caches the linter binary, so it is handed its own args. Two independent encodings of one obligation is exactly the condition this gate exists for."
+      },
+      "vault-gates": {
+        "obligation": "every blocking vault gate refuses, on a commit and on a pull request",
+        "single_encoding": true,
+        "why": "`.github/workflows/check.yml` runs `make check`, the same target a contributor runs. One encoding reached from two places; nothing can drift."
+      },
+      "test-tiers": {
+        "obligation": "the three test tiers run, under the fast tier's wall-clock budget",
+        "single_encoding": true,
+        "why": "`.github/workflows/test.yml` runs `make test-fast` and its siblings, the same targets a contributor runs."
+      },
+      "elixir-lint": {
+        "obligation": "the six Elixir quality tools refuse their own violating inputs",
+        "single_encoding": true,
+        "why": "`.github/workflows/test.yml` runs `make -C proxy lint`, which is the recipe in ci/make/elixir.mk."
+      }
+    },
+    "schedule": {
+      "_comment": [
+        "rebuild-plugboard task 3.12. A gate broken by a change ELSEWHERE -- a moved",
+        "dependency, a tool's changed output, a new major of a hosting action -- is not",
+        "a commit here, so a check bound only to change finds it whenever somebody next",
+        "pushes. The commands are asserted against the workflow's `run:` bodies: the",
+        "first attempt compared against the whole file and passed on one that echoed",
+        "the command names."
+      ],
+      "workflow": ".github/workflows/scheduled.yml",
+      "cron_trigger": "schedule",
+      "invokes": [
+        "make check-gates",
+        "python3 ci/gates/parity.py"
+      ]
     }
   },
   "generators": {

@@ -1,0 +1,41 @@
+# The gates and the parity check, on an interval as well as on change.
+# rebuild-plugboard task 3.12.
+#
+# A gate can be broken by a change ELSEWHERE -- a dependency moves, a tool
+# changes its output, a hosting action ships a new major -- and none of those is a
+# commit to this repository. A check bound only to change finds that class when
+# somebody next happens to push, which may be long after it stopped checking.
+#
+# Declared in ci/vault.json's runner.workflows, so ci/gates/runner.py holds it to
+# the forbidden clauses, and in parity.schedule, so ci/gates/parity.py asserts
+# these commands are actually EXECUTED here rather than merely named. The reverted
+# first attempt at this file was satisfied by a workflow that echoed the command
+# names, which is why that assertion reads `run:` bodies now.
+name: scheduled
+
+on:
+  schedule:
+    - cron: '17 4 * * *'
+  push:
+  pull_request:
+
+jobs:
+  standing-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm install -g @fission-ai/openspec@1.13.0
+
+      # Every gate proven to fail on its own violating input, by its own logic.
+      - run: make check-gates
+
+      # Every dual-encoded obligation still spelled the same way on both sides.
+      - run: python3 ci/gates/parity.py

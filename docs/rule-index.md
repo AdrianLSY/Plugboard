@@ -14,7 +14,7 @@ the build today), **gate planned** (an obligation whose check is not built yet),
 (taste, quarantined, never a blocking objection).
 
 
-**56 rules** — 45 gated, 8 gate planned, 3 preference (5% unenforced).
+**57 rules** — 46 gated, 8 gate planned, 3 preference (5% unenforced).
 
 | rule | status | gate | note |
 |---|---|---|---|
@@ -38,6 +38,7 @@ the build today), **gate planned** (an obligation whose check is not built yet),
 | A wire error is a typed code, and no term rendering crosses the wire | **gated** | `ci/gates/banned_patterns.py` | [note](code/banned-patterns/inspect-on-a-wire-payload.md) |
 | An artifact declared out of scope stays byte-unchanged | **gated** | `ci/gates/out_of_scope.py` | [note](method/rules/out-of-scope-byte-unchanged.md) |
 | An entry file routes, stays small, and names nothing absent | **gated** | `ci/gates/entry_points.py` | [note](method/rules/entry-files-route.md) |
+| An obligation enforced in two places is enforced the same way in both | **gated** | `ci/gates/parity.py` | [note](method/rules/one-obligation-one-invocation.md) |
 | Authority precedence | **gated** | `ci/gates/precedence.py` | [note](method/authority-precedence.md) |
 | Conventions reach both authoring channels | **gated** | `ci/gates/authoring_channels.py` | [note](method/rules/authoring-channels.md) |
 | Currency runs in both directions | **gated** | `ci/gates/currency.py` | [note](method/rules/currency-both-directions.md) |

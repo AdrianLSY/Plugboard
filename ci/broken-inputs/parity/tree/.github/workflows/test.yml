@@ -1,0 +1,14 @@
+name: test
+on:
+  push:
+  pull_request:
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      # The drifted encoding: --timeout is missing and --fix is present. Neither
+      # side is obviously wrong on its own; the pair is.
+      - uses: golangci/golangci-lint-action@v9
+        with:
+          working-directory: sidecar
+          args: --config ../.golangci.yml --build-tags gating,integration --fix

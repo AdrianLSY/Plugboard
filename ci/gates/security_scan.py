@@ -41,53 +41,13 @@ import re
 from pathlib import Path
 
 from _common import Report, load_manifest, main_guard, repo_root
+from _workflow import executable_text, executes, triggers
 
 GATE_ID = "security-scan"
 RULE_NOTE = "docs/method/rules/declared-scanners-are-invoked.md"
 
 STEP = re.compile(r"^\s*-\s", re.M)
 
-
-def executable_text(body: str) -> str:
-    """Only what a runner executes: `run:` bodies and `uses:` references.
-
-    A step's `name:` is prose. Reading it is how the reverted version of this gate
-    came to report four scanners invoked by a workflow that ran `echo skipping`
-    four times.
-    """
-    out: list[str] = []
-    lines = body.splitlines()
-    i = 0
-    while i < len(lines):
-        line = lines[i]
-        m = re.match(r"^(\s*)(?:-\s+)?(run|uses|with)\s*:\s*(.*)$", line)
-        if not m:
-            i += 1
-            continue
-        indent, key, rest = len(m.group(1)), m.group(2), m.group(3)
-        out.append(rest)
-        if key in ("run", "with") and rest.strip() in ("|", ">", "", "|-", ">-"):
-            i += 1
-            while i < len(lines) and (not lines[i].strip() or
-                                      len(lines[i]) - len(lines[i].lstrip()) > indent):
-                out.append(lines[i])
-                i += 1
-            continue
-        i += 1
-    return "\n".join(out)
-
-
-def triggers(body: str) -> set[str]:
-    m = re.search(r"^on:\s*$(.*?)(?=^\S)", body, re.M | re.S)
-    if m:
-        return set(re.findall(r"^\s+([a-z_]+)\s*:", m.group(1), re.M))
-    m = re.search(r"^on:\s*(.+?)\s*$", body, re.M)
-    if not m:
-        return set()
-    rest = m.group(1)
-    if rest.startswith("["):
-        return {t.strip().strip("'\"") for t in rest.strip("[]").split(",") if t.strip()}
-    return {rest.strip()}
 
 
 def run(scan_root: Path, report_only: bool) -> int:
@@ -114,7 +74,7 @@ def run(scan_root: Path, report_only: bool) -> int:
 
     for name, spec in sorted(scanners.items()):
         report.examine(name)
-        if spec["invocation"] not in runs:
+        if not executes(body, spec["invocation"]):
             report.fail(
                 f"{rel}: declares the {spec['side']} scanner `{name}` and no step "
                 f"EXECUTES `{spec['invocation']}` -- a scanner named in a step's "

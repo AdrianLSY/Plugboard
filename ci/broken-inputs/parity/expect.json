@@ -1,0 +1,15 @@
+{
+  "_comment": "What this gate emits against each tree here. Machine-readable because prose in GATE.md is not a declaration: a stated count nothing checks drifts the moment a case is added.",
+  "trees": {
+    "tree": {
+      "violations": 5,
+      "cases": [
+        "`--timeout` is passed locally and not in 1 of 1 CI invocation(s)",
+        "`--fix` is passed in 1 of 1 CI invocation(s) and not locally",
+        "does not trigger on `schedule`",
+        "does not EXECUTE `make check-gates`",
+        "does not EXECUTE `python3 ci/gates/parity.py`"
+      ]
+    }
+  }
+}

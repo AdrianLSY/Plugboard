@@ -1,0 +1,12 @@
+# The recurring runner, satisfied by nothing: no cron, and both standing checks
+# merely ECHOED. `echo "make check-gates"` is a run body that contains the
+# command, which is what defeated the first attempt at this check.
+name: scheduled
+on:
+  push:
+jobs:
+  theatre:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "make check-gates"
+      - run: echo "python3 ci/gates/parity.py"

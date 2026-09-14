@@ -1,7 +1,7 @@
 {
   "trees": {
     "tree": {
-      "violations": 10,
+      "violations": 11,
       "cases": [
         ".github/workflows/check.yml: carries `branches:`",
         ".github/workflows/check.yml: carries `continue-on-error:`",
@@ -12,7 +12,8 @@
         ".github/workflows/dependabot-auto-merge.yml: no runner configuration at a path ci/vault.json declares",
         ".github/workflows/pr.yml: no runner configuration at a path ci/vault.json declares",
         ".github/workflows/test.yml: no runner configuration at a path ci/vault.json declares",
-        ".github/workflows/security.yml: no runner configuration at a path ci/vault.json declares"
+        ".github/workflows/security.yml: no runner configuration at a path ci/vault.json declares",
+        ".github/workflows/scheduled.yml: no runner configuration at a path ci/vault.json declares"
       ]
     }
   }
