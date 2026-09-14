@@ -17,10 +17,27 @@ shipped; the findings are in [the finding table](../method/harness.md#the-findin
 `main` with messages like `updated code` ×17. The sidecar used PRs and conventional commits and is
 visibly the better-maintained half — that difference is the argument.
 
-**Branch protection on `main`:**
-- No direct pushes. No force pushes.
-- Required checks: fast suite, lint, format, conformance suite, security scan.
-- Linear history (squash merge), so `main` reads as one commit per change.
+**Branch protection on `main`**, configured on 2026-09-14 and recorded here because a policy nobody
+can check against the live setting is a policy nobody can audit:
+
+- No direct pushes, no force pushes, no branch deletion. Linear history, with squash the only merge
+  method, so `main` reads as one commit per change.
+- A pull request is required. **No approving review is required**, because the repository has one
+  maintainer and nobody can approve their own pull request — requiring one would mean no change could
+  ever merge.
+- Required checks, by their job names rather than their workflow names: `check`, `fast`,
+  `integration`, `lint`, `gating`, `conformance-build`, `description`, `sign-off`. Dependabot's
+  `auto-merge` is deliberately **not** required: it runs only on a bot's pull request, so requiring it
+  would block every human one.
+- **Administrators are exempt, by choice.** That is the load-bearing caveat. The owner can still push
+  directly to `main`, so for the one account most able to bypass the rule, the rule is advisory. It
+  buys the ability to unblock the repository without a pull request, and it costs the guarantee.
+
+What that last point does to the verification is stated rather than glossed: the obligation this note
+carries was to attempt a direct push and record the refusal. A push by the owner is **not** refused,
+so what is recorded is the configuration above and the fact that the refusal applies to everyone
+except the account that configured it. Nothing here demonstrates the refusal for an administrator,
+because under this setting there is none.
 
 **PR size.** If a PR cannot be reviewed in one sitting, split it. This is a hard constraint for a
 solo-maintainer project with outside contributors, because unreviewable PRs are either merged unread or
