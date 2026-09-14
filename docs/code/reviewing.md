@@ -33,11 +33,21 @@ can check against the live setting is a policy nobody can audit:
   directly to `main`, so for the one account most able to bypass the rule, the rule is advisory. It
   buys the ability to unblock the repository without a pull request, and it costs the guarantee.
 
-What that last point does to the verification is stated rather than glossed: the obligation this note
-carries was to attempt a direct push and record the refusal. A push by the owner is **not** refused,
-so what is recorded is the configuration above and the fact that the refusal applies to everyone
-except the account that configured it. Nothing here demonstrates the refusal for an administrator,
-because under this setting there is none.
+**The direct push, attempted on 2026-09-15 and recorded here.** The obligation was to attempt one and
+record the refusal. The push *succeeded*, because administrators are exempt — and the server
+nonetheless printed the rules it was waiving:
+
+```
+remote: - Changes must be made through a pull request.
+remote: - 8 of 8 required status checks are expected.
+To github.com:AdrianLSY/Plugboard.git
+   558bfb9..2edc02a  main -> main
+```
+
+That is the useful form of this record. The rules are evaluated on every push and then waived for the
+one exempt account, so what a non-administrator meets is exactly those two refusals — quoted above
+from the server rather than paraphrased from the settings page. What is *not* demonstrated, and cannot
+be while the exemption stands, is the refusal itself taking effect.
 
 **PR size.** If a PR cannot be reviewed in one sitting, split it. This is a hard constraint for a
 solo-maintainer project with outside contributors, because unreviewable PRs are either merged unread or
