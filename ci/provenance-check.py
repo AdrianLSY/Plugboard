@@ -88,14 +88,42 @@ def reconcile() -> list[str]:
     return problems
 
 
+class ToolAbsent(Exception):
+    """A declared tool is not on PATH.
+
+    Carried rather than printed, so the CALLER decides what it means. An absent
+    `mix` costs the proxy component and nothing else; an absent `git` costs every
+    expectation this check derives, and those are different verdicts.
+    """
+
+    def __init__(self, tool: str) -> None:
+        super().__init__(tool)
+        self.tool = tool
+
+
+def run_tool(cmd: list[str], cwd: Path) -> subprocess.CompletedProcess:
+    """Run cmd, or raise ToolAbsent naming it. Every subprocess here goes through
+    this.
+
+    Two of them did not, and each was wrong in its own direction: one let
+    FileNotFoundError escape as a traceback, the other caught it and printed
+    `[skip]`. Absent is neither. ci/make/elixir.mk says why in its own refusal --
+    "a target that skips when its toolchain is absent reports green over an
+    unchecked module" -- and a traceback is not a verdict either.
+    """
+    try:
+        return subprocess.run(cmd, cwd=str(cwd), capture_output=True,
+                              text=True, check=False)
+    except OSError as err:
+        raise ToolAbsent(cmd[0]) from err
+
+
 def git(*args: str) -> str:
-    return subprocess.run(["git", *args], cwd=str(ROOT), capture_output=True,
-                          text=True, check=False).stdout.strip()
+    return run_tool(["git", *args], ROOT).stdout.strip()
 
 
 def reported(component: str) -> tuple[str, str]:
-    done = subprocess.run(COMPONENTS[component], cwd=str(ROOT / component),
-                          capture_output=True, text=True, check=False)
+    done = run_tool(COMPONENTS[component], ROOT / component)
     return done.returncode, (done.stdout + done.stderr)
 
 
@@ -138,9 +166,13 @@ def check_formatting(root: Path) -> list[str]:
             problems.append(f"{rel}: absent -- run `make stamp`")
             continue
         try:
-            done = subprocess.run(cmd, cwd=root / cwd, capture_output=True, text=True)
-        except FileNotFoundError:
-            print(f"  [skip] {rel}: {cmd[0]} is not on PATH")
+            done = run_tool(cmd, root / cwd)
+        except ToolAbsent as absent:
+            problems.append(
+                f"{rel}: {absent.tool} is not on PATH, so this generated source "
+                f"was not read by the linter that refuses it. Install it and "
+                f"re-run -- skipping here reports green over an unchecked file, "
+                f"which is how the generated Elixir reached CI twice")
             continue
         if done.returncode != 0 or (stdout_is_verdict and done.stdout.strip()):
             # The first line that carries WORDS. gofmt prints a bare filename and
@@ -297,12 +329,32 @@ def renders() -> list[str]:
 def main(argv: list[str]) -> int:
     problems: list[str] = (reconcile() + renders() + selfcheck()
                            + refuses_an_absent_toolchain())
-    want_commit = git("rev-parse", "HEAD")
-    want_tree = "dirty" if git("status", "--porcelain") else "clean"
-    want_version = git("describe", "--tags", "--always", "--dirty")
+    # Every expectation below is derived from git, so an absent git is not one
+    # component's problem -- there is nothing left to compare against. Refused
+    # here, with the tool named, rather than raised from four lines down.
+    try:
+        want_commit = git("rev-parse", "HEAD")
+        want_tree = "dirty" if git("status", "--porcelain") else "clean"
+        want_version = git("describe", "--tags", "--always", "--dirty")
+    except ToolAbsent as absent:
+        print(f"[FAIL] provenance: {absent.tool} is not on PATH, so every value "
+              f"this check compares against is underivable and nothing was "
+              f"verified. Install it and re-run.")
+        for problem in problems:
+            print(f"  - {problem}")
+        print("  rule: docs/code/rules/build-provenance-from-one-place.md")
+        return 1
 
     for component in sorted(COMPONENTS):
-        code, out = reported(component)
+        try:
+            code, out = reported(component)
+        except ToolAbsent as absent:
+            problems.append(
+                f"{component}: {absent.tool} is not on PATH, so nothing ran for it "
+                f"and its stamp is unverified. Install it and re-run -- the other "
+                f"components are still reported below, which is the half a "
+                f"traceback here used to take with it")
+            continue
         if code != 0:
             problems.append(f"{component}: did not start ({out.strip().splitlines()[-1:] or ['no output']})")
             continue
