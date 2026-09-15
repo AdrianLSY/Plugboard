@@ -41,6 +41,9 @@ thing to know before reopening anything.
 | `D26` | WebTransport is designed for, not shipped | [note](d26-webtransport-deferred.md) |
 | `D27` | Observability before the hot path | [note](d27-observability-first.md) |
 | `D28` | Licensing: Apache-2.0 over the authored tree | [note](d28-licensing.md) |
+| `D29` | No gate manifest. The roster is discovered; the INVOCATIONS are reconciled | [note](d29-no-gate-manifest.md) |
+| `D30` | Durable state is held in PostgreSQL | [note](d30-durable-state-postgresql.md) |
+| `D31` | A declared out-of-scope set may not name its own declarant's tree | [note](d31-out-of-scope-containment.md) |
 
 ## Retired identifiers
 
