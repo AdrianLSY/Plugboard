@@ -8,6 +8,15 @@ import (
 	"plugboard/conformance/recorder"
 )
 
+// Named because `goconst` counts a repeated literal across the package and is
+// right to: a field name retyped nine times is nine places to mistype it.
+const (
+	contentLength = "Content-Length"
+	fiveOctets    = "ABCDE"
+	notACount     = "not a count"
+	moreThanOne   = "more than one"
+)
+
 // The framing an instrument refuses to guess at.
 //
 // This file exists because the instrument guessed. `Content-Length: 5` followed
@@ -31,45 +40,47 @@ import (
 // normalising nothing.
 func TestMalformedFramingIsRefusedRatherThanGuessedAt(t *testing.T) {
 	t.Parallel()
+	// Field order is govet fieldalignment's, not a reader's -- the same trade
+	// conformance/harness records, and for the same linter.
 	for _, c := range []struct {
 		name     string
-		fields   []recorder.Field
 		body     string
 		mentions string
+		fields   []recorder.Field
 	}{
 		{
 			name:     "two lengths that disagree",
-			fields:   []recorder.Field{{Name: "Content-Length", Value: "5"}, {Name: "Content-Length", Value: "3"}},
-			body:     "ABCDE",
-			mentions: "more than one",
+			fields:   []recorder.Field{{Name: contentLength, Value: "5"}, {Name: contentLength, Value: "3"}},
+			body:     fiveOctets,
+			mentions: moreThanOne,
 		},
 		{
 			name:     "two lengths that agree",
-			fields:   []recorder.Field{{Name: "Content-Length", Value: "5"}, {Name: "content-length", Value: "5"}},
-			body:     "ABCDE",
-			mentions: "more than one",
+			fields:   []recorder.Field{{Name: contentLength, Value: "5"}, {Name: strings.ToLower(contentLength), Value: "5"}},
+			body:     fiveOctets,
+			mentions: moreThanOne,
 		},
 		{
 			name:     "one field carrying a list",
-			fields:   []recorder.Field{{Name: "Content-Length", Value: "5, 5"}},
-			body:     "ABCDE",
-			mentions: "not a count",
+			fields:   []recorder.Field{{Name: contentLength, Value: "5, 5"}},
+			body:     fiveOctets,
+			mentions: notACount,
 		},
 		{
 			name:     "a negative length",
-			fields:   []recorder.Field{{Name: "Content-Length", Value: "-5"}},
-			mentions: "not a count",
+			fields:   []recorder.Field{{Name: contentLength, Value: "-5"}},
+			mentions: notACount,
 		},
 		{
 			name:     "a signed length",
-			fields:   []recorder.Field{{Name: "Content-Length", Value: "+5"}},
-			body:     "ABCDE",
-			mentions: "not a count",
+			fields:   []recorder.Field{{Name: contentLength, Value: "+5"}},
+			body:     fiveOctets,
+			mentions: notACount,
 		},
 		{
 			name:     "a length that is not a number at all",
-			fields:   []recorder.Field{{Name: "Content-Length", Value: "five"}},
-			mentions: "not a count",
+			fields:   []recorder.Field{{Name: contentLength, Value: "five"}},
+			mentions: notACount,
 		},
 	} {
 		t.Run(c.name, func(t *testing.T) {
@@ -94,13 +105,13 @@ func TestWellFramedBodiesAreStillRead(t *testing.T) {
 	t.Parallel()
 	t.Run("a declared length reads exactly that many octets", func(t *testing.T) {
 		t.Parallel()
-		body, err := readBody(bufio.NewReader(strings.NewReader("ABCDEtrailing")),
-			[]recorder.Field{{Name: "Content-Length", Value: "5"}})
+		body, err := readBody(bufio.NewReader(strings.NewReader(fiveOctets+"trailing")),
+			[]recorder.Field{{Name: contentLength, Value: "5"}})
 		if err != nil {
 			t.Fatalf("a single valid Content-Length was refused: %v", err)
 		}
-		if string(body) != "ABCDE" {
-			t.Errorf("read %q, want %q", body, "ABCDE")
+		if string(body) != fiveOctets {
+			t.Errorf("read %q, want %q", body, fiveOctets)
 		}
 	})
 	t.Run("no length field means no body", func(t *testing.T) {
