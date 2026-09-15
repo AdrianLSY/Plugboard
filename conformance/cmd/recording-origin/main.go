@@ -89,7 +89,15 @@ func serve(conn net.Conn, rec *recorder.Ordered, recordDir string, emitBytes int
 	}
 	body, err := readBody(br, fields)
 	if err != nil {
-		if writeErr := writeStatus(conn, "501 Not Implemented", nil); writeErr != nil {
+		// 400 for framing that is INVALID, 501 for framing this instrument does
+		// not implement. RFC 9112 6.3 makes an invalid Content-Length an
+		// unrecoverable error answered with 400; a transfer coding is a thing
+		// this origin declines to read, which is a different statement.
+		status := "501 Not Implemented"
+		if errors.Is(err, errInvalidFraming) {
+			status = "400 Bad Request"
+		}
+		if writeErr := writeStatus(conn, status, nil); writeErr != nil {
 			warn(writeErr)
 		}
 		return err
@@ -159,8 +167,23 @@ func readFields(br *bufio.Reader) ([]recorder.Field, error) {
 	}
 }
 
+// errInvalidFraming marks a message whose framing is not merely unsupported but
+// malformed. serve answers 400 for it and 501 for framing this instrument simply
+// does not implement, because "your message is invalid" and "I do not do that"
+// are different answers and a sender can act on only one of them.
+var errInvalidFraming = errors.New("invalid message framing")
+
+// readBody reads exactly the body the fields declare, or refuses.
+//
+// It resolves nothing. Two Content-Length fields are refused rather than reduced
+// to one, EVEN WHERE THEY AGREE -- RFC 9112 6.3 permits collapsing an identical
+// pair, and this instrument declines the permission, because collapsing is
+// normalising and the package this serves is documented as normalising nothing.
+// The value is read as a count of octets and nothing else: no sign, no list, no
+// surrounding space, so `-5`, `+5` and `5, 5` are each refused rather than
+// silently becoming 5, -5 or a body that was never read.
 func readBody(br *bufio.Reader, fields []recorder.Field) ([]byte, error) {
-	length := -1
+	declared := make([]string, 0, 1)
 	for _, f := range fields {
 		switch strings.ToLower(f.Name) {
 		case "transfer-encoding":
@@ -168,21 +191,49 @@ func readBody(br *bufio.Reader, fields []recorder.Field) ([]byte, error) {
 				"Content-Length framing only, and refuses rather than guessing at a "+
 				"body it cannot frame", f.Value)
 		case "content-length":
-			n, err := strconv.Atoi(f.Value)
-			if err != nil {
-				return nil, fmt.Errorf("content-length %q: %w", f.Value, err)
-			}
-			length = n
+			declared = append(declared, f.Value)
 		}
 	}
-	if length <= 0 {
+	if len(declared) > 1 {
+		return nil, fmt.Errorf("%w: more than one content-length field (%s) -- this is "+
+			"one of the two request-smuggling shapes, and which one a hop believes is "+
+			"the whole defect, so this instrument records neither",
+			errInvalidFraming, strings.Join(declared, ", "))
+	}
+	if len(declared) == 0 {
 		return nil, nil
 	}
-	body := make([]byte, length)
-	if _, err := io.ReadFull(br, body); err != nil {
+	length, err := octetCount(declared[0])
+	if err != nil {
+		return nil, fmt.Errorf("%w: content-length %q is not a count of octets (%v) -- "+
+			"read as one it would frame a body nobody sent", errInvalidFraming, declared[0], err)
+	}
+	if length == 0 {
+		return nil, nil
+	}
+	// Grown as octets arrive rather than allocated from the declared number: a
+	// peer states that number, and this instrument is pointed at adversarial
+	// inputs by design.
+	var body bytes.Buffer
+	if _, err := io.CopyN(&body, br, int64(length)); err != nil {
 		return nil, fmt.Errorf("reading %d body octet(s): %w", length, err)
 	}
-	return body, nil
+	return body.Bytes(), nil
+}
+
+// octetCount reads RFC 9110's Content-Length production and nothing wider: one
+// or more decimal digits. strconv alone is too permissive here -- it accepts a
+// sign, and a signed length parsed as a number is how `-5` became "no body".
+func octetCount(v string) (uint64, error) {
+	if v == "" {
+		return 0, errors.New("empty")
+	}
+	for i := 0; i < len(v); i++ {
+		if v[i] < '0' || v[i] > '9' {
+			return 0, fmt.Errorf("contains %q, which is not a decimal digit", v[i])
+		}
+	}
+	return strconv.ParseUint(v, 10, 63)
 }
 
 func readLine(br *bufio.Reader) ([]byte, error) {
