@@ -167,8 +167,17 @@ Sorting by reversibility puts the irreversible work first, and the price is that
 That is accepted, not overlooked, because the alternative is worse: a walking skeleton built before the schema is frozen would either freeze the schema by accident or be thrown away, and the schema is the one artifact no later work can correct. But it sits in direct tension with the Risks entry above — *when feedback is slow, an agent or a person writes assertions that are cheap to satisfy* — so the ordering carries three obligations rather than a hope:
 
 - **The two exact-bytes gates are the milestones that matter**, and they are scheduled, not aspirational: task 36.5 turns the request-direction POST assertion green and task 38.6 the response-direction one. Their red baselines are committed from task 4.3 onward, so the gap is visible in CI from the first week rather than being discovered at section 38.
-- **Nothing in sections 5 to 25 may be justified by "the spine will need it".** Each is gated by its own conformance fixtures against a stub, not by a downstream consumer that does not exist yet.
+- **Nothing in sections 5 to 25 may be justified by "the spine will need it".** Each is gated by its own conformance fixtures against a stub, not by a downstream consumer that does not exist yet — with the exceptions stated in the tasks themselves rather than discovered, task 6.8's cross-instance verification being one: it runs on task 33.10's multi-instance harness, which is a downstream consumer.
 - **If either exact-bytes gate has not turned green by the end of section 38, the ordering has failed and the remaining sequence is re-planned** — the plan is wrong before the code is, and that is the cheaper thing to discover.
+
+**Section order is not the work order.** Some tasks depend on tasks numbered after them, and the
+dependency is recorded in the depending task's own text — named there as a prerequisite rather than
+left as a passing citation, so an agent or a person working the list in file order is told before
+starting rather than after failing. It is never recorded by moving a task. The identifiers cannot
+move: every `task N.M` reference in `tasks.md`, and every task and section number cited in this file
+and across `docs/`, resolves against them, so a renumbering that silently redirected one would be the
+defect class this repository exists to refuse. `tasks.md` is therefore the single place any instance
+is recorded, and this paragraph deliberately enumerates none.
 
 ### D16 · HTTP/2 to clients is in v1, and the edge listener is a separate component from the start
 
@@ -366,6 +375,170 @@ that an explicit manifest is easier to read than a discovery rule. Rejected: the
 to be maintained by hand against four things that already know their own answer, and a stale entry in
 it would be indistinguishable from a correct one — which is the defect the roster was made
 discoverable to avoid.
+
+### D30 · Durable state is held in PostgreSQL
+
+**Decided by the owner.** PostgreSQL is the engine of every durable store the proxy installation
+itself operates. It binds the proxy alone: no specification assigns durable state to the client-facing
+terminator, and the sidecar originates from local configuration inside the tenant's infrastructure, so
+nothing settled here reaches a tenant's deployment.
+
+**Why it is recorded now rather than left where it sat.** The store is assumed throughout the build
+and decided nowhere. `Makefile:113` defines the integration tier as real Postgres and real sockets;
+task 22.5 names the product outright, requiring notification delivery to be proven against real
+Postgres with committing transactions; the integration job in `.github/workflows/test.yml` stands up a
+`postgres:16` service container while the fast job deliberately declares none. By this repository's own
+rule a thing is decided when the register holds it with its rationale and open when it is listed as
+undecided, and [anything else is neither](../../../docs/start-here.md#conventions). D10 makes that more
+than untidiness: the carry-forward it calls load-bearing is specific to this store, so the choice has
+been carrying weight since before anyone wrote it down.
+
+None of the sixteen specifications names a storage product, and that is correct rather than an
+omission. Behaviour belongs to them and the choice belongs here; nothing below is a new obligation on a
+specification.
+
+**What is relied on, each against the requirement that needs it.**
+
+- **A row lock inside the writing transaction.** D10 states the mechanism and carries its citations;
+  they are not repeated here. What this decision adds is why the store rather than the code must supply
+  it: `routing/mount-points` makes that enforcement a property of the durable store rather than of any
+  single code path that writes to it, and requires it to hold for operations issued from independent
+  sessions. A parent-row lock taken in the writing transaction answers both at once.
+- **Transactional DDL.** `operability/schema-migration` requires an interrupted migration to leave the
+  recorded version unadvanced and to be identifiable where it stopped. A schema change that commits or
+  rolls back whole satisfies that without a hand-written inverse per step. Where a change cannot be
+  applied as one indivisible unit — a concurrent index build cannot — that specification already owns
+  the outcome rather than leaving it to be discovered: such a migration declares itself as such, and
+  declares the point a re-run resumes from.
+- **Change notification, for latency and never for correctness.** `routing/mount-points` requires a
+  committed change to become effective within a configured bound *whether or not any notification was
+  delivered, and with no notification mechanism present at all*, and task 22.4 tests exactly that. So
+  notification is an optimisation the store happens to offer, not a mechanism the system has: where it
+  is used it fires at commit, which is why task 22.5 is specific about committing transactions — a
+  sandboxed transaction never commits and so never delivers. Its absence in a replacement store would
+  cost latency rather than correctness.
+- **One store that several instances read.** D20 makes the installation multi-instance, so the durable
+  store is the shared state every instance projects from. It is not the sidecar registry:
+  `tunnel/sidecar-registry` states no durable-store obligation at all, and this decision does not give
+  it one.
+
+**This settles the engine, not the store count, and not what sits outside the platform.**
+`operability/schema-migration` contemplates an installation holding more than one durable store, each
+separately versioned and checked together with the rest; whether those share one database or several is
+that capability's to constrain. And the decision reaches only stores the installation itself operates —
+cryptographic material held outside the platform is `security/key-custody`'s, and nothing here obliges
+it into a database.
+
+*Alternatives considered:*
+
+**(a) SQLite, or any store embedded in the proxy process.** Rejected on D20. An embedded store is
+per-instance, so a mount created at one instance exists at one instance, and the cross-instance
+effectiveness bound `routing/mount-points` places on the lookup surface becomes a replication protocol
+this project would then own. It also reopens by the back door the per-instance accounting exception D20
+deliberately closed: a per-tenant bound accounted against a per-instance store grants one allowance per
+instance, which is the conformance failure that decision names.
+
+**(b) A key-value or document store.** The alternative worth engaging rather than waving away, because
+what it offers is real — the projections are already tenant-keyed, so they shard on the key they
+already have, and most of the migration machinery the previous point relies on disappears. **Rejected
+on the invariant.** The terminal-mount rule needs a lock on the *parent* that a concurrent sibling
+insert must respect, and a store with no cross-document transaction cannot offer one, so the check
+moves into application code — which is precisely what `routing/mount-points` forecloses by making the
+enforcement the store's. Reconstructing it means a lease per subtree, which is a second durable system
+with failure modes of its own, or optimistic retry, whose conflict window that capability's concurrency
+requirement does not permit. The invariant is not a detail: it is what makes strip-one-segment-and-retry
+terminate at the unique correct answer with no trie, no sort and no tie-break.
+
+**(c) Leave it undecided.** Rejected on the rule cited above, and on the specific harm rather than on
+principle: the assumption is already encoded across the build, so "undecided" describes nothing true of
+the tree. An assumption encoded several times and stated nowhere is this repository's duplication defect
+with the original missing — there is no first encoding for the copies to be reconciled against, which is
+why no gate could have caught it.
+
+**What it costs, named rather than discovered.**
+
+An operational dependency the tenant never sees and the operator cannot avoid: a database to run, back
+up, restore and upgrade, on whose availability the mutation path depends. Not the matching path —
+`routing/mount-points` already requires a lookup to complete against the last loaded state while the
+store is unreachable, and task 22.8 is where that is proven — so the honest statement of the blast
+radius is that mutations stop while traffic continues.
+
+The fast tier has to stay free of this store, and that is a constraint on the architecture rather than
+on the test setup: a module that cannot be exercised without a database is a module the tier a
+contributor runs on save does not cover. The mitigation is already stated in Risks / Trade-offs under
+*[Slow test suite reproduces the original root cause]* and is not restated here. What this decision adds
+is that the constraint now descends from a recorded choice, so a contributor asking why the core may not
+simply query has an entry to read instead of a habit to infer.
+
+Part of the system's correctness then lives in the store rather than in the pure core, invisible to the
+type system and unreachable by the fast tier. That cost has been paid once already, and the way it
+failed is recorded rather than inferred: every "concurrent" test in the reference ran under one shared
+sandbox connection (`data_case.ex:46`), so the `FOR UPDATE` locks the invariant depends on were never
+once contended. Choosing this store means owning the contended integration test the reference never had.
+
+**Reversibility, under D24's own framing.** The store is not the wire schema and the asymmetry does not
+reach it: no tenant pins a database version, nothing a tenant deploys can observe the choice, and the
+operator upgrades their own store on their own schedule. So this is reversible, and the price is stated
+rather than implied — the store-enforced invariants re-expressed in whatever replaces them or moved into
+code with a serialisation story of their own, a data migration conducted under
+`operability/schema-migration`'s own rules, and an integration tier rewritten against the new store. That
+is one component's rewrite and one migration, paid once, by one party, with no tenant action required.
+Expensive, bounded, and categorically unlike the schema decisions D24 governs, which cannot be paid at
+all.
+
+**What would reopen it.** A stated durable-state requirement one PostgreSQL cluster cannot meet — a
+write-latency bound across geographically separated instances, or a per-tenant volume beyond what one
+primary serves — because the answer to either is a second system of record rather than a tuning exercise.
+A decision moving the terminal-mount invariant out of the store and into code, which would remove the
+largest single reason recorded here. A hosting arrangement whose managed PostgreSQL withholds the trigger
+or DDL surface this relies on.
+
+### D31 · A declared out-of-scope set may not name its own declarant's tree
+
+**Decided.** `ci/vault.json`'s `out_of_scope` key declares a set of paths byte-unchanged against a
+pinned baseline, and names in `declared_by` the change forbidden to touch them. Those are not the same
+mechanism. `ci/gates/out_of_scope.py` reads `declared_by` for the failure text and for the expiry check
+that ends a declaration once every declarant is archived. **The byte-unchanged assertion itself is
+unconditional and cannot observe which change is editing.**
+
+So re-pointing `declared_by` does not re-scope the freeze. It changes whose name the failure prints and
+when the declaration expires, and nothing else. On 2026-09-12 the set naming
+`openspec/changes/rebuild-plugboard/specs` was re-pointed from the two archiving documentation changes
+to `rebuild-plugboard` itself — the change that owns those sixteen specifications and must revise them
+as implementation finds gaps. A freeze whose ending condition was days away became one that ends when
+the plan does, and the manifest recorded the move as the assertion continuing to mean what it meant. It
+does not: the field that scopes the declaration is not the field the assertion reads, so the inversion
+was invisible in review and every gate stayed green through it.
+
+**The invariant this installs.** A declared out-of-scope path may not lie inside a declaring change's
+own directory. It is checkable, it is what "out of scope" means, and having it as a check rather than as
+a comment is the difference between the two states this repository keeps distinguishing. Task 3.16 does
+the work.
+
+*Alternatives considered:*
+
+**(a) Retire the gate along with the declaration.** Refused, and not on preference:
+[`openspec/specs/docs/knowledge-base/spec.md`](../../specs/docs/knowledge-base/spec.md) holds the
+byte-unchanged requirement and requires the assertion be among those the aggregating target reports. The
+declaration may go; the gate may not.
+
+**(b) Re-baseline a third time.** Refused on evidence already in the tree. A pinned baseline cannot name
+the commit that carries the revision it is meant to admit, so every revision becomes a two-commit dance
+whose first commit is red — and a squash merge destroys the intermediate identifier, which is exactly how
+`26d2927` came to be reachable from nothing and `make check` came to fail for every reader but its
+author.
+
+**(c) Keep the declaration and re-baseline per spec revision.** Refused: it converts a deliberate visible
+act into a routine one, and a step taken on every change is a step nobody reads.
+
+**What it costs, named rather than discovered.** Retiring the declaration removes the only mechanical
+control against a coherence pass silently revising a specification no task named — the defect the gate's
+own docstring says motivated it, and `/opsx:update` reconciles neighbouring artifacts over glob-expanded
+spec paths, so the hazard is real rather than theoretical. The containment invariant replaces *who may
+not edit* with *who may not declare*, which is a weaker property, and this decision does not pretend
+otherwise. Whether anything should replace the immutability half — and if so what, given that the owner
+of these specifications must be able to revise them — is left open here rather than answered by
+implication.
 
 ## Open Questions
 
