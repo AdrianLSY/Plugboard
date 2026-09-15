@@ -39,9 +39,11 @@ clause cases, which are this fixture's subject.
 
 ## The three undeclared-workflow cases, added by task 3.1
 
-`ci/vault.json` declares five workflows since D29 settled task 3.1, and this tree carries two. The
-other three are therefore reported as declared-but-absent — which is the same case the tree already
-demonstrated for one file, now demonstrated for the set.
+`ci/vault.json` declares every workflow the repository runs, and this tree carries two of them. The
+rest are therefore reported as declared-but-absent — which is the same case the tree already
+demonstrated for one file, now demonstrated for the set. The exact set is enumerated in `expect.json`
+and is checked on every run; this paragraph is not, which is why it states no count — it said "five"
+and "the other three" while the declaration had grown to seven.
 
 That is the point of the case rather than an accident of the fixture. `ci/gates/runner.py` checks the
 forbidden clauses ONLY on declared workflows, so an undeclared one is a blocking job whose path

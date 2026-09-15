@@ -359,7 +359,7 @@ filters and `continue-on-error` only on what `runner.workflows` declares, so tho
 blocking jobs with their refusal-defeating clauses read by nothing, and every gate was green
 throughout.
 
-**What was built instead.** All five workflows are declared with their required triggers and a stated
+**What was built instead.** Every workflow is declared with its required triggers and a stated
 reason, and a new `runner-workflows` correspondence reconciles that declaration against the directory
 in both directions: a workflow file nobody declared fails by name, and a declaration whose file is
 gone fails too. Both demonstrated.
