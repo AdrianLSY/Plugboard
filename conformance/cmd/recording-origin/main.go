@@ -220,7 +220,7 @@ func readBody(br *bufio.Reader, fields []recorder.Field) ([]byte, error) {
 	// peer states that number, and this instrument is pointed at adversarial
 	// inputs by design.
 	var body bytes.Buffer
-	if read, err := io.CopyN(&body, br, int64(length)); err != nil {
+	if read, err := io.CopyN(&body, br, length); err != nil {
 		// io.CopyN reports a short read as io.EOF, and run() suppresses io.EOF so
 		// an ordinary connection close between requests stays quiet. A body that
 		// stopped early is the opposite of a quiet end, so it is restated as what
@@ -237,7 +237,7 @@ func readBody(br *bufio.Reader, fields []recorder.Field) ([]byte, error) {
 // octetCount reads RFC 9110's Content-Length production and nothing wider: one
 // or more decimal digits. strconv alone is too permissive here -- it accepts a
 // sign, and a signed length parsed as a number is how `-5` became "no body".
-func octetCount(v string) (uint64, error) {
+func octetCount(v string) (int64, error) {
 	if v == "" {
 		return 0, errors.New("empty")
 	}
@@ -246,7 +246,10 @@ func octetCount(v string) (uint64, error) {
 			return 0, fmt.Errorf("contains %q, which is not a decimal digit", v[i])
 		}
 	}
-	return strconv.ParseUint(v, 10, 63)
+	// ParseInt, not ParseUint: the digit check above already refuses a sign, so
+	// the value is non-negative by construction and this returns the width
+	// io.CopyN takes -- which leaves no conversion for anyone to audit.
+	return strconv.ParseInt(v, 10, 64)
 }
 
 func readLine(br *bufio.Reader) ([]byte, error) {
