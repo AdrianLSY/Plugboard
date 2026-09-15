@@ -19,8 +19,12 @@ ci/gates/correspondences.py exists.
 
 ## Two halves, because the obligation has two encodings
 
-  1. MAKE: every target whose recipe runs the Go toolchain lists the generating
-     target among its prerequisites. Add a target that compiles without it and
+  1. MAKE: every target whose recipe TYPE-CHECKS -- in either language -- lists
+     the generating target among its prerequisites. Both languages, because the
+     first version of this gate named only the Go make files and the Elixir half
+     of the identical defect reached CI: `mix compile --warnings-as-errors` on a
+     missing Plugboard.BuildStamp. A gate whose declared coverage omits half its
+     subject reports green over that half. Add a target that compiles without it and
      this fails, so the make graph cannot quietly lose the edge.
   2. WORKFLOW: every job that reaches the toolchain around make runs the
      generator FIRST. Order is checked, not containment: a step that regenerates
@@ -56,10 +60,46 @@ from _workflow import first_execution
 GATE_ID = "build-prerequisites"
 RULE_NOTE = "docs/code/rules/generated-sources-are-generated-first.md"
 
-#: A make rule. Lowercase start excludes `.PHONY`; the negative lookahead on `=`
-#: excludes `VAR := value`, which is a colon in a line that is not a rule.
-_RULE = re.compile(r"^([a-z][a-z0-9-]*)\s*:(?!=)\s*(.*)$")
-_JOB = re.compile(r"^  ([A-Za-z0-9_-]+):\s*$")
+#: A make rule. The leading `.` of `.PHONY` is excluded by requiring a letter or
+#: underscore; the negative lookahead on `=` excludes `VAR := value`, which is a
+#: colon in a line that is not a rule. Underscores and capitals are allowed
+#: because make allows them and a target named `test_fast` whose recipe this
+#: dropped would have been silently uncovered.
+_RULE = re.compile(r"^([A-Za-z_][A-Za-z0-9_-]*)\s*:(?!=)\s*(.*)$")
+#: A job key. The trailing-comment group matters: `  lint:  # go only` is a job,
+#: and without it that job's steps were absorbed into the previous job -- which
+#: is silent NON-COVERAGE, the failure mode this gate exists to prevent.
+_JOB = re.compile(r"^  ([A-Za-z0-9_-]+):[ \t]*(#.*)?$")
+
+
+def compiling(cfg: dict) -> list[re.Pattern]:
+    """One pattern per toolchain: any declared invocation followed by a declared verb.
+
+    Declared as invocation + verb rather than as literal strings, so `$(GO) build`,
+    `go build` and `$(GOCMD) build` are one declaration. A reviewer defeated the
+    literal-string version with `cd sidecar && go build ./...` in a recipe and with
+    `$(GO) install`, neither of which any listed literal matched.
+    """
+    out = []
+    for name, spec in sorted(cfg["compiles"].items()):
+        if name.startswith("_"):
+            continue
+        inv = "|".join(re.escape(i) for i in spec["invocations"])
+        verbs = "|".join(re.escape(v) for v in spec["verbs"])
+        out.append(re.compile(rf"(?:^|[\s;&|(]){{0,1}}(?:{inv})\s+(?:{verbs})(?![\w-])"))
+    for tool in cfg["standalone_tools"]:
+        out.append(re.compile(rf"(?<![\w/-]){re.escape(tool)}(?![\w-])"))
+    return out
+
+
+def first_match(body: str, patterns: list[re.Pattern]) -> int:
+    """Source line index of the first EXECUTED line matching any pattern, or -1."""
+    from _workflow import executable_lines
+    for i, text in executable_lines(body):
+        for seg in re.split(r"&&|\|\||;|\|", text):
+            if any(p.search(seg.strip()) for p in patterns):
+                return i
+    return -1
 
 
 def make_rules(text: str) -> dict[str, tuple[set[str], list[str]]]:
@@ -94,8 +134,8 @@ def jobs(body: str) -> list[tuple[str, str]]:
 def run(scan_root: Path, report_only: bool) -> int:
     cfg = load_manifest(repo_root())["build_prerequisites"]
     target = cfg["prerequisite_target"]
-    markers = [m for m in cfg["compiles_in_make"] if not m.startswith("_")]
-    compiles = [c for c in cfg["compiles_outside_make"] if not c.startswith("_")]
+    markers = compiling(cfg)
+    compiles = markers
     provides = [c for c in cfg["provides"] if not c.startswith("_")]
     report = Report(GATE_ID, RULE_NOTE)
     covered: list[str] = []
@@ -105,14 +145,14 @@ def run(scan_root: Path, report_only: bool) -> int:
         path = scan_root / rel
         if not path.is_file():
             continue
-        report.examine(rel)
         for name, (prereqs, recipe) in sorted(make_rules(path.read_text(encoding="utf-8")).items()):
-            if not any(m in l for l in recipe for m in markers):
+            if not any(m.search(l) for l in recipe for m in markers):
                 continue
+            report.examine(f"{rel}:{name}")
             covered.append(f"{rel}:{name}")
             if target not in prereqs:
                 report.fail(
-                    f"{rel}: target `{name}` type-checks Go but does not list "
+                    f"{rel}: target `{name}` type-checks but does not list "
                     f"`{target}` as a prerequisite -- it compiles a generated "
                     f"source without generating it, which fails on any tree where "
                     f"the generated file is absent. A clean checkout is exactly "
@@ -121,18 +161,20 @@ def run(scan_root: Path, report_only: bool) -> int:
 
     # 2. The workflow side.
     wf_dir = scan_root / cfg["workflows_dir"]
-    for path in sorted(wf_dir.glob("*.yml")) if wf_dir.is_dir() else []:
+    globs = cfg["workflow_globs"]
+    found_wf = sorted({p for g in globs for p in wf_dir.glob(g)}) if wf_dir.is_dir() else []
+    for path in found_wf:
         rel = str(path.relative_to(scan_root))
-        report.examine(rel)
         for name, body in jobs(path.read_text(encoding="utf-8")):
-            at = first_execution(body, compiles)
+            at = first_match(body, compiles)
             if at < 0:
                 continue
+            report.examine(f"{rel}:{name}")
             covered.append(f"{rel}:{name}")
-            generated_at = first_execution(body, provides)
+            generated_at = first_execution(body, provides)  # literal commands
             if generated_at < 0:
                 report.fail(
-                    f"{rel}: job `{name}` reaches the Go toolchain without going "
+                    f"{rel}: job `{name}` reaches a toolchain without going "
                     f"through make, and never runs {' or '.join(provides)}. The "
                     f"dependency the make graph declares does not reach a step "
                     f"that bypasses make"

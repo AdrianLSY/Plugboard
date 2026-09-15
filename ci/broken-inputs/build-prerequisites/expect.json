@@ -3,15 +3,36 @@
   "trees": {
     "tree-make-missing-prereq": {
       "violations": 1,
-      "cases": ["target `test-fast` type-checks Go but does not list `stamp` as a prerequisite"]
+      "cases": [
+        "target `test-fast` type-checks but does not list `stamp` as a prerequisite"
+      ]
     },
     "tree-workflow-unstamped": {
       "violations": 1,
-      "cases": ["job `go` reaches the Go toolchain without going through make, and never runs make stamp or make warm"]
+      "cases": [
+        "job `go` reaches a toolchain without going through make, and never runs make stamp or make warm"
+      ]
     },
     "tree-workflow-wrong-order": {
       "violations": 1,
-      "cases": ["job `lint` generates the source AFTER compiling it"]
+      "cases": [
+        "job `lint` generates the source AFTER compiling it"
+      ]
+    },
+    "tree-elixir-missing-prereq": {
+      "violations": 1,
+      "cases": [
+        "target `test-integration` type-checks but does not list `stamp` as a prerequisite"
+      ]
+    },
+    "tree-bypasses": {
+      "violations": 4,
+      "cases": [
+        "target `install-all` type-checks but does not list `stamp` as a prerequisite",
+        "target `release` type-checks but does not list `stamp` as a prerequisite",
+        "target `test_fast` type-checks but does not list `stamp` as a prerequisite",
+        "job `lint` reaches a toolchain without going through make, and never runs make stamp or make warm"
+      ]
     }
   }
 }

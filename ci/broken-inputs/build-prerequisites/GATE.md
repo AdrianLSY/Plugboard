@@ -22,6 +22,13 @@ right about what it ran. What was missing was the relation **between** them.
 exists and `lint` still declares it, so the two targets side by side look
 consistent. `test-fast` type-checks the generated package without generating it.
 
+**`tree-elixir-missing-prereq` — the same lost edge, in the other language.**
+`lint` and `test-fast` declare `stamp`; `test-integration` does not, and
+`mix compile --warnings-as-errors` over a missing `Plugboard.BuildStamp` is a failed build
+rather than a warning. This tree exists because the **first version of this gate named only
+the Go make files**, so this exact defect reached CI while the gate reported green — a gate
+whose declared coverage omits half its subject reports green over that half.
+
 **`tree-workflow-unstamped` — a job bypasses make and never generates.** The step
 is `- run: echo "make stamp"`. That **is** a run body and it **does** contain the
 command — the exact shape that defeated two earlier gates in this repository (a
@@ -32,6 +39,17 @@ is what refuses it, and this tree is here to keep that refusal pinned.
 **`tree-workflow-wrong-order` — the generator runs, too late.** Containment is
 satisfied and the build still fails. This is the case that makes the gate read
 *order* rather than *presence*.
+
+**`tree-bypasses` — four ways past the first version, found by attacking it.** An underscore in
+a target name (the rule regex demanded `[a-z][a-z0-9-]*`, so the recipe was never read); a literal
+`go build` reached after `&&` (the markers were `$(GO) <verb>` literal strings); `go install`, a
+verb that was not on the list; and a `.yaml` workflow whose job key carried a trailing comment —
+two bypasses at once, since the file was globbed as `*.yml` only and the job regex demanded a bare
+key ending the line.
+
+Three of those four are **silent non-coverage**: the gate read nothing and reported green, which
+is worse than reporting a problem. Toolchains are now declared as invocation + verb rather than as
+literal strings, and both regexes were widened to what make and YAML actually accept.
 
 ## Why the make half is keyed on the operation, not the target name
 
@@ -50,4 +68,4 @@ name. A floor, not a proof.
 
 ## Expected
 
-Exit 1 against each tree, one violation each.
+Exit 1 against each of the five trees: one violation each, except `tree-bypasses`, which emits four.

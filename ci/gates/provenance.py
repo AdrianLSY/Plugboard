@@ -35,6 +35,31 @@ Three directions, which is what pins it:
      generates is reported empty, which at startup reads exactly like a binary
      that was never stamped.
 
+## Why the marker is `git` and not "runs a subprocess"
+
+The first draft of the discovered version refused any execution primitive --
+exec.Command, os/exec, System.cmd, Port.open -- and immediately flagged four
+conformance files. Rightly, on its own terms, and wrongly in fact: the conformance
+harness STARTS PROCESSES for a living. That is its job, not a provenance
+derivation.
+
+So the marker is `git` itself, in executable text. A component has no legitimate
+reason to name it: provenance is the only thing it would be asking for, and that
+comes from the generated stamp. Stripping comments first is what makes this
+usable at all -- seven files in this tree mention git in prose and none runs it.
+
+## Why the roster is discovered
+
+The first version of this file listed its subjects in ci/vault.json. A reviewer
+attacking it planted sidecar/cmd/probe/main.go -- a new Go main deriving its own
+commit with exec.Command("git", "rev-parse", "--short", "HEAD") -- and the gate
+passed, because the list did not name the new file. A declared roster is coverage
+that silently stops growing, which is worse than no coverage: it reports a number.
+
+So every TRACKED source under a declared component root is a subject. Tracked is
+the right set, not every file on disk: CI checks out what is tracked, so an
+untracked experiment is not in any build.
+
 ## What it does not decide
 
 Whether the reported values are RIGHT -- ci/provenance-check.py runs each of the
@@ -46,29 +71,138 @@ rather than faked here.
 
 from __future__ import annotations
 
+import ast
 import re
 from pathlib import Path
 
-from _common import Report, load_manifest, main_guard, repo_root
+from _common import Report, load_manifest, main_guard, repo_root, subject_source
+from _source import config, scan_excludes, sources
 
 GATE_ID = "provenance"
 RULE_NOTE = "docs/code/rules/build-provenance-from-one-place.md"
 
 
-def strip_prose(text: str, suffix: str) -> str:
-    """Comments and doc strings removed, so only what RUNS is left.
+#: Elixir doc strings are attribute-prefixed heredocs. They are prose, and every
+#: other heredoc is not, so they are removed by name rather than by stripping all
+#: heredocs -- a string is executable text, and `System.cmd("git", ...)` is one.
+_EX_DOC = re.compile(r'@(?:module)?doc\s+"""(?:.|\n)*?"""')
 
-    Every subject file in this tree mentions git in prose and none of them runs
-    it. Stripping cannot open a hole: a derivation hidden behind a comment
-    marker is a comment, and does not derive anything.
+#: A comment the BUILD RUNS. `go generate` executes these, so a `//go:generate`
+#: that derives provenance is executable text that comment-stripping would delete
+#: by construction. Found by a reviewer, who used exactly that to hide one.
+_GO_DIRECTIVE = "//go:"
+
+
+def _scan(text: str, line: tuple, block: list, quotes: list, keep: tuple) -> str:
+    """Comments removed, string literals preserved, by scanning rather than regex.
+
+    A regex deleting from `//` to end of line also deletes the rest of any line
+    holding "http://" inside a string. A reviewer used that to hide an
+    exec.Command("git", ...) from this gate, in Go that compiles and vets clean;
+    the same trick worked in Elixir, where `#{` begins an interpolation and not a
+    comment. Both needed the scanner to know it is inside a string.
     """
+    out: list[str] = []
+    i, n = 0, len(text)
+    while i < n:
+        quote = next((q for q in quotes if text.startswith(q, i)), None)
+        if quote:
+            out.append(quote)
+            j = i + len(quote)
+            while j < n:
+                if text[j] == "\\" and quote != "`":
+                    out.append(text[j:j + 2])
+                    j += 2
+                    continue
+                if text.startswith(quote, j):
+                    out.append(quote)
+                    j += len(quote)
+                    break
+                out.append(text[j])
+                j += 1
+            i = j
+            continue
+        opened = next(((a, b) for a, b in block if text.startswith(a, i)), None)
+        if opened:
+            end = text.find(opened[1], i + len(opened[0]))
+            i = n if end < 0 else end + len(opened[1])
+            continue
+        marker = next((c for c in line if text.startswith(c, i)), None)
+        if marker and not any(text.startswith(k, i) for k in keep):
+            end = text.find("\n", i)
+            i = n if end < 0 else end
+            continue
+        out.append(text[i])
+        i += 1
+    return "".join(out)
+
+
+def strip_prose(text: str, suffix: str) -> str:
+    """Only what RUNS. Comments and doc strings gone; string literals kept."""
     if suffix == ".go":
-        text = re.sub(r"/\*.*?\*/", "", text, flags=re.S)
-        return re.sub(r"//[^\n]*", "", text)
+        return _scan(text, ("//",), [("/*", "*/")], ['"', "`", "'"], (_GO_DIRECTIVE,))
     if suffix in (".ex", ".exs"):
-        text = re.sub(r'"""(?:.|\n)*?"""', "", text)
-        return re.sub(r"#[^\n]*", "", text)
-    return re.sub(r"#[^\n]*", "", text)
+        return _scan(_EX_DOC.sub("", text), ("#",), [], ['"""', '"', "'"], ())
+    return _scan(text, ("#",), [], [], ())
+
+
+def derives(source: Path) -> list[str]:
+    """What is missing from the one place, read as CODE rather than as text.
+
+    Parsed with `ast` -- standard library, so the gate keeps its no-dependency
+    rule. A substring search over the file was satisfied by this module's own
+    docstring, which names both `subprocess` and `git` while running neither: the
+    check could not have failed, and a reviewer showed it by deleting the entire
+    derivation and watching the gate stay green.
+    """
+    try:
+        tree = ast.parse(source.read_text(encoding="utf-8"))
+    except SyntaxError as exc:
+        return [f"does not parse ({exc.msg})"]
+    missing = []
+    runs_git = any(
+        isinstance(node, ast.Call)
+        and any(isinstance(a, ast.Constant) and a.value == "git"
+                for arg in node.args
+                for a in (arg.elts if isinstance(arg, (ast.List, ast.Tuple)) else [arg]))
+        for node in ast.walk(tree)
+    )
+    if not runs_git:
+        missing.append("any call passing `git` as a command argument")
+    names = {n.id for n in ast.walk(tree) if isinstance(n, ast.Name)} | {
+        n.attr for n in ast.walk(tree) if isinstance(n, ast.Attribute)} | {
+        a.name for n in ast.walk(tree) if isinstance(n, ast.Import) for a in n.names}
+    if "subprocess" not in names:
+        missing.append("any use of `subprocess`")
+    return missing
+
+
+def build_files(scan_root: Path, cfg: dict, manifest: dict) -> list[str]:
+    """Every TRACKED build file: `Makefile` and `*.mk`, discovered not listed.
+
+    Through the same reader the source roster uses, with the build-file suffixes
+    standing in for the language suffixes -- so "tracked" means exactly what it
+    means there, and a vendored proxy/deps/mix_audit/Makefile that no checkout of
+    this repository contains is not a subject.
+    """
+    suffixes = {s: "make" for s in cfg["build_file_suffixes"]}
+    return sources(scan_root, {"languages": suffixes}, manifest)
+
+
+def _fields_of(source: Path) -> list[str]:
+    """The string members of the module's FIELDS assignment, read as code."""
+    try:
+        tree = ast.parse(source.read_text(encoding="utf-8"))
+    except SyntaxError:
+        return []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign) and any(
+                isinstance(x, ast.Name) and x.id == "FIELDS" for x in node.targets):
+            value = node.value
+            if isinstance(value, (ast.Tuple, ast.List)):
+                return [e.value for e in value.elts
+                        if isinstance(e, ast.Constant) and isinstance(e.value, str)]
+    return []
 
 
 def run(scan_root: Path, report_only: bool) -> int:
@@ -76,10 +210,27 @@ def run(scan_root: Path, report_only: bool) -> int:
     cfg = manifest["provenance"]
     one_place = cfg["one_place"]
     fields = [f for f in cfg["fields"] if not f.startswith("_")]
-    derives = [m for m in cfg["one_place_markers"] if not m.startswith("_")]
     forbidden = [m for m in cfg["executes"] if not m.startswith("_")]
-    subjects = [s for s in cfg["subject_files"] if not s.startswith("_")]
+    # The roster is DISCOVERED, not listed. A hardcoded subject list is coverage
+    # that silently stops growing: a reviewer planted sidecar/cmd/probe/main.go,
+    # a new Go main deriving its own commit with exec.Command("git", ...), and
+    # the listed version of this gate passed over it because the list did not
+    # name it. Every tracked source under a declared component root is held.
+    roots = tuple(r for r in cfg["component_roots"] if not r.startswith("_"))
+    discovered = [s for s in sources(scan_root, config(manifest), manifest)
+                  if s.startswith(roots)]
+    # Build files are discovered too. Listing them missed every per-component
+    # Makefile -- conformance/Makefile among them -- so a component's own build
+    # file could derive provenance freely while the gate reported green over the
+    # shared includes it did name.
+    builds = sorted(set(build_files(scan_root, cfg, manifest)))
+    subjects = sorted(set(discovered) | set(builds))
     calls = {k: v for k, v in cfg["called_as"].items() if not k.startswith("_")}
+    #: Files that legitimately name git for a reason that is not provenance.
+    #: Declared with the reason, and held in BOTH directions below: an entry whose
+    #: file has stopped naming git is an exemption outliving what earned it.
+    permitted = {k: v for k, v in cfg["permitted_git"].items() if not k.startswith("_")}
+    used: set[str] = set()
     report = Report(GATE_ID, RULE_NOTE)
 
     # (2) The one place still derives it.
@@ -91,11 +242,14 @@ def run(scan_root: Path, report_only: bool) -> int:
             f"every component either carries no stamp or has grown its own"
         )
     else:
-        body = strip_prose(source.read_text(encoding="utf-8"), source.suffix)
-        gone = [m for m in derives if m not in body] + [f for f in fields if f not in body]
+        gone = derives(source)
+        declared = set(_fields_of(source))
+        absent = [f for f in fields if f not in declared]
+        if absent:
+            gone.append(f"the field(s) {', '.join(absent)} in its FIELDS tuple")
         if gone:
             report.fail(
-                f"{one_place}: no longer derives {', '.join(sorted(gone))} -- the "
+                f"{one_place}: no longer holds {'; '.join(gone)} -- the "
                 f"computation has left the one place, which is the arrangement "
                 f"this gate exists to hold. Moving it back is the fix; widening "
                 f"this check is not"
@@ -114,12 +268,14 @@ def run(scan_root: Path, report_only: bool) -> int:
         # trips two markers and is one defect.
         hits = [m for m in forbidden
                 if re.search(rf"(?<![\w.]){re.escape(m)}(?![\w])", body)]
-        if hits:
+        if hits and rel in permitted:
+            used.add(rel)
+        elif hits:
             report.fail(
-                f"{rel}: runs {', '.join(f'`{h}`' for h in hits)} -- provenance "
-                f"is derived once, in {one_place}. A second derivation drifts "
-                f"from the first while both stay self-consistent, so neither "
-                f"looks wrong on its own"
+                f"{rel}: names {', '.join(f'`{h}`' for h in hits)} in executable "
+                f"text -- provenance is derived once, in {one_place}. A second "
+                f"derivation drifts from the first while both stay "
+                f"self-consistent, so neither looks wrong on its own"
             )
         if rel in calls and calls[rel] not in raw:
             report.fail(
@@ -127,6 +283,15 @@ def run(scan_root: Path, report_only: bool) -> int:
                 f"nothing generates reports an empty one, and an empty stamp "
                 f"reads at startup exactly like a binary that was never stamped"
             )
+
+    for rel, reason in sorted(permitted.items()):
+        if rel in used or not (scan_root / rel).is_file():
+            continue
+        report.fail(
+            f"{rel}: declared a permitted use of git -- \"{reason[:70]}...\" -- "
+            f"but it no longer names git. The exemption outlived what earned it; "
+            f"delete it"
+        )
 
     report.coverage(
         covered=[one_place, *subjects],
@@ -136,10 +301,11 @@ def run(scan_root: Path, report_only: bool) -> int:
             "a configuration item colliding with a provenance field (needs task 5.2's schema)",
         ],
         kind="provenance subject",
-        source="manifest",
+        source=subject_source(scan_root),
         scan_root=scan_root,
     )
-    print(f"  one place: {one_place} | subjects held to it: {len(subjects)} | "
+    print(f"  one place: {one_place} | discovered sources: {len(discovered)} | "
+          f"build files: {len(builds)} | "
           f"execution primitives refused: {len(forbidden)}")
     return report.finish(report_only=report_only)
 

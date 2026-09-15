@@ -34,6 +34,16 @@ A step that regenerates a source *after* the step that compiled it contains the 
 and the build still fails. A containment check passes on that arrangement, which makes
 containment the wrong question.
 
+## Why the declaration is invocation-plus-verb
+
+Literal strings were defeated four ways in one review: an underscore in a target name, a literal
+`go build` after `&&`, a verb (`go install`) that was not on the list, and a `.yaml` workflow whose
+job key carried a trailing comment. Three of the four produced **silent non-coverage** — the check
+read nothing and reported green.
+
+A declaration that enumerates spellings has to be complete to be correct, and nothing makes it
+complete. Declaring the toolchain and its verbs instead covers every spelling of the same call.
+
 ## What it cannot decide
 
 Whether the generated source is right — that is

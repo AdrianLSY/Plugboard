@@ -1259,7 +1259,14 @@
       "the first attempt matched `git rev-parse` and friends as substrings, and the",
       "spelling the one place actually uses -- _git(\"rev-parse\", \"HEAD\") -- defeated",
       "it, so it passed over the very tree it governed. A second derivation must run",
-      "a subprocess; there is no other route from Go, Elixir or make to git."
+      "a subprocess; there is no other route from Go, Elixir or make to git.",
+      "The roster is DISCOVERED from component_roots, not listed. A listed roster",
+      "passed over a planted sidecar/cmd/probe/main.go that derived its own commit,",
+      "because the list did not name the new file.",
+      "`executes` is `git` alone, in executable text. A wider list of execution",
+      "primitives flagged four conformance files that start processes for a living.",
+      "Build files are DISCOVERED by glob, not listed: a listed pair missed every",
+      "per-component Makefile, so a component's own build file could derive freely."
     ],
     "one_place": "ci/stamp.py",
     "fields": [
@@ -1268,26 +1275,23 @@
       "tree",
       "built_at"
     ],
-    "one_place_markers": [
-      "subprocess",
-      "git"
-    ],
     "executes": [
-      "exec.Command",
-      "os/exec",
-      "System.cmd",
-      "Port.open",
       "git"
     ],
-    "subject_files": [
-      "ci/make/go.mk",
-      "ci/make/elixir.mk",
-      "proxy/lib/plugboard.ex",
-      "proxy/mix.exs",
-      "sidecar/cmd/telephone/main.go",
-      "terminator/cmd/terminator/main.go",
-      "conformance/cmd/conformance/main.go"
+    "component_roots": [
+      "proxy",
+      "sidecar",
+      "terminator",
+      "conformance"
     ],
+    "build_file_suffixes": [
+      "Makefile",
+      ".mk"
+    ],
+    "permitted_git": {
+      "_comment": "Files that name git for a reason that is NOT provenance. Held in both directions: an entry whose file stops naming git fails as stale.",
+      "Makefile": "installs the repository's own hook path with `git rev-parse --git-path hooks`. It asks where the hooks directory is, never what revision this is, and no generated source reads its output."
+    },
     "called_as": {
       "_comment": "Build files that must GENERATE a stamp, and the invocation that does it.",
       "ci/make/go.mk": "ci/stamp.py --component",
@@ -1422,36 +1426,66 @@
   "build_prerequisites": {
     "_comment": [
       "Read by ci/gates/build_prerequisites.py. Task 3.13 put a GENERATED package",
-      "into every Go component's import graph; the make graph declared the edge and",
-      "the two CI jobs that reach the toolchain around make did not inherit it, so",
-      "the security job failed on `internal/buildstamp is not in std`. Both",
-      "encodings are held here, and the workflow half checks ORDER: generating a",
-      "source after compiling it satisfies containment and fixes nothing.",
-      "compiles_in_make lists the operations that TYPE-CHECK. `go fmt` is absent",
-      "deliberately and empirically: with internal/buildstamp deleted it exits 0",
-      "where `go vet` fails."
+      "into every component's import graph; the make graph declared the edge and the",
+      "CI jobs that reach a toolchain around make did not inherit it, so the security",
+      "job failed on `internal/buildstamp is not in std`. Both encodings are held",
+      "here, and the workflow half checks ORDER: generating a source after compiling",
+      "it satisfies containment and fixes nothing.",
+      "",
+      "Toolchains are declared as invocation + verb rather than as literal strings, so",
+      "`$(GO) build`, `go build` and `$(GOCMD) build` are all one declaration. The",
+      "verb lists are EMPIRICAL: on a stampless tree, go build/test/vet/run/install/",
+      "list/generate all fail and `go fmt` exits 0, so fmt is not a compiling site.",
+      "Both languages are listed: the first version named only the Go make files and",
+      "the Elixir half of the identical defect reached CI."
     ],
     "prerequisite_target": "stamp",
-    "compiles_in_make": [
-      "$(GO) build",
-      "$(GO) test",
-      "$(GO) vet",
-      "$(GO) run",
-      "$(GO) generate"
-    ],
-    "make_files": [
-      "ci/make/go.mk",
-      "conformance/Makefile"
-    ],
-    "workflows_dir": ".github/workflows",
-    "compiles_outside_make": [
-      "go build",
-      "go test",
-      "go vet",
-      "go run",
+    "compiles": {
+      "go": {
+        "invocations": [
+          "$(GO)",
+          "$(GOCMD)",
+          "go"
+        ],
+        "verbs": [
+          "build",
+          "test",
+          "vet",
+          "run",
+          "install",
+          "list",
+          "generate"
+        ]
+      },
+      "mix": {
+        "invocations": [
+          "$(MIX)",
+          "mix"
+        ],
+        "verbs": [
+          "compile",
+          "test",
+          "run",
+          "credo",
+          "dialyzer",
+          "sobelow"
+        ]
+      }
+    },
+    "standalone_tools": [
       "govulncheck",
       "golangci-lint",
       "golangci/golangci-lint-action"
+    ],
+    "make_files": [
+      "ci/make/go.mk",
+      "ci/make/elixir.mk",
+      "conformance/Makefile"
+    ],
+    "workflows_dir": ".github/workflows",
+    "workflow_globs": [
+      "*.yml",
+      "*.yaml"
     ],
     "provides": [
       "make stamp",

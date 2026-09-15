@@ -65,14 +65,14 @@ test-fast: require-mix stamp
 # component is a no-op there, never a missing target. `--exclude test` with the
 # tag re-included is ExUnit's own idiom for it, and it still runs every tagged
 # test where one exists.
-test-integration: require-mix
+test-integration: require-mix stamp
 	$(MIX) test --exclude test --include integration
 
-test-conformance: require-mix
+test-conformance: require-mix stamp
 	$(MIX) test --exclude test --include conformance
 
 gen: require-mix
 	@echo "proxy: nothing is generated yet"
 
-dev: require-mix
+dev: require-mix stamp
 	$(MIX) run --no-halt

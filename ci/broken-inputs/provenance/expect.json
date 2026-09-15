@@ -4,19 +4,27 @@
     "tree-second-derivation": {
       "violations": 1,
       "cases": [
-        "sidecar/cmd/telephone/main.go: runs `exec.Command`, `os/exec`, `git`"
+        "sidecar/cmd/telephone/main.go: names `git` in executable text"
       ]
     },
     "tree-one-place-gutted": {
       "violations": 1,
       "cases": [
-        "ci/stamp.py: no longer derives git, subprocess"
+        "ci/stamp.py: no longer holds any call passing `git` as a command argument; any use of `subprocess`"
       ]
     },
     "tree-uninvoked": {
       "violations": 1,
       "cases": [
         "ci/make/go.mk: never invokes `ci/stamp.py --component`"
+      ]
+    },
+    "tree-hidden-derivations": {
+      "violations": 3,
+      "cases": [
+        "proxy/lib/p.ex: names `git` in executable text",
+        "sidecar/cmd/a/main.go: names `git` in executable text",
+        "terminator/cmd/b/main.go: names `git` in executable text"
       ]
     }
   }

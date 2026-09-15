@@ -1,0 +1,17 @@
+# (4) Two bypasses of the workflow half at once.
+#
+#   - The file is `.yaml`. GitHub runs it; the gate globbed `*.yml` only, so it
+#     was scanned by the runner and skipped entirely by the check.
+#   - The job key carries a trailing comment. The job regex demanded a bare
+#     `name:` to end the line, so this job's steps were absorbed into whatever
+#     job came before it -- which is silent non-coverage again, the exact
+#     failure mode this gate exists to prevent.
+name: extra
+on:
+  push:
+jobs:
+  lint:   # go only
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: go vet ./...

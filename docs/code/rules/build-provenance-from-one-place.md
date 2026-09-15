@@ -35,6 +35,16 @@ indistinguishable from a clean one. The marker is therefore derived from `git st
 separately, and it is two words rather than a boolean — a boolean read out of a log line is a coin
 flip about which way round the author meant it.
 
+## Why the check reads code rather than text
+
+Three of this gate's own defects were the same mistake in different clothes: a regex asked a text
+question about a language question. `//` inside a string is not a comment; `#{` in Elixir is an
+interpolation; `//go:generate` is a comment the build *executes*; and a Python docstring naming
+`subprocess` and `git` satisfied a substring test over a file that had stopped calling either.
+
+Where the question is "does this run", the answer comes from a scanner that tracks string state, or
+from `ast`. A substring is evidence of nothing.
+
 ## What it cannot decide
 
 Whether the values are right. That needs the components run and their output compared against git read

@@ -65,6 +65,9 @@ jobs:
           otp-version: '27'
           elixir-version: '1.18'
       - run: make -C proxy deps
+      # sobelow compiles the project, so it needs the generated
+      # Plugboard.BuildStamp that Plugboard.provenance_line/0 references.
+      - run: make stamp
       - name: mix sobelow --exit
         run: cd proxy && mix sobelow --exit
       - name: mix deps.audit

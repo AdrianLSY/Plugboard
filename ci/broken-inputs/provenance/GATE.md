@@ -9,11 +9,16 @@
 One tree per direction, because a single tree carrying all three would let any one of them
 pass unnoticed behind the others.
 
-**`tree-second-derivation` — a component derives its own.** The sidecar shells out to
-`git rev-parse --short HEAD`. It compiles, it runs, and it prints a plausible line. It also
-asks git for the **short** hash where the one place asks for the full one, so this binary and
-the other three now disagree about what "the commit" means — and each is internally consistent,
-which is why nobody notices.
+**`tree-second-derivation` — a component derives its own.** The sidecar shells out to git. It
+compiles, it runs, and it prints a plausible line. It is also asking a *different question* than
+the one place asks, so this binary and the other three disagree about what "the commit" means —
+and each is internally consistent, which is why nobody notices.
+
+The gate's marker is `git` itself, in executable text, rather than any particular command
+spelling or execution primitive. A wider marker — `exec.Command`, `os/exec`, `System.cmd` — was
+tried and flagged four conformance files, rightly on its own terms and wrongly in fact: the
+conformance harness starts processes for a living. A component naming **git** has no second
+reading.
 
 **`tree-one-place-gutted` — the one place stops deriving.** The fields are all still there, the
 function is still called `values()`, every component still compiles and starts. They all report
@@ -23,6 +28,31 @@ ever looked for a *second* derivation; removing the first was invisible to it.
 **`tree-uninvoked` — nothing generates the stamp.** A `go.mk` with no `stamp` target. On a clean
 checkout the buildstamp package is simply absent or empty, and the binary's startup line is
 indistinguishable from one built before stamping existed.
+
+**`tree-hidden-derivations` — three ways to hide a real derivation from a regex.** All three were
+found by a reviewer attacking this gate, and all three passed before the fix:
+
+- A `//` **inside a Go string literal**. A regex deleting from `//` to end of line deletes the rest
+  of that line — and with it the `exec.Command("git", ...)` on the next. The file compiles and vets
+  clean.
+- A `//go:generate` directive. It is a comment to the compiler and an **instruction to
+  `go generate`, which runs it**. Comment-stripping deletes it by construction, so the one kind of
+  comment that executes was the one kind guaranteed to be invisible.
+- `#{` in Elixir, which begins an **interpolation**, not a comment. A regex deleting from `#` ate a
+  `System.cmd("git", ...)` that mix really compiles and really runs.
+
+The repair is a scanner that knows whether it is inside a string, and that keeps `//go:` directives
+as executable text. Stripping is still necessary — seven files in the real tree mention git in prose
+— but it now has to be done properly rather than with a substitution.
+
+## The one place is read as code, not as text
+
+Direction 2 asked whether `ci/stamp.py` still contained `subprocess` and `git`. That file's own
+**docstring** contains both words while running neither, so the check could not fail: a reviewer
+deleted the entire derivation and watched the gate stay green.
+
+It is now parsed with `ast` — standard library, so the gate keeps its no-dependency rule — and asks
+whether a call actually passes `git` as a command argument and whether `subprocess` is actually used.
 
 ## The case that matters most, and why it is here
 
@@ -39,7 +69,11 @@ respelled the way a command string does.
 ## What pins the repair, and what does not
 
 Honestly: **the three trees here do not pin it.** They fail whether or not the comment-stripping fix is
-present, because they are violating trees either way.
+present, because they are violating trees either way. Nor do they pin the roster being *discovered*
+rather than listed — that repair was forced by a reviewer planting `sidecar/cmd/probe/main.go`, a new
+Go main deriving its own commit, which the listed version passed over because the list did not name
+the new file. A discovered roster has no such blind spot, and the count it prints moves when the tree
+does.
 
 What pins it is **the real tree**. Every subject file in this repository mentions git in prose — a
 comment in `go.mk`, a `@doc` heredoc in `plugboard.ex`, a comment in each of the three Go mains — and

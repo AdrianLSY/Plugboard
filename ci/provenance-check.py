@@ -73,6 +73,66 @@ def reported(component: str) -> tuple[str, str]:
     return done.returncode, (done.stdout + done.stderr)
 
 
+#: The generated sources, and every linter each component's own `lint` target
+#: runs over them -- not only the formatter. The Go side is piped through gofmt by ci/stamp.py; the Elixir side cannot
+#: be (mix needs a project context and may be absent), so it is checked here.
+#:
+#: This exists because a trailing comma in the generated Elixir map failed
+#: `mix format --check-formatted` in CI, on a file no human wrote and that
+#: `make check` never sees -- it is gitignored, and the formatter runs only in
+#: `make -C proxy lint`. A generated file is still a file the linters read.
+#:
+#: Then a reviewer found the SECOND one the same way: `mix credo --strict`
+#: refused the generated module for functions with no @spec, which the formatter
+#: had nothing to say about. One linter was never the subject; every linter the
+#: component's lint target runs is.
+FORMATTED = {
+    "proxy/lib/plugboard/build_stamp.ex": (
+        ["mix", "format", "--check-formatted", "lib/plugboard/build_stamp.ex"], "proxy", False),
+    "proxy/lib/plugboard/build_stamp.ex (credo)": (
+        ["mix", "credo", "--strict", "lib/plugboard/build_stamp.ex"], "proxy", False),
+    # gofmt -l says nothing when a file is formatted and PRINTS ITS NAME when it
+    # is not, exiting 0 either way -- so for it, and only for it, output is the
+    # verdict. mix reports through its exit code and prints on every run.
+    "sidecar/internal/buildstamp/stamp.go": (
+        ["gofmt", "-l", "internal/buildstamp/stamp.go"], "sidecar", True),
+    "terminator/internal/buildstamp/stamp.go": (
+        ["gofmt", "-l", "internal/buildstamp/stamp.go"], "terminator", True),
+    "conformance/internal/buildstamp/stamp.go": (
+        ["gofmt", "-l", "internal/buildstamp/stamp.go"], "conformance", True),
+}
+
+
+def check_formatting(root: Path) -> list[str]:
+    """Every generated stamp, held to the formatter its component's lint runs."""
+    problems = []
+    for rel, (cmd, cwd, stdout_is_verdict) in sorted(FORMATTED.items()):
+        target = root / rel.split(" (")[0]
+        if not target.is_file():
+            problems.append(f"{rel}: absent -- run `make stamp`")
+            continue
+        try:
+            done = subprocess.run(cmd, cwd=root / cwd, capture_output=True, text=True)
+        except FileNotFoundError:
+            print(f"  [skip] {rel}: {cmd[0]} is not on PATH")
+            continue
+        if done.returncode != 0 or (stdout_is_verdict and done.stdout.strip()):
+            # The first line that carries WORDS. gofmt prints a bare filename and
+            # mix prints a diff whose last line is a pipe character; quoting
+            # either is a diagnosis nobody can act on, which is the shape of a
+            # check that discards the evidence for its own verdict.
+            said = [l.strip() for l in (done.stdout + done.stderr).splitlines()
+                    if any(c.isalpha() for c in l)]
+            problems.append(
+                f"{rel}: the generator emitted source its own component's linter "
+                f"refuses -- {said[0][:140] if said else 'exit ' + str(done.returncode)}. "
+                f"Fix ci/stamp.py; the file is generated and editing it is undone "
+                f"by the next `make stamp`")
+        else:
+            print(f"  [ok  ] {rel}: formatter-clean")
+    return problems
+
+
 def main(argv: list[str]) -> int:
     problems: list[str] = []
     want_commit = git("rev-parse", "HEAD")
@@ -111,6 +171,10 @@ def main(argv: list[str]) -> int:
             problems.append(f"{component}: `built` is not an RFC 3339 instant: {fields.get('built')!r}")
         if not problems or problems[-1].split(":")[0] != component:
             print(f"  [ok  ] {component}: {line[:96]}")
+
+    # (2a) the generated sources are formatter-clean. Their components' linters
+    # read them like any other file, and `make check` never sees them.
+    problems.extend(check_formatting(ROOT))
 
     # (3) one revision, one modified file, two different markers
     import stamp as stamp_mod
