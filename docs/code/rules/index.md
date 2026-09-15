@@ -22,6 +22,7 @@ Generated index of the notes in `docs/code/rules/`.
 - [Ten identical non-comment lines in two places is a duplication failure](duplication-threshold.md)
 - [The fast tier stays inside ten seconds, and its latency is treated as a defect class](fast-tier-latency-budget.md)
 - [A function is at most 60 non-comment lines](function-size-ceiling.md)
+- [A generated source is generated before anything compiles it](generated-sources-are-generated-first.md)
 - [Language conventions are keyed on the languages present](language-conventions-keyed-on-source.md)
 - [A module is at most 300 non-comment lines](module-size-ceiling.md)
 - [A credential is absent from the tree, and absent from the range under review](no-credential-in-tree-or-history.md)

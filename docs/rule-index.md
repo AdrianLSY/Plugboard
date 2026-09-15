@@ -14,7 +14,7 @@ the build today), **gate planned** (an obligation whose check is not built yet),
 (taste, quarantined, never a blocking objection).
 
 
-**58 rules** — 47 gated, 8 gate planned, 3 preference (5% unenforced).
+**59 rules** — 48 gated, 8 gate planned, 3 preference (5% unenforced).
 
 | rule | status | gate | note |
 |---|---|---|---|
@@ -28,6 +28,7 @@ the build today), **gate planned** (an obligation whose check is not built yet),
 | A gating test written before its subject is recorded red, and the red is a debt | **gated** | `ci/gates/expected_outcomes.py` | [note](code/rules/a-red-gate-is-a-recorded-debt.md) |
 | A generated artifact is verified against something other than its generator | **gated** | `ci/gates/generators.py` | [note](method/rules/generators-have-an-oracle.md) |
 | A generated index cannot drift | **gated** | `ci/gates/index_drift.py` | [note](method/rules/index-drift.md) |
+| A generated source is generated before anything compiles it | **gated** | `ci/gates/build_prerequisites.py` | [note](code/rules/generated-sources-are-generated-first.md) |
 | A module is at most 300 non-comment lines | **gated** | `ci/gates/size_ceilings.py` | [note](code/rules/module-size-ceiling.md) |
 | A proxied body is emitted as it arrives, and nothing accumulates it first | **gated** | `ci/gates/banned_patterns.py` | [note](code/banned-patterns/read-all-on-a-proxied-body.md) |
 | A published enumeration and the computed one are reconciled | **gated** | `ci/gates/correspondences.py` | [note](method/rules/one-set-one-encoding.md) |

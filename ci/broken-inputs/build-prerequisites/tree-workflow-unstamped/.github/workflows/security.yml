@@ -1,0 +1,15 @@
+# A job that reaches the Go toolchain around make and never generates the
+# source it type-checks. The `echo` is the shape that matters: it IS a run body
+# and it DOES contain the command, so a containment test passes here while
+# nothing is generated.
+name: security
+on:
+  push:
+    branches: [main]
+jobs:
+  go:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "make stamp"
+      - run: govulncheck ./...

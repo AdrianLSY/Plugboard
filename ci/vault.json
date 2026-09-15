@@ -476,6 +476,7 @@
       "authoring-channels",
       "banned-patterns",
       "binary-assets",
+      "build-prerequisites",
       "capability-notes",
       "citations",
       "code-duplication",
@@ -566,7 +567,8 @@
         "expected-outcomes",
         "security-scan",
         "parity",
-        "provenance"
+        "provenance",
+        "build-prerequisites"
       ]
     },
     "declared_vacuity": {
@@ -1416,5 +1418,44 @@
       "heading": "PR template",
       "path": ".github/pull_request_template.md"
     }
+  },
+  "build_prerequisites": {
+    "_comment": [
+      "Read by ci/gates/build_prerequisites.py. Task 3.13 put a GENERATED package",
+      "into every Go component's import graph; the make graph declared the edge and",
+      "the two CI jobs that reach the toolchain around make did not inherit it, so",
+      "the security job failed on `internal/buildstamp is not in std`. Both",
+      "encodings are held here, and the workflow half checks ORDER: generating a",
+      "source after compiling it satisfies containment and fixes nothing.",
+      "compiles_in_make lists the operations that TYPE-CHECK. `go fmt` is absent",
+      "deliberately and empirically: with internal/buildstamp deleted it exits 0",
+      "where `go vet` fails."
+    ],
+    "prerequisite_target": "stamp",
+    "compiles_in_make": [
+      "$(GO) build",
+      "$(GO) test",
+      "$(GO) vet",
+      "$(GO) run",
+      "$(GO) generate"
+    ],
+    "make_files": [
+      "ci/make/go.mk",
+      "conformance/Makefile"
+    ],
+    "workflows_dir": ".github/workflows",
+    "compiles_outside_make": [
+      "go build",
+      "go test",
+      "go vet",
+      "go run",
+      "govulncheck",
+      "golangci-lint",
+      "golangci/golangci-lint-action"
+    ],
+    "provides": [
+      "make stamp",
+      "make warm"
+    ]
   }
 }

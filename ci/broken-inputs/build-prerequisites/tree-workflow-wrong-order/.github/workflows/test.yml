@@ -1,0 +1,13 @@
+# The generator runs, but after the thing that needed it. Containment is
+# satisfied; the build still fails. This is why order is what the gate reads.
+name: test
+on:
+  push:
+    branches: [main]
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: go vet ./...
+      - run: make stamp

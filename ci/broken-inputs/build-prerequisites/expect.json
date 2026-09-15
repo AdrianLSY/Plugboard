@@ -1,0 +1,17 @@
+{
+  "_comment": "What this gate emits against each tree here. Machine-readable because prose in GATE.md is not a declaration: a stated count nothing checks drifts the moment a case is added.",
+  "trees": {
+    "tree-make-missing-prereq": {
+      "violations": 1,
+      "cases": ["target `test-fast` type-checks Go but does not list `stamp` as a prerequisite"]
+    },
+    "tree-workflow-unstamped": {
+      "violations": 1,
+      "cases": ["job `go` reaches the Go toolchain without going through make, and never runs make stamp or make warm"]
+    },
+    "tree-workflow-wrong-order": {
+      "violations": 1,
+      "cases": ["job `lint` generates the source AFTER compiling it"]
+    }
+  }
+}

@@ -53,7 +53,16 @@ def executable_text(body: str) -> str:
     in `name:`. Returning the executable text alone makes that shape unmatchable
     rather than merely discouraged.
     """
-    out: list[str] = []
+    return "\n".join(text for _i, text in executable_lines(body))
+
+
+def executable_lines(body: str):
+    """(source line index, executable text) for each position a runner executes.
+
+    executable_text() and executes() are both built on this, and so is
+    first_execution() -- which needs ORDER, and therefore the original line index
+    that joining the text away would discard. One reader, three questions.
+    """
     lines = body.splitlines()
     i = 0
     while i < len(lines):
@@ -62,18 +71,36 @@ def executable_text(body: str) -> str:
             i += 1
             continue
         indent, key, rest = len(m.group(1)), m.group(2), m.group(3)
-        out.append(rest)
+        yield i, rest
         if key in ("run", "with") and rest.strip() in _BLOCK_SCALAR:
             i += 1
             while i < len(lines) and (
                 not lines[i].strip()
                 or len(lines[i]) - len(lines[i].lstrip()) > indent
             ):
-                out.append(lines[i])
+                yield i, lines[i]
                 i += 1
             continue
         i += 1
-    return "\n".join(out)
+
+
+def _runs(text: str, command: str) -> bool:
+    """Whether `text` runs `command` at a position a shell would run it."""
+    return any(seg.strip().startswith(command)
+               for seg in re.split(r"&&|\|\||;|\|", text))
+
+
+def first_execution(body: str, commands) -> int:
+    """Source line index of the first executed occurrence of any command, or -1.
+
+    Order matters for a generated prerequisite: a step that regenerates a source
+    AFTER the step that compiled it satisfies a containment test and fixes
+    nothing.
+    """
+    for i, text in executable_lines(body):
+        if any(_runs(text, c) for c in commands):
+            return i
+    return -1
 
 
 def executes(body: str, command: str) -> bool:
@@ -94,8 +121,4 @@ def executes(body: str, command: str) -> bool:
     file, or an alias. `run: $SCANNER` runs something this cannot name. Stated
     because the check is a floor, not a proof.
     """
-    for line in executable_text(body).splitlines():
-        for segment in re.split(r"&&|\|\||;|\|", line):
-            if segment.strip().startswith(command):
-                return True
-    return False
+    return first_execution(body, [command]) >= 0

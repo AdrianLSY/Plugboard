@@ -17,7 +17,7 @@ DIST      := dist
 #
 # The platform set is read from ci/vault.json rather than listed here, so the
 # declaration and the build cannot disagree.
-build:
+build: stamp
 	@rm -rf $(DIST) && mkdir -p $(DIST)
 	@for p in $(PLATFORMS); do \
 	  os=$${p%%/*}; arch=$${p##*/}; \

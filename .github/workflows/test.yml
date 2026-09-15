@@ -90,6 +90,13 @@ jobs:
           otp-version: '27'
           elixir-version: '1.18'
       - run: make -C proxy deps
+
+      # golangci-lint compiles each module, so it needs the generated build stamp
+      # that every component's main imports. These steps call the action directly
+      # rather than `make lint`, which declares that dependency -- so it is
+      # restated here, and ci/gates/build_prerequisites.py holds the two together.
+      - run: make stamp
+
       # One configuration for all three Go modules, at the repository root;
       # ci/gates/linter_config.py fails the build if a second copy appears.
       - uses: golangci/golangci-lint-action@v9

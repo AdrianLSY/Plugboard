@@ -73,14 +73,14 @@ test: test-fast test-integration test-conformance
 test-fast: stamp
 	$(GO) test -race ./...
 
-test-integration:
+test-integration: stamp
 	$(GO) test -race -tags=integration ./...
 
-test-conformance:
+test-conformance: stamp
 	$(GO) test -race -tags=conformance ./...
 
-gen:
+gen: stamp
 	$(GO) generate ./...
 
-dev:
+dev: stamp
 	$(GO) run ./cmd/$(CMD)
