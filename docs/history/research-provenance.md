@@ -110,7 +110,7 @@ Three of its conclusions became decisions, and each is worth tracing back:
   a test framework that replaces the serializer with a no-op, provably so because
   `telephone_channel_test.exs:101` asserts an atom key that cannot survive JSON, and Go tests
   marshalling a struct whose tags production never uses
-  (`openspec/changes/rebuild-plugboard/design.md:240`).
+  (`openspec/changes/rebuild-plugboard/design.md:259`).
 - **The observability finding → [D27 — observability before the hot path](../decisions/d27-observability-first.md).**
   The detail that makes it a decision rather than a preference is a provenance detail: *five of seven
   auditors cited the telemetry as evidence of good instrumentation*

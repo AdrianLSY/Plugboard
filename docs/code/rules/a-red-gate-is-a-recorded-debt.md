@@ -26,8 +26,8 @@ therefore only passes in the same change that turns the test green; editing the 
 ## Why the red is allowed to stand at all
 
 [The plan's own cost analysis](../../../openspec/changes/rebuild-plugboard/design.md) sorts work by
-reversibility, which puts the irreversible schema first and end-to-end signal late: 270 of 727 tasks
-land before the streaming spine begins, and 406 before a response body first reaches a client. That
+reversibility, which puts the irreversible schema first and end-to-end signal late: most of the plan
+lands before the architecture is known to carry real traffic. That
 ordering is accepted, and it carries three obligations rather than a hope. The first is that the two
 exact-bytes gates are **committed red from the start**, so the gap is visible in CI from the first
 week rather than discovered at section 38.
