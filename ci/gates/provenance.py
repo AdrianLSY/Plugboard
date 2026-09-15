@@ -189,6 +189,41 @@ def build_files(scan_root: Path, cfg: dict, manifest: dict) -> list[str]:
     return sources(scan_root, {"languages": suffixes}, manifest)
 
 
+#: A file a build recipe hands to an interpreter. `$(VAR)/` prefixes are dropped
+#: because make expands them and this does not need to: what matters is the path
+#: inside the tree.
+_SCRIPT = re.compile(r"(?:\$\([A-Za-z_]+\)/)?([\w./-]+\.(?:sh|bash|py))")
+
+
+def invoked_scripts(scan_root: Path, build_files: list[str]) -> list[str]:
+    """Every script a build file hands to an interpreter, as a subject.
+
+    One level of shell indirection defeated the first discovered roster: a
+    reviewer put `git rev-parse --short HEAD` in ci/derive-provenance.sh and one
+    line in ci/make/go.mk --
+
+        PROV := $(shell sh $(REPO_ROOT)/ci/derive-provenance.sh)
+
+    -- so go.mk named no git, the script was under no component root, and the
+    derivation ran at make parse time while the gate reported no violations. It
+    is tree-second-derivation's exact defect moved one file sideways.
+
+    Sweeping in every tracked *.sh would have caught it and also caught scripts
+    no build runs. Following the invocation catches what the build reaches, which
+    is the set that can actually derive anything.
+    """
+    found: set[str] = set()
+    for rel in build_files:
+        path = scan_root / rel
+        if not path.is_file():
+            continue
+        for match in _SCRIPT.findall(path.read_text(encoding="utf-8")):
+            candidate = match.lstrip("./")
+            if (scan_root / candidate).is_file():
+                found.add(candidate)
+    return sorted(found)
+
+
 def _fields_of(source: Path) -> list[str]:
     """The string members of the module's FIELDS assignment, read as code."""
     try:
@@ -224,7 +259,10 @@ def run(scan_root: Path, report_only: bool) -> int:
     # file could derive provenance freely while the gate reported green over the
     # shared includes it did name.
     builds = sorted(set(build_files(scan_root, cfg, manifest)))
-    subjects = sorted(set(discovered) | set(builds))
+    # Plus whatever those build files hand to an interpreter. The one place is
+    # excluded: it is the file that IS allowed to derive.
+    reached = [s for s in invoked_scripts(scan_root, builds) if s != one_place]
+    subjects = sorted(set(discovered) | set(builds) | set(reached))
     calls = {k: v for k, v in cfg["called_as"].items() if not k.startswith("_")}
     #: Files that legitimately name git for a reason that is not provenance.
     #: Declared with the reason, and held in BOTH directions below: an entry whose
@@ -305,7 +343,7 @@ def run(scan_root: Path, report_only: bool) -> int:
         scan_root=scan_root,
     )
     print(f"  one place: {one_place} | discovered sources: {len(discovered)} | "
-          f"build files: {len(builds)} | "
+          f"build files: {len(builds)} | scripts they invoke: {len(reached)} | "
           f"execution primitives refused: {len(forbidden)}")
     return report.finish(report_only=report_only)
 

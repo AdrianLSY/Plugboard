@@ -45,6 +45,16 @@ interpolation; `//go:generate` is a comment the build *executes*; and a Python d
 Where the question is "does this run", the answer comes from a scanner that tracks string state, or
 from `ast`. A substring is evidence of nothing.
 
+## Why the subject set follows invocations
+
+A roster that lists its subjects stops growing silently. A roster that discovers them under the
+component roots stops at the roots: a derivation in a shell script that a make file invokes is under
+none of them, and the build file naming the script names no git itself. Both halves read clean while
+the derivation runs on every make invocation.
+
+So the set is component sources, the build files, **and whatever those build files hand to an
+interpreter**.
+
 ## What it cannot decide
 
 Whether the values are right. That needs the components run and their output compared against git read

@@ -26,6 +26,12 @@
         "sidecar/cmd/a/main.go: names `git` in executable text",
         "terminator/cmd/b/main.go: names `git` in executable text"
       ]
+    },
+    "tree-shell-indirection": {
+      "violations": 1,
+      "cases": [
+        "ci/derive-provenance.sh: names `git` in executable text"
+      ]
     }
   }
 }

@@ -45,6 +45,22 @@ The repair is a scanner that knows whether it is inside a string, and that keeps
 as executable text. Stripping is still necessary — seven files in the real tree mention git in prose
 — but it now has to be done properly rather than with a substitution.
 
+**`tree-shell-indirection` — the derivation moved one file sideways.** `ci/make/go.mk` names no
+git; the derivation lives in `ci/derive-provenance.sh`, which the make file invokes:
+
+```make
+PROV := $(shell sh $(REPO_ROOT)/ci/derive-provenance.sh)
+```
+
+A check that reads only the build files finds nothing. A check that reads only component sources
+finds nothing either — the script is under no component root. The derivation runs at make **parse**
+time, on every invocation of every target, and asks for the short hash where the one place asks for
+the full one.
+
+The roster now follows the invocation: a script a build file hands to an interpreter is a subject.
+Sweeping in every tracked `*.sh` would also have caught it, and would have caught scripts no build
+runs; following the invocation catches exactly the set that can derive anything.
+
 ## The one place is read as code, not as text
 
 Direction 2 asked whether `ci/stamp.py` still contained `subprocess` and `git`. That file's own

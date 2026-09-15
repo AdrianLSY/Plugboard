@@ -108,6 +108,48 @@ def distinct_sites(sites: list[str], size: int) -> list[str]:
     return kept
 
 
+#: The three ways a shape-collision declaration can be wrong.
+GONE, STALE, EXTRA = "gone", "stale", "extra"
+
+
+def declaration_verdict(found: int, allowed: int, missing: list) -> str | None:
+    """How a declaration disagrees with the tree, or None when it agrees."""
+    if missing:
+        return GONE
+    if found < allowed:
+        return STALE
+    if found > allowed:
+        return EXTRA
+    return None
+
+
+def verdict_selfcheck() -> list[str]:
+    """That declaration_verdict actually returns each verdict it claims to.
+
+    Nothing pinned the stale direction: a reviewer deleted the entire block that
+    implements it and the gate, ci/gates/meta.py and all 43 gates stayed green.
+    No fixture can pin it, because the declaration lives in ci/vault.json and is
+    read from the repository root rather than from the scan root -- so a
+    violating tree cannot carry one. These four cases can.
+    """
+    cases = [
+        ("a declaration that matches", (1, 1, []), None),
+        ("a pair that has stopped colliding", (0, 1, []), STALE),
+        ("a region beyond the exemption", (2, 1, []), EXTRA),
+        ("a declared file that is gone", (1, 1, ["x.go"]), GONE),
+    ]
+    wrong = []
+    for name, args, want in cases:
+        got = declaration_verdict(*args)
+        if got != want:
+            wrong.append(
+                f"declaration_verdict returned {got!r} for {name}, expected "
+                f"{want!r} -- the both-directions claim in this gate's docstring "
+                f"is no longer implemented"
+            )
+    return wrong
+
+
 def run(scan_root: Path, report_only: bool) -> int:
     manifest = load_manifest(repo_root())
     cfg = config(manifest)
@@ -119,8 +161,11 @@ def run(scan_root: Path, report_only: bool) -> int:
     #: How many colliding regions each declared pair is allowed. An exemption at
     #: file level would hide a REAL copy made between those two files later; a
     #: count means growth reopens the question.
-    seen: dict[frozenset, int] = {}
+    #: Every colliding region found for each declared pair, in order.
+    regions: dict[frozenset, list] = {}
     report = Report(GATE_ID, RULE_NOTE)
+    for wrong in verdict_selfcheck():
+        report.fail(wrong)
 
     files = sources(scan_root, cfg, manifest)
     verbatim: dict[str, list[str]] = {}
@@ -158,9 +203,15 @@ def run(scan_root: Path, report_only: bool) -> int:
             kept.append(sites)
             pair = frozenset(s.rpartition(":")[0] for s in sites)
             if pair in declared:
-                seen[pair] = seen.get(pair, 0) + 1
-                if seen[pair] <= declared[pair]["regions"]:
-                    continue
+                # Every region for a declared pair is collected, and NONE is
+                # reported here. Reporting the surplus one at this point named
+                # whichever region happened to sort last, because the exemption
+                # is consumed in blanked-text order -- so a genuine copy could
+                # take the exemption and the innocent boilerplate be the thing
+                # the finding named. The gate has no way to know which region a
+                # count meant; it says so below, and shows both.
+                regions.setdefault(pair, []).append(sites)
+                continue
             report.fail(
                 f"{sites[0]}: {size} lines identical to {', '.join(sites[1:])} once "
                 f"identifiers are set aside -- a renamed copy is a copy. If the two "
@@ -181,28 +232,32 @@ def run(scan_root: Path, report_only: bool) -> int:
         missing = [s for s in sorted(pair) if not (scan_root / s).is_file()]
         if missing and not _in_worktree(scan_root):
             continue
-        if missing:
-            report.fail(
-                f"{' and '.join(sorted(pair))}: declared a shape collision and "
-                f"{', '.join(missing)} no longer exists -- the declaration "
-                f"outlived its subject; delete it"
-            )
-            continue
-        found, allowed = seen.get(pair, 0), entry["regions"]
-        if found == allowed:
+        found_regions = regions.get(pair, [])
+        verdict = declaration_verdict(len(found_regions), entry["regions"], missing)
+        if verdict is None:
             continue
         names = " and ".join(sorted(pair))
-        if found < allowed:
+        if verdict == GONE:
             report.fail(
-                f"{names}: declared {allowed} colliding region(s), found {found} "
-                f"-- the declaration outlived the shape that earned it. Reason "
-                f"given was \"{entry['reason'][:60]}...\"; delete or lower it"
+                f"{names}: declared a shape collision and {', '.join(missing)} "
+                f"no longer exists -- the declaration outlived its subject; "
+                f"delete it"
+            )
+        elif verdict == STALE:
+            report.fail(
+                f"{names}: declared {entry['regions']} colliding region(s), found "
+                f"{len(found_regions)} -- the declaration outlived the shape that "
+                f"earned it. Reason given was \"{entry['reason'][:60]}...\"; "
+                f"delete or lower it"
             )
         else:
+            listed = "; ".join(", ".join(distinct_sites(r, size)) for r in found_regions)
             report.fail(
-                f"{names}: declared {allowed} colliding region(s), found {found}. "
-                f"The extra one is not covered by the declaration -- a shape was "
-                f"exempted, and something has since been COPIED between these two"
+                f"{names}: declared {entry['regions']} colliding region(s) and "
+                f"{len(found_regions)} collide. All of them are listed because "
+                f"a count cannot say WHICH region it exempted, and naming one "
+                f"would name the innocent half as often as the copied half -- "
+                f"{listed}"
             )
 
     report.coverage(
@@ -215,7 +270,7 @@ def run(scan_root: Path, report_only: bool) -> int:
     print(
         f"  files: {len(files)} | windows: {len(verbatim)} verbatim, {len(renamed)} "
         f"identifier-blanked | threshold: {size} consecutive non-comment lines | "
-        f"declared shape collisions: {sum(seen.values())}/"
+        f"declared shape collisions: {sum(len(v) for v in regions.values())}/"
         f"{sum(e['regions'] for e in declared.values())}"
     )
     return report.finish(report_only=report_only)
