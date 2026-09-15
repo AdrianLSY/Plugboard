@@ -215,7 +215,15 @@ func readBody(br *bufio.Reader, fields []recorder.Field) ([]byte, error) {
 	// peer states that number, and this instrument is pointed at adversarial
 	// inputs by design.
 	var body bytes.Buffer
-	if _, err := io.CopyN(&body, br, int64(length)); err != nil {
+	if read, err := io.CopyN(&body, br, int64(length)); err != nil {
+		// io.CopyN reports a short read as io.EOF, and run() suppresses io.EOF so
+		// an ordinary connection close between requests stays quiet. A body that
+		// stopped early is the opposite of a quiet end, so it is restated as what
+		// it is -- which is also what io.ReadFull said here before this read
+		// stopped pre-allocating.
+		if errors.Is(err, io.EOF) {
+			err = fmt.Errorf("%w after %d of them", io.ErrUnexpectedEOF, read)
+		}
 		return nil, fmt.Errorf("reading %d body octet(s): %w", length, err)
 	}
 	return body.Bytes(), nil
