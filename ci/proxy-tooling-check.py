@@ -98,7 +98,12 @@ VAULT = "ci/vault.json"
 
 #: Copied into the scratch tree so proxy/Makefile's `include $(REPO_ROOT)/...`
 #: resolves and `make -C proxy lint` is the same recipe it is in the repository.
-SUPPORT = ["ci/make"]
+#:
+#: ci/stamp.py is here because `lint` now declares `stamp`, which runs it. Without
+#: it the copy's very first target fails and every tool below reports against a
+#: tree that never compiled -- the baseline check caught exactly that, which is
+#: what a baseline is for.
+SUPPORT = ["ci/make", "ci/stamp.py"]
 
 #: Requirements of the copy, each with the command that satisfies it. A missing
 #: one is refused rather than worked around: building a PLT inside a throwaway
@@ -166,7 +171,17 @@ def declaration(root: Path) -> tuple[dict, object]:
 
 
 def tar_copy(src: Path, dst: Path) -> None:
-    """Copy src's CONTENTS into dst. Never `git archive`: see the docstring."""
+    """Copy src's CONTENTS into dst, or src itself when src is a file.
+
+    Never `git archive`: see the docstring. The file case exists because one
+    support entry is a single script, ci/stamp.py, and tar -C on a file is an
+    error rather than a copy.
+    """
+    if src.is_file():
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        dst.write_bytes(src.read_bytes())
+        dst.chmod(src.stat().st_mode)
+        return
     dst.mkdir(parents=True, exist_ok=True)
     producer = subprocess.Popen(
         ["tar", "-cf", "-", "-C", str(src), "."], stdout=subprocess.PIPE
