@@ -21,7 +21,7 @@ jobs:
   go:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-go@v5
         with:
           go-version: '1.27'
@@ -40,7 +40,7 @@ jobs:
   dependencies:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # ci/broken-inputs is skipped, and the reason is load-bearing rather than
       # convenience: the violating input for `mix deps.audit` pins plug 1.3.0 with
       # two HIGH advisories ON PURPOSE. Scanning it fails every push over a defect
@@ -59,7 +59,7 @@ jobs:
   elixir:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: erlef/setup-beam@v1
         with:
           otp-version: '27'
