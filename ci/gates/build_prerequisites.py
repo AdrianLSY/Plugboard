@@ -55,6 +55,7 @@ import re
 from pathlib import Path
 
 from _common import Report, load_manifest, main_guard, repo_root
+from _source import sources
 from _workflow import first_execution
 
 GATE_ID = "build-prerequisites"
@@ -140,8 +141,13 @@ def run(scan_root: Path, report_only: bool) -> int:
     report = Report(GATE_ID, RULE_NOTE)
     covered: list[str] = []
 
-    # 1. The make side.
-    for rel in cfg["make_files"]:
+    # 1. The make side. The roster is DISCOVERED -- every tracked `Makefile` and
+    # `*.mk` -- not listed. A listed pair had already missed the Elixir include
+    # once, and would miss a new component's Makefile the same way: a roster is
+    # coverage that silently stops growing, and it reports a number while it does.
+    manifest = load_manifest(repo_root())
+    make_files = sources(scan_root, {"languages": {s: "make" for s in cfg["build_file_suffixes"]}}, manifest)
+    for rel in make_files:
         path = scan_root / rel
         if not path.is_file():
             continue

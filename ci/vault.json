@@ -1437,7 +1437,10 @@
       "verb lists are EMPIRICAL: on a stampless tree, go build/test/vet/run/install/",
       "list/generate all fail and `go fmt` exits 0, so fmt is not a compiling site.",
       "Both languages are listed: the first version named only the Go make files and",
-      "the Elixir half of the identical defect reached CI."
+      "the Elixir half of the identical defect reached CI.",
+      "Make files are DISCOVERED by tracked suffix, not listed: the listed pair had",
+      "already missed the Elixir include once, and would miss a new component's",
+      "Makefile the same way."
     ],
     "prerequisite_target": "stamp",
     "compiles": {
@@ -1477,10 +1480,9 @@
       "golangci-lint",
       "golangci/golangci-lint-action"
     ],
-    "make_files": [
-      "ci/make/go.mk",
-      "ci/make/elixir.mk",
-      "conformance/Makefile"
+    "build_file_suffixes": [
+      "Makefile",
+      ".mk"
     ],
     "workflows_dir": ".github/workflows",
     "workflow_globs": [

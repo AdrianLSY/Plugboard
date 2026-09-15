@@ -46,7 +46,8 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from _common import Report, load_manifest, main_guard, repo_root, subject_source
+from _common import (Report, _in_worktree, load_manifest, main_guard, repo_root,
+                     subject_source)
 from _source import COMMENT, code_lines, config, sources
 
 GATE_ID = "code-duplication"
@@ -172,7 +173,20 @@ def run(scan_root: Path, report_only: bool) -> int:
         # contains none of them, so there is nothing there to be stale about --
         # without this, every fixture under ci/broken-inputs/ trips this gate and
         # the meta-check rightly calls each of them ambiguous.
-        if not all((scan_root / s).is_file() for s in pair):
+        #
+        # But the guard is for FIXTURE SCANS only. In the repository itself a
+        # declared file that has gone is a declaration outliving its subject, and
+        # skipping it there retired both the exemption and the check on it in
+        # silence -- the gate printed "0/1" and passed.
+        missing = [s for s in sorted(pair) if not (scan_root / s).is_file()]
+        if missing and not _in_worktree(scan_root):
+            continue
+        if missing:
+            report.fail(
+                f"{' and '.join(sorted(pair))}: declared a shape collision and "
+                f"{', '.join(missing)} no longer exists -- the declaration "
+                f"outlived its subject; delete it"
+            )
             continue
         found, allowed = seen.get(pair, 0), entry["regions"]
         if found == allowed:

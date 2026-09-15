@@ -114,6 +114,18 @@ def run(scan_root: Path, report_only: bool) -> int:
             continue
         declared_trees = {k: v for k, v in decl.get("trees", {}).items() if not k.startswith("_")}
 
+        # The other direction. The loop below walks trees ON DISK, so a tree named
+        # in expect.json that does not exist was invisible: it demonstrated
+        # nothing, nothing ran it, and the declaration read as coverage. A
+        # declaration held in one direction is the defect this gate exists for.
+        for name in sorted(set(declared_trees) - {t.name for t in trees}):
+            report.examine(f"{gid}/{name}")
+            report.fail(
+                f"{gid}/{name}: expect.json declares this tree and no such "
+                f"directory exists -- it demonstrates nothing, and a declaration "
+                f"nothing runs reads as coverage from the outside"
+            )
+
         for tree in trees:
             subject = f"{gid}/{tree.name}"
             report.examine(subject)

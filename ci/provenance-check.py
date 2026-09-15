@@ -54,12 +54,37 @@ RFC3339 = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}")
 
 #: How to make each component report. One entry per deployable that has a
 #: toolchain; `contract` has none and is declared so in ci/vault.json.
+#: How each component is started so it reports. The COMMANDS have to live here --
+#: they are per-component facts, not a pattern -- but the SET of components does
+#: not: it is declared in ci/vault.json, and reconcile() below holds these keys to
+#: it in both directions. A hardcoded set reconciled to nothing is how a fifth
+#: stamped component gets built, shipped and never checked, while this script
+#: goes on printing "4 components" as if that were the whole roster.
 COMPONENTS = {
     "sidecar": ["go", "run", "./cmd/telephone"],
     "terminator": ["go", "run", "./cmd/terminator"],
     "conformance": ["go", "run", "./cmd/conformance"],
     "proxy": ["mix", "run", "--no-start", "-e", "IO.puts(Plugboard.provenance_line())"],
 }
+
+
+def reconcile() -> list[str]:
+    """This file's component set against the vault's, both directions."""
+    import json
+    spec = json.loads((ROOT / "ci" / "vault.json").read_text())["code_standards"]["components"]
+    declared = {c for c in spec["candidates"] if not c.startswith("_")}
+    no_toolchain = {c for c in spec.get("no_toolchain", {}) if not c.startswith("_")}
+    expected = declared - no_toolchain
+    problems = []
+    for missing in sorted(expected - set(COMPONENTS)):
+        problems.append(
+            f"{missing}: declared a component with a toolchain in ci/vault.json "
+            f"and this check does not start it -- it is stamped and unverified")
+    for extra in sorted(set(COMPONENTS) - expected):
+        problems.append(
+            f"{extra}: started by this check and not a component with a toolchain "
+            f"in ci/vault.json -- the declaration outlived the component")
+    return problems
 
 
 def git(*args: str) -> str:
@@ -133,10 +158,99 @@ def check_formatting(root: Path) -> list[str]:
     return problems
 
 
+def judge(component: str, line: str, want_commit: str, want_tree: str,
+          want_version: str) -> list[str]:
+    """One component's reported line against values read from git INDEPENDENTLY.
+
+    A function rather than an inline block so selfcheck() below can feed it a
+    blank stamp and a wrong one and assert it rejects both. The recorded defect
+    this replaces is a test whose expectation was read from the value under
+    test, which passes over a blank stamp and over the wrong component name.
+    """
+    problems = []
+    fields = dict(FIELD.findall(line))
+    for name in ("version", "commit", "tree", "built"):
+        if name not in fields:
+            problems.append(f"{component}: reports no `{name}` field")
+    if fields.get("commit") != want_commit:
+        problems.append(
+            f"{component}: reports commit {fields.get('commit')!r} and git says "
+            f"{want_commit!r} -- derived here rather than read from the stamp, "
+            f"because a test that reads its expectation from the value under "
+            f"test passes over a blank one")
+    if fields.get("tree") != want_tree:
+        problems.append(
+            f"{component}: reports tree {fields.get('tree')!r} and the working "
+            f"tree is {want_tree!r}")
+    # `version` is as independently derivable as the other two, and binding it
+    # only to non-emptiness left one of the four declared fields checked by
+    # nothing -- which is where the reference's stamped binaries went wrong.
+    if want_version and fields.get("version") != want_version:
+        problems.append(
+            f"{component}: reports version {fields.get('version')!r} and "
+            f"`git describe --tags --always --dirty` says {want_version!r}")
+    if not RFC3339.match(fields.get("built", "")):
+        problems.append(
+            f"{component}: `built` is not an RFC 3339 instant: {fields.get('built')!r}")
+    return problems
+
+
+def selfcheck() -> list[str]:
+    """That judge() actually rejects the shapes it exists to reject.
+
+    Nothing pinned the independence repair: reverting judge() to read its
+    expectation from the reported line would leave every gate and every fixture
+    green, because the only thing exercising it is a tree where the stamp is
+    already right. These three cases are the counter-examples.
+    """
+    good = "sidecar version=v1 commit=abc tree=clean built=2026-01-01T00:00:00+00:00"
+    cases = [
+        ("a correct line", good, False),
+        ("a blank stamp", "sidecar version= commit= tree= built=", True),
+        ("another component's stamp", good.replace("abc", "deadbeef"), True),
+    ]
+    problems = []
+    for name, line, want_rejected in cases:
+        rejected = bool(judge("sidecar", line, "abc", "clean", "v1"))
+        if rejected != want_rejected:
+            problems.append(
+                f"ci/provenance-check.py: judge() {'accepted' if want_rejected else 'rejected'} "
+                f"{name} -- the comparison has stopped being independent of the "
+                f"value under test, which is the defect it was written to close")
+    return problems
+
+
+def renders() -> list[str]:
+    """The generator produces source for every language it claims to, at all.
+
+    Both templates are `.format()`ed, so a brace in one is a format field. Adding
+    `@spec stamp() :: %{String.t() => String.t()}` to the Elixir template made
+    every `make stamp` raise KeyError: 'String' -- and because the make recipe
+    redirects, the failure was silent and the components went on reporting a
+    stamp from the previous commit. Calling the generator directly says which
+    language and why, instead of leaving a stale stamp to be noticed downstream.
+    """
+    import stamp as stamp_mod
+    problems = []
+    for language in ("go", "elixir"):
+        try:
+            out = stamp_mod.render("probe", language, stamp_mod.values())
+        except Exception as exc:
+            problems.append(
+                f"ci/stamp.py: cannot render {language} at all -- "
+                f"{type(exc).__name__}: {exc}. Both templates are `.format()`ed, "
+                f"so a literal brace in one has to be doubled")
+            continue
+        if not out.strip():
+            problems.append(f"ci/stamp.py: rendered empty {language} source")
+    return problems
+
+
 def main(argv: list[str]) -> int:
-    problems: list[str] = []
+    problems: list[str] = reconcile() + renders() + selfcheck()
     want_commit = git("rev-parse", "HEAD")
     want_tree = "dirty" if git("status", "--porcelain") else "clean"
+    want_version = git("describe", "--tags", "--always", "--dirty")
 
     for component in sorted(COMPONENTS):
         code, out = reported(component)
@@ -151,24 +265,7 @@ def main(argv: list[str]) -> int:
                 f"and five of seven auditors read that as instrumentation"
             )
             continue
-        fields = dict(FIELD.findall(line))
-        for name in ("version", "commit", "tree", "built"):
-            if name not in fields:
-                problems.append(f"{component}: reports no `{name}` field")
-        if fields.get("commit") != want_commit:
-            problems.append(
-                f"{component}: reports commit {fields.get('commit')!r} and git says "
-                f"{want_commit!r} -- derived here rather than read from the stamp, "
-                f"because a test that reads its expectation from the value under "
-                f"test passes over a blank one"
-            )
-        if fields.get("tree") != want_tree:
-            problems.append(
-                f"{component}: reports tree {fields.get('tree')!r} and the working "
-                f"tree is {want_tree!r}"
-            )
-        if not RFC3339.match(fields.get("built", "")):
-            problems.append(f"{component}: `built` is not an RFC 3339 instant: {fields.get('built')!r}")
+        problems.extend(judge(component, line, want_commit, want_tree, want_version))
         if not problems or problems[-1].split(":")[0] != component:
             print(f"  [ok  ] {component}: {line[:96]}")
 

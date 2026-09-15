@@ -144,7 +144,7 @@ defmodule Plugboard.BuildStamp do
   @component "{component}"
 
   @doc "The provenance map."
-  @spec stamp() :: %{String.t() => String.t()}
+  @spec stamp() :: %{{String.t() => String.t()}}
   def stamp, do: @stamp
 
   @doc "The deployable this release is."

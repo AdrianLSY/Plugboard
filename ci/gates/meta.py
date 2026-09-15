@@ -196,6 +196,24 @@ def run(scan_root: Path, report_only: bool) -> int:
     whole_tree = set(
         manifest["gate_policy"].get("whole_tree_gates", {}).get("gates", [])
     )
+    # Both policy rosters are held to the gates that actually exist. A name in
+    # either that is not a gate excuses nothing and reads as though it does:
+    # `whole_tree_gates` silently widened the isolation exemption, and a typo in
+    # `blocking` silently demoted a gate to report-only. Neither had anything
+    # checking it, which is the shape this file exists to refuse.
+    # Plus this gate's own id: meta excludes itself from the roster it checks,
+    # and it is still a gate the policy may legitimately name.
+    real = {gate_id_for(m) for m in modules} | {GATE_ID}
+    policy = manifest["gate_policy"]
+    for key, names in (("whole_tree_gates.gates", whole_tree),
+                       ("blocking", set(policy.get("blocking", [])))):
+        for ghost in sorted(names - real):
+            report.fail(
+                f"ci/vault.json gate_policy.{key} names `{ghost}`, which is not a "
+                f"gate. A roster entry matching no gate excuses nothing while "
+                f"reading from the outside as though it does"
+            )
+
     cross = 0
     for module, module_path in modules.items():
         gid = gate_id_for(module)
