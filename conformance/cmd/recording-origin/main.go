@@ -26,6 +26,8 @@ import (
 	"strconv"
 	"strings"
 
+	"plugboard/conformance/internal/buildstamp"
+
 	"plugboard/conformance/recorder"
 )
 
@@ -36,6 +38,9 @@ func main() {
 	emitBytes := flag.Int("emit-bytes", 0, "respond with this many octets of recorder.Pattern")
 	flag.Parse()
 
+	if _, err := fmt.Fprintln(os.Stdout, buildstamp.Line()); err != nil {
+		os.Exit(1)
+	}
 	if err := run(*listen, *recordDir, *readyFile, *emitBytes); err != nil {
 		fmt.Fprintf(os.Stderr, "recording-origin: %v\n", err)
 		os.Exit(1)
