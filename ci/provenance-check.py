@@ -41,6 +41,7 @@ Both are named in 'unfinished' rather than quietly skipped.
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 import sys
@@ -195,6 +196,53 @@ def judge(component: str, line: str, want_commit: str, want_tree: str,
     return problems
 
 
+#: Set on the child this check spawns, so the child does not spawn one of its own.
+CHILD_MARKER = "PROVENANCE_CHECK_TOOLCHAIN_PROBE"
+
+
+def refuses_an_absent_toolchain() -> list[str]:
+    """This script, where a declared tool is absent, states a refusal.
+
+    It did neither thing a reader would expect. `reported()` let
+    FileNotFoundError out of subprocess.run, so a machine without Elixir got a
+    traceback where a verdict belongs -- and the verdict it interrupted covered
+    the components whose toolchains WERE present. The other half is the inverse
+    and worse: `check_formatting()` caught the identical error and printed
+    `[skip]`, so a generated source went unread while the run reported green.
+
+    ci/make/elixir.mk states the rule both halves broke, in its own refusal:
+    "a target that skips when its toolchain is absent reports green over an
+    unchecked module." Absent is not passing and it is not a crash; it is a
+    stated refusal with a non-zero exit.
+
+    Run as a child with an empty PATH, because that is the only way to observe
+    what this script does when the tools are gone without removing them.
+    """
+    if os.environ.get(CHILD_MARKER):
+        return []
+    done = subprocess.run(
+        [sys.executable, str(Path(__file__).resolve())],
+        cwd=str(ROOT), capture_output=True, text=True, check=False,
+        env={**os.environ, CHILD_MARKER: "1", "PATH": "/nonexistent"})
+    said = done.stdout + done.stderr
+    problems = []
+    if "Traceback" in said:
+        problems.append(
+            "ci/provenance-check.py: raises where a declared toolchain is absent "
+            "rather than stating a refusal -- a traceback is not a verdict, and it "
+            "stops the components whose toolchains ARE present from being reported")
+    if done.returncode == 0:
+        problems.append(
+            "ci/provenance-check.py: exits zero where every declared toolchain is "
+            "absent -- nothing was compared, and a run that checked nothing must "
+            "not read as a run that found nothing wrong")
+    if not any(m in said for m in ("not on PATH", "is absent")):
+        problems.append(
+            "ci/provenance-check.py: refuses an absent toolchain without naming it "
+            "-- the tool to install is the one fact the reader needs")
+    return problems
+
+
 def selfcheck() -> list[str]:
     """That judge() actually rejects the shapes it exists to reject.
 
@@ -247,7 +295,8 @@ def renders() -> list[str]:
 
 
 def main(argv: list[str]) -> int:
-    problems: list[str] = reconcile() + renders() + selfcheck()
+    problems: list[str] = (reconcile() + renders() + selfcheck()
+                           + refuses_an_absent_toolchain())
     want_commit = git("rev-parse", "HEAD")
     want_tree = "dirty" if git("status", "--porcelain") else "clean"
     want_version = git("describe", "--tags", "--always", "--dirty")
