@@ -21,7 +21,7 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # Full history. ci/vault.json pins out_of_scope.baseline_ref to a
           # commit, so the byte-unchanged assertion over the sixteen
