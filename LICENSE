@@ -1,6 +1,6 @@
 This License covers everything in this repository EXCEPT the vendored agent
-harness under .claude/ -- see .claude/THIRD-PARTY-NOTICES.md. The License text
-below is unmodified.
+harnesses under .claude/ and .agents/ -- see the THIRD-PARTY-NOTICES.md file in
+each directory. The License text below is unmodified.
 
 
                                  Apache License
