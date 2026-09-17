@@ -27,13 +27,13 @@ specification projects that closed that gap reached for a specification instrume
 software licence. The gap is open here, recorded rather than papered over, and becomes live when
 `contract/` first ships files a third party embeds.
 
-`.claude/` is outside the grant, and the exclusion is stated in [`LICENSE`](../../LICENSE) itself
-rather than only in the notes: §4(d) of the Apache text says a `NOTICE` cannot modify the License, so
-an exclusion carried only there sits where the licence disclaims it. It is a vendored agent harness:
-the openspec skills declare a licence, and every other skill and slash command declares none — the
-defect
-[the supply-chain rule](../method/supply-chain.md) logs against the prior art, found in this tree
-while writing this decision. → [third-party notices](../../.claude/THIRD-PARTY-NOTICES.md)
+`.claude/` and `.agents/` are outside the grant, and the exclusion is stated in
+[`LICENSE`](../../LICENSE) itself rather than only in notices: §4(d) of the Apache text says a
+`NOTICE` cannot modify the License, so an exclusion carried only there sits where the licence
+disclaims it. Both are vendored agent harnesses. The Claude harness retains the provenance gap
+[the supply-chain rule](../method/supply-chain.md) exposed; the Codex harness records its OpenSpec,
+Matt Pocock and HumanLayer sources, Matt Pocock content hashes and required MIT notices. → [Claude notice](../../.claude/THIRD-PARTY-NOTICES.md)
+· [Codex notice](../../.agents/THIRD-PARTY-NOTICES.md) · [Codex lock](../../skills-lock.json)
 
 - **Full entry, with rationale and alternatives:** [register D28](../../openspec/changes/rebuild-plugboard/design.md#d28--licensing-apache-20-over-the-authored-tree)
 - **Deferred with it:** [follow-ups](../method/follow-ups.md) — the implementer patent position, the

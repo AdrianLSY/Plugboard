@@ -346,9 +346,11 @@ gate harness, and the component directories when they exist. Contributions arriv
 by §5 of that licence, which does not depend on this repository living on GitHub. The name is not part
 of the grant: §6 conveys no trademark rights, so *Plugboard* stays governed separately from the code.
 
-`.claude/` is excluded, and [`LICENSE`](LICENSE) says so above the Apache text rather than leaving it
-to a note. It is a vendored agent harness this repository did not author: the openspec skills declare
-a licence, and every other skill and slash command declares none —
-[enumerated by path, not papered over](.claude/THIRD-PARTY-NOTICES.md).
+`.claude/` and `.agents/` are excluded, and [`LICENSE`](LICENSE) says so above the Apache text rather
+than leaving it to a notice. They are vendored agent harnesses this repository did not author. The
+Claude harness still carries an unresolved provenance gap
+([notice](.claude/THIRD-PARTY-NOTICES.md)); the Codex harness records its three MIT-licensed upstreams,
+their copyright notices and the installed Matt Pocock skill hashes
+([notice](.agents/THIRD-PARTY-NOTICES.md), [lock](skills-lock.json)).
 
 → [why Apache-2.0, and the alternative it beat](docs/decisions/d28-licensing.md)
