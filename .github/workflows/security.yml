@@ -46,7 +46,7 @@ jobs:
       # two HIGH advisories ON PURPOSE. Scanning it fails every push over a defect
       # that is the point of the fixture. The previous attempt at this workflow
       # did exactly that and would have been red from its first run.
-      - uses: aquasecurity/trivy-action@0.35.0
+      - uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: fs
           scan-ref: .
