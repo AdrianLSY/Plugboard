@@ -41,7 +41,7 @@ jobs:
       # not floating: docs/method/supply-chain.md gates dependency movement on
       # semver-patch, and a planning tool that changes its JSON shape under CI
       # is the same silent-drift class the gate itself exists to catch.
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: '20'
       - run: npm install -g @fission-ai/openspec@1.13.0
