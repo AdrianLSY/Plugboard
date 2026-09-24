@@ -1,0 +1,8 @@
+# Keep the portable graph and human-readable outputs; regenerate local state.
+cache/
+memory/
+reflections/
+.graphify_*
+.vocab.txt
+manifest.json
+cost.json
