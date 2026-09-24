@@ -55,21 +55,27 @@ abandoned — and both happened in the reference.
 
 ### The change-description questions
 
-The canonical enumeration. Four questions, cited by number; every artifact that asks for a change
+The canonical enumeration. Five questions, cited by number; every artifact that asks for a change
 description links to this anchor instead of keeping its own copy of the list
 ([the rule](rules/review-obligations-single-sourced.md)).
 
-1. **What breaks if this is wrong.** Not what it does — what it *breaks*. This one question would have
+1. **Description.** What changed and why the change is needed. Give the reviewer the context to
+   understand the diff before assessing its risks.
+2. **What breaks if this is wrong.** Not what it does — what it *breaks*. This one question would have
    caught the empty-body defect.
-2. **The wire-contract impact**: `none` / `additive` / **`BREAKING`**. A `BREAKING` answer requires a
+3. **The wire-contract impact**: `none` / `additive` / **`BREAKING`**. A `BREAKING` answer requires a
    version bump and a capability flag, and cannot be merged without one.
-3. **What was tested, and what the test would catch that a wrong implementation would not.**
-4. **Which pre-submit checks were run**, item by item, so a reviewer reads what the author claims
+4. **What was tested, and what the test would catch that a wrong implementation would not.**
+5. **Which pre-submit checks were run**, item by item, so a reviewer reads what the author claims
    rather than inferring it.
 
 ### PR template
 
 ```markdown
+## Description
+
+<!-- Summarize what changed and why this PR is needed. -->
+
 ## What breaks if this is wrong?
 
 ## Wire contract impact
@@ -92,8 +98,8 @@ Name the specific wrong implementation each new test would reject.
 The block above is the statement; [`.github/pull_request_template.md`](../../.github/pull_request_template.md)
 is the copy the forge serves, held byte-identical to it by
 [`ci/gates/review_obligations.py`](../../ci/gates/review_obligations.py) in both directions — editing
-either alone fails. The template's four headings are
-[the four questions above](#the-change-description-questions), in the order a body answers them;
+either alone fails. The template's five headings are
+[the five questions above](#the-change-description-questions), in the order a body answers them;
 its checklist points at the two enumerations below rather than
 repeating their items, because a template is the artifact most likely to be copied and then left
 behind. The standard the *Tests* answer is judged against is
@@ -182,7 +188,7 @@ Test shape and size:
 
 Description and procedure:
 
-15. A change description leaving one of [the four questions](#the-change-description-questions)
+15. A change description leaving one of [the five questions](#the-change-description-questions)
     unanswered, or answering `BREAKING` with no version bump and no capability flag.
 16. A fix with no case that failed before it — [fixing a bug](fixing-a-bug.md).
 

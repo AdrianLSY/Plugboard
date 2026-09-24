@@ -1,0 +1,7 @@
+{
+  "_why": "The HTML comment in the template is a prompt, not an answer.",
+  "check": "description",
+  "body": "## Description\n\n<!-- Summarize what changed and why this PR is needed. -->\n\n## What breaks if this is wrong?\nA missing guard could let an incomplete PR through.\n",
+  "changed": [],
+  "expect": "fail"
+}

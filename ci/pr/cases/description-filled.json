@@ -1,0 +1,7 @@
+{
+  "_why": "A filled Description explains the change and its reason before the risk answer.",
+  "check": "description",
+  "body": "## Description\n\nAdd a body check to the PR workflow so authors find missing context before review.\n\n## What breaks if this is wrong?\nThe check might refuse valid PRs.\n",
+  "changed": [],
+  "expect": "pass"
+}

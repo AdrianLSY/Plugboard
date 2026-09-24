@@ -68,14 +68,15 @@ that `POST` bodies arrive empty — [the audit](docs/history/reference-audit.md)
 ## Describing a change
 
 Stated once and [cited by number](docs/code/reviewing.md#the-change-description-questions).
-Every pull request answers all four:
+Every human-authored pull request answers all five:
 
 | # | answers |
 |---|---|
-| change-description question 1 | what *breaks* if this is wrong — not what it does |
-| change-description question 2 | the wire-contract impact: none, additive, or **BREAKING** |
-| change-description question 3 | what was tested, and what the test would catch |
-| change-description question 4 | which pre-submit checks were run, item by item |
+| change-description question 1 | what changed and why |
+| change-description question 2 | what *breaks* if this is wrong — not what it does |
+| change-description question 3 | the wire-contract impact: none, additive, or **BREAKING** |
+| change-description question 4 | what was tested, and what the test would catch |
+| change-description question 5 | which pre-submit checks were run, item by item |
 
 A `BREAKING` answer cannot merge without a version bump and a capability flag.
 

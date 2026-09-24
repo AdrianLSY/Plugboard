@@ -33,7 +33,7 @@ def repository() -> tuple[str, str]:
 
 def preflight(body: str, changed: list[str]) -> bool:
     mf = checks.manifest()
-    for name in ("wire-contract-impact", "docs-touched"):
+    for name in ("description", "wire-contract-impact", "docs-touched"):
         verdict = checks.CHECKS[name](body, changed, mf)
         if verdict:
             print(f"[FAIL] {name}: {verdict}", file=sys.stderr)
@@ -42,11 +42,13 @@ def preflight(body: str, changed: list[str]) -> bool:
     return True
 
 
-def impact_answered(body: str) -> bool:
-    verdict = checks.wire_contract_impact(body, [], checks.manifest())
-    if verdict:
-        print(f"[FAIL] wire-contract-impact: {verdict}", file=sys.stderr)
-        return False
+def body_answered(body: str) -> bool:
+    mf = checks.manifest()
+    for name in ("description", "wire-contract-impact"):
+        verdict = checks.CHECKS[name](body, [], mf)
+        if verdict:
+            print(f"[FAIL] {name}: {verdict}", file=sys.stderr)
+            return False
     return True
 
 
@@ -100,8 +102,8 @@ def main(argv: list[str]) -> int:
     try:
         body_file = args.body_file.resolve(strict=True)
         body = body_file.read_text(encoding="utf-8")
-        # This check needs only the body. Reject it before any network request.
-        if not impact_answered(body):
+        # These checks need only the body. Reject it before any network request.
+        if not body_answered(body):
             return 1
         branch = current_branch()
         repo, default_base = repository()

@@ -1,3 +1,7 @@
+## Description
+
+<!-- Summarize what changed and why this PR is needed. -->
+
 ## What breaks if this is wrong?
 
 ## Wire contract impact

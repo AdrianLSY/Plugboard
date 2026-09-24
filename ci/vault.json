@@ -1102,7 +1102,7 @@
           "pull_request"
         ],
         "invokes_aggregating_target": false,
-        "why_these_triggers": "Its two checks read the pull request's body and its changed-path set. A push event defines neither, so the narrower trigger is a decision rather than an omission."
+        "why_these_triggers": "Its three checks read the pull request's body and its changed-path set. A push event defines neither, so the narrower trigger is a decision rather than an omission."
       },
       ".github/workflows/dependabot-auto-merge.yml": {
         "required_triggers": [
