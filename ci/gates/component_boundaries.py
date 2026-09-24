@@ -34,7 +34,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from _common import Report, load_manifest, main_guard, repo_root, on_tracked_tree
+from _common import Report, load_manifest, main_guard, on_tracked_tree, repo_root
 
 GATE_ID = "component-boundaries"
 RULE_NOTE = "docs/code/rules/component-boundary-stated-once.md"
@@ -50,11 +50,15 @@ def run(scan_root: Path, report_only: bool) -> int:
     report = Report(GATE_ID, RULE_NOTE)
 
     existing = [c for c in candidates if (scan_root / c).is_dir()]
-    notes = {
-        p.stem: p
-        for p in sorted((scan_root / bdir).glob("*.md"))
-        if p.stem != "index"
-    } if (scan_root / bdir).is_dir() else {}
+    notes = (
+        {
+            p.stem: p
+            for p in sorted((scan_root / bdir).glob("*.md"))
+            if p.stem != "index"
+        }
+        if (scan_root / bdir).is_dir()
+        else {}
+    )
 
     for comp in existing:
         if comp not in notes:

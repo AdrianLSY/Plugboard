@@ -33,7 +33,6 @@ than a bug.
 
 from __future__ import annotations
 
-import re
 from pathlib import Path
 
 from _common import Report, load_manifest, main_guard, notes, repo_root
@@ -52,7 +51,9 @@ def run(scan_root: Path, report_only: bool) -> int:
     marker = cfg["marker"]
     canon_path = scan_root / canonical
     if not canon_path.is_file():
-        report.fail(f"{canonical}: the declared canonical precedence note does not exist")
+        report.fail(
+            f"{canonical}: the declared canonical precedence note does not exist"
+        )
     else:
         text = canon_path.read_text(encoding="utf-8")
         if marker not in text:
@@ -90,7 +91,9 @@ def run(scan_root: Path, report_only: bool) -> int:
         source="manifest",
         scan_root=scan_root,
     )
-    print(f"  layers: {len(layers)} | canonical: {canonical} | restatements: {restated}")
+    print(
+        f"  layers: {len(layers)} | canonical: {canonical} | restatements: {restated}"
+    )
     return report.finish(report_only=report_only)
 
 

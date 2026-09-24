@@ -86,8 +86,9 @@ def task_complete(root: Path, ends_with: str) -> bool:
     if not path.is_file():
         return False
     for line in path.read_text(encoding="utf-8").splitlines():
-        if re.match(rf"\s*- \[(.)\] {re.escape(task_id)}\b", line):
-            return re.match(rf"\s*- \[(.)\]", line).group(1) == "x"
+        match = re.match(rf"\s*- \[(.)\] {re.escape(task_id)}\b", line)
+        if match:
+            return match.group(1) == "x"
     return False
 
 
@@ -101,7 +102,9 @@ def run(scan_root: Path, report_only: bool) -> int:
         code, output = run_gate(module, scan_root)
         report.examine(name)
 
-        line = next((l for l in output.splitlines() if l.lstrip().startswith("coverage:")), None)
+        line = next(
+            (l for l in output.splitlines() if l.lstrip().startswith("coverage:")), None
+        )
         if line is None:
             report.fail(
                 f"ci/gates/{name}.py: prints no coverage line -- a run that says "
@@ -168,8 +171,10 @@ def run(scan_root: Path, report_only: bool) -> int:
         source="scan",
         scan_root=scan_root,
     )
-    print(f"  gates inspected: {len(modules)} | declared vacuities: "
-          f"{len([k for k in declared_vacuity if not k.startswith('_')])}")
+    print(
+        f"  gates inspected: {len(modules)} | declared vacuities: "
+        f"{len([k for k in declared_vacuity if not k.startswith('_')])}"
+    )
     return report.finish(report_only=report_only)
 
 

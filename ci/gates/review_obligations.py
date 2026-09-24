@@ -129,6 +129,7 @@ def fenced_block(raw: str, heading: str) -> str | None:
     lines = raw.splitlines()
     fence = False
     start = None
+    level = 0
     for i, line in enumerate(lines):
         if _FENCE.match(line):
             fence = not fence
@@ -150,7 +151,7 @@ def fenced_block(raw: str, heading: str) -> str | None:
                 inner = True
                 continue
             if inner:
-                return "\n".join(lines[opener + 1:i]) + "\n"
+                return "\n".join(lines[opener + 1 : i]) + "\n"
         if opener is None:
             m = re.match(r"^(#+)\s+", lines[i])
             if m and len(m.group(1)) <= level:
@@ -243,9 +244,12 @@ def links_to(text: str, basename: str, anchor: str) -> bool:
     so a link naming a heading that does not exist fails there. This gate checks
     only that the link is present.
     """
-    return re.search(
-        r"\]\([^)]*" + re.escape(basename) + r"#" + re.escape(anchor) + r"\)", text
-    ) is not None
+    return (
+        re.search(
+            r"\]\([^)]*" + re.escape(basename) + r"#" + re.escape(anchor) + r"\)", text
+        )
+        is not None
+    )
 
 
 def run(scan_root: Path, report_only: bool) -> int:
@@ -274,7 +278,9 @@ def run(scan_root: Path, report_only: bool) -> int:
     for rel in obliged:
         report.examine(rel)
         path = scan_root / rel
-        texts[rel] = mask_fences(path.read_text(encoding="utf-8")) if path.is_file() else None
+        texts[rel] = (
+            mask_fences(path.read_text(encoding="utf-8")) if path.is_file() else None
+        )
         if texts[rel] is None:
             report.fail(
                 f"{rel}: declared to carry the review obligations and absent -- "
@@ -286,7 +292,9 @@ def run(scan_root: Path, report_only: bool) -> int:
 
     # The published template against the block that states it. Raw text, because
     # mask_fences blanks exactly the block this case is about.
-    template = {k: v for k, v in cfg.get("template", {}).items() if not k.startswith("_")}
+    template = {
+        k: v for k, v in cfg.get("template", {}).items() if not k.startswith("_")
+    }
     if template:
         heading, published_rel = template["heading"], template["path"]
         report.examine(published_rel)

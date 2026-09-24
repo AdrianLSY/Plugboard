@@ -63,8 +63,11 @@ def make_variables(text: str) -> dict[str, str]:
 def expand(value: str, variables: dict[str, str], depth: int = 0) -> str:
     if depth > 5:
         return value
-    def sub(m):
-        return variables.get(m.group(1), m.group(0))
+
+    def sub(m: re.Match[str]) -> str:
+        key = m.group(1)
+        return variables.get(key, m.group(0)) if key is not None else m.group(0)
+
     grown = MAKE_VAR.sub(sub, value)
     return grown if grown == value else expand(grown, variables, depth + 1)
 
@@ -135,6 +138,7 @@ def run(scan_root: Path, report_only: bool) -> int:
         local = expand(m.group("argv"), make_variables(mk_text))
 
         from _workflow import executable_text
+
         runs = executable_text(wf.read_text(encoding="utf-8"))
         ci_matches = re.findall(spec["ci"]["argv_pattern"], runs, re.M)
         if not ci_matches:
@@ -154,8 +158,9 @@ def run(scan_root: Path, report_only: bool) -> int:
         # whose output repeats itself is one that stops being read.
         missing_in, extra_in = {}, {}
         for found in ci_matches:
-            got = flags(found if isinstance(found, str) else found[0], norm) \
-                | set(spec.get("implicit_ci", []))
+            got = flags(found if isinstance(found, str) else found[0], norm) | set(
+                spec.get("implicit_ci", [])
+            )
             for f in want - got:
                 missing_in[f] = missing_in.get(f, 0) + 1
             for f in got - want:
@@ -202,11 +207,15 @@ def run(scan_root: Path, report_only: bool) -> int:
                     )
 
     report.coverage(
-        covered=sorted(k for k, v in obligations.items() if not v.get("single_encoding")),
+        covered=sorted(
+            k for k, v in obligations.items() if not v.get("single_encoding")
+        ),
         excluded=[
             f"{k} (one encoding reached from two places, so nothing can drift)"
-            for k, v in sorted(obligations.items()) if v.get("single_encoding")
-        ] + ["whether the flags are the right ones (the configuration's business)"],
+            for k, v in sorted(obligations.items())
+            if v.get("single_encoding")
+        ]
+        + ["whether the flags are the right ones (the configuration's business)"],
         kind="dual-invocation obligation",
         source="manifest",
         scan_root=scan_root,

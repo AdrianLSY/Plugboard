@@ -71,8 +71,10 @@ COMPONENTS = {
 
 def reconcile() -> list[str]:
     """This file's component set against the vault's, both directions."""
-    import json
-    spec = json.loads((ROOT / "ci" / "vault.json").read_text())["code_standards"]["components"]
+
+    spec = json.loads((ROOT / "ci" / "vault.json").read_text())["code_standards"][
+        "components"
+    ]
     declared = {c for c in spec["candidates"] if not c.startswith("_")}
     no_toolchain = {c for c in spec.get("no_toolchain", {}) if not c.startswith("_")}
     expected = declared - no_toolchain
@@ -80,11 +82,13 @@ def reconcile() -> list[str]:
     for missing in sorted(expected - set(COMPONENTS)):
         problems.append(
             f"{missing}: declared a component with a toolchain in ci/vault.json "
-            f"and this check does not start it -- it is stamped and unverified")
+            f"and this check does not start it -- it is stamped and unverified"
+        )
     for extra in sorted(set(COMPONENTS) - expected):
         problems.append(
             f"{extra}: started by this check and not a component with a toolchain "
-            f"in ci/vault.json -- the declaration outlived the component")
+            f"in ci/vault.json -- the declaration outlived the component"
+        )
     return problems
 
 
@@ -112,8 +116,9 @@ def run_tool(cmd: list[str], cwd: Path) -> subprocess.CompletedProcess:
     unchecked module" -- and a traceback is not a verdict either.
     """
     try:
-        return subprocess.run(cmd, cwd=str(cwd), capture_output=True,
-                              text=True, check=False)
+        return subprocess.run(
+            cmd, cwd=str(cwd), capture_output=True, text=True, check=False
+        )
     except OSError as err:
         raise ToolAbsent(cmd[0]) from err
 
@@ -122,7 +127,7 @@ def git(*args: str) -> str:
     return run_tool(["git", *args], ROOT).stdout.strip()
 
 
-def reported(component: str) -> tuple[str, str]:
+def reported(component: str) -> tuple[int, str]:
     done = run_tool(COMPONENTS[component], ROOT / component)
     return done.returncode, (done.stdout + done.stderr)
 
@@ -142,18 +147,33 @@ def reported(component: str) -> tuple[str, str]:
 #: component's lint target runs is.
 FORMATTED = {
     "proxy/lib/plugboard/build_stamp.ex": (
-        ["mix", "format", "--check-formatted", "lib/plugboard/build_stamp.ex"], "proxy", False),
+        ["mix", "format", "--check-formatted", "lib/plugboard/build_stamp.ex"],
+        "proxy",
+        False,
+    ),
     "proxy/lib/plugboard/build_stamp.ex (credo)": (
-        ["mix", "credo", "--strict", "lib/plugboard/build_stamp.ex"], "proxy", False),
+        ["mix", "credo", "--strict", "lib/plugboard/build_stamp.ex"],
+        "proxy",
+        False,
+    ),
     # gofmt -l says nothing when a file is formatted and PRINTS ITS NAME when it
     # is not, exiting 0 either way -- so for it, and only for it, output is the
     # verdict. mix reports through its exit code and prints on every run.
     "sidecar/internal/buildstamp/stamp.go": (
-        ["gofmt", "-l", "internal/buildstamp/stamp.go"], "sidecar", True),
+        ["gofmt", "-l", "internal/buildstamp/stamp.go"],
+        "sidecar",
+        True,
+    ),
     "terminator/internal/buildstamp/stamp.go": (
-        ["gofmt", "-l", "internal/buildstamp/stamp.go"], "terminator", True),
+        ["gofmt", "-l", "internal/buildstamp/stamp.go"],
+        "terminator",
+        True,
+    ),
     "conformance/internal/buildstamp/stamp.go": (
-        ["gofmt", "-l", "internal/buildstamp/stamp.go"], "conformance", True),
+        ["gofmt", "-l", "internal/buildstamp/stamp.go"],
+        "conformance",
+        True,
+    ),
 }
 
 
@@ -172,27 +192,33 @@ def check_formatting(root: Path) -> list[str]:
                 f"{rel}: {absent.tool} is not on PATH, so this generated source "
                 f"was not read by the linter that refuses it. Install it and "
                 f"re-run -- skipping here reports green over an unchecked file, "
-                f"which is how the generated Elixir reached CI twice")
+                f"which is how the generated Elixir reached CI twice"
+            )
             continue
         if done.returncode != 0 or (stdout_is_verdict and done.stdout.strip()):
             # The first line that carries WORDS. gofmt prints a bare filename and
             # mix prints a diff whose last line is a pipe character; quoting
             # either is a diagnosis nobody can act on, which is the shape of a
             # check that discards the evidence for its own verdict.
-            said = [l.strip() for l in (done.stdout + done.stderr).splitlines()
-                    if any(c.isalpha() for c in l)]
+            said = [
+                l.strip()
+                for l in (done.stdout + done.stderr).splitlines()
+                if any(c.isalpha() for c in l)
+            ]
             problems.append(
                 f"{rel}: the generator emitted source its own component's linter "
                 f"refuses -- {said[0][:140] if said else 'exit ' + str(done.returncode)}. "
                 f"Fix ci/stamp.py; the file is generated and editing it is undone "
-                f"by the next `make stamp`")
+                f"by the next `make stamp`"
+            )
         else:
             print(f"  [ok  ] {rel}: formatter-clean")
     return problems
 
 
-def judge(component: str, line: str, want_commit: str, want_tree: str,
-          want_version: str) -> list[str]:
+def judge(
+    component: str, line: str, want_commit: str, want_tree: str, want_version: str
+) -> list[str]:
     """One component's reported line against values read from git INDEPENDENTLY.
 
     A function rather than an inline block so selfcheck() below can feed it a
@@ -210,21 +236,25 @@ def judge(component: str, line: str, want_commit: str, want_tree: str,
             f"{component}: reports commit {fields.get('commit')!r} and git says "
             f"{want_commit!r} -- derived here rather than read from the stamp, "
             f"because a test that reads its expectation from the value under "
-            f"test passes over a blank one")
+            f"test passes over a blank one"
+        )
     if fields.get("tree") != want_tree:
         problems.append(
             f"{component}: reports tree {fields.get('tree')!r} and the working "
-            f"tree is {want_tree!r}")
+            f"tree is {want_tree!r}"
+        )
     # `version` is as independently derivable as the other two, and binding it
     # only to non-emptiness left one of the four declared fields checked by
     # nothing -- which is where the reference's stamped binaries went wrong.
     if want_version and fields.get("version") != want_version:
         problems.append(
             f"{component}: reports version {fields.get('version')!r} and "
-            f"`git describe --tags --always --dirty` says {want_version!r}")
+            f"`git describe --tags --always --dirty` says {want_version!r}"
+        )
     if not RFC3339.match(fields.get("built", "")):
         problems.append(
-            f"{component}: `built` is not an RFC 3339 instant: {fields.get('built')!r}")
+            f"{component}: `built` is not an RFC 3339 instant: {fields.get('built')!r}"
+        )
     return problems
 
 
@@ -254,24 +284,31 @@ def refuses_an_absent_toolchain() -> list[str]:
         return []
     done = subprocess.run(
         [sys.executable, str(Path(__file__).resolve())],
-        cwd=str(ROOT), capture_output=True, text=True, check=False,
-        env={**os.environ, CHILD_MARKER: "1", "PATH": "/nonexistent"})
+        cwd=str(ROOT),
+        capture_output=True,
+        text=True,
+        check=False,
+        env={**os.environ, CHILD_MARKER: "1", "PATH": "/nonexistent"},
+    )
     said = done.stdout + done.stderr
     problems = []
     if "Traceback" in said:
         problems.append(
             "ci/provenance-check.py: raises where a declared toolchain is absent "
             "rather than stating a refusal -- a traceback is not a verdict, and it "
-            "stops the components whose toolchains ARE present from being reported")
+            "stops the components whose toolchains ARE present from being reported"
+        )
     if done.returncode == 0:
         problems.append(
             "ci/provenance-check.py: exits zero where every declared toolchain is "
             "absent -- nothing was compared, and a run that checked nothing must "
-            "not read as a run that found nothing wrong")
+            "not read as a run that found nothing wrong"
+        )
     if not any(m in said for m in ("not on PATH", "is absent")):
         problems.append(
             "ci/provenance-check.py: refuses an absent toolchain without naming it "
-            "-- the tool to install is the one fact the reader needs")
+            "-- the tool to install is the one fact the reader needs"
+        )
     return problems
 
 
@@ -296,7 +333,8 @@ def selfcheck() -> list[str]:
             problems.append(
                 f"ci/provenance-check.py: judge() {'accepted' if want_rejected else 'rejected'} "
                 f"{name} -- the comparison has stopped being independent of the "
-                f"value under test, which is the defect it was written to close")
+                f"value under test, which is the defect it was written to close"
+            )
     return problems
 
 
@@ -311,6 +349,7 @@ def renders() -> list[str]:
     language and why, instead of leaving a stale stamp to be noticed downstream.
     """
     import stamp as stamp_mod
+
     problems = []
     for language in ("go", "elixir"):
         try:
@@ -319,7 +358,8 @@ def renders() -> list[str]:
             problems.append(
                 f"ci/stamp.py: cannot render {language} at all -- "
                 f"{type(exc).__name__}: {exc}. Both templates are `.format()`ed, "
-                f"so a literal brace in one has to be doubled")
+                f"so a literal brace in one has to be doubled"
+            )
             continue
         if not out.strip():
             problems.append(f"ci/stamp.py: rendered empty {language} source")
@@ -327,8 +367,9 @@ def renders() -> list[str]:
 
 
 def main(argv: list[str]) -> int:
-    problems: list[str] = (reconcile() + renders() + selfcheck()
-                           + refuses_an_absent_toolchain())
+    problems: list[str] = (
+        reconcile() + renders() + selfcheck() + refuses_an_absent_toolchain()
+    )
     # Every expectation below is derived from git, so an absent git is not one
     # component's problem -- there is nothing left to compare against. Refused
     # here, with the tool named, rather than raised from four lines down.
@@ -337,9 +378,11 @@ def main(argv: list[str]) -> int:
         want_tree = "dirty" if git("status", "--porcelain") else "clean"
         want_version = git("describe", "--tags", "--always", "--dirty")
     except ToolAbsent as absent:
-        print(f"[FAIL] provenance: {absent.tool} is not on PATH, so every value "
-              f"this check compares against is underivable and nothing was "
-              f"verified. Install it and re-run.")
+        print(
+            f"[FAIL] provenance: {absent.tool} is not on PATH, so every value "
+            f"this check compares against is underivable and nothing was "
+            f"verified. Install it and re-run."
+        )
         for problem in problems:
             print(f"  - {problem}")
         print("  rule: docs/code/rules/build-provenance-from-one-place.md")
@@ -353,10 +396,13 @@ def main(argv: list[str]) -> int:
                 f"{component}: {absent.tool} is not on PATH, so nothing ran for it "
                 f"and its stamp is unverified. Install it and re-run -- the other "
                 f"components are still reported below, which is the half a "
-                f"traceback here used to take with it")
+                f"traceback here used to take with it"
+            )
             continue
         if code != 0:
-            problems.append(f"{component}: did not start ({out.strip().splitlines()[-1:] or ['no output']})")
+            problems.append(
+                f"{component}: did not start ({out.strip().splitlines()[-1:] or ['no output']})"
+            )
             continue
         line = next((l for l in out.splitlines() if l.startswith(component + " ")), "")
         if not line:
@@ -376,6 +422,7 @@ def main(argv: list[str]) -> int:
 
     # (3) one revision, one modified file, two different markers
     import stamp as stamp_mod
+
     before = stamp_mod.values()
     scratch = ROOT / "ci" / ".provenance-probe"
     scratch.write_text("a modification, removed immediately\n", encoding="utf-8")
@@ -384,10 +431,14 @@ def main(argv: list[str]) -> int:
     finally:
         scratch.unlink(missing_ok=True)
     if before["commit"] != after["commit"]:
-        problems.append("the dirty-marker probe changed the revision, so it proves nothing")
+        problems.append(
+            "the dirty-marker probe changed the revision, so it proves nothing"
+        )
     elif before["tree"] == after["tree"] == "dirty":
-        print("  [ok  ] dirty marker: the tree was already dirty, so both stamps say dirty "
-              "-- the probe is inconclusive here and says so rather than claiming a pass")
+        print(
+            "  [ok  ] dirty marker: the tree was already dirty, so both stamps say dirty "
+            "-- the probe is inconclusive here and says so rather than claiming a pass"
+        )
     elif before["tree"] == after["tree"]:
         problems.append(
             f"two stamps of one revision, one with a file modified, both report "
@@ -396,12 +447,16 @@ def main(argv: list[str]) -> int:
             f"repository with no tags"
         )
     else:
-        print(f"  [ok  ] dirty marker: {before['tree']} -> {after['tree']} across one modified file")
+        print(
+            f"  [ok  ] dirty marker: {before['tree']} -> {after['tree']} across one modified file"
+        )
 
-    print(f"\ncoverage: {len(COMPONENTS)} component(s) reporting provenance | derived "
-          f"independently: commit, tree | excluded: contract (no toolchain, declared), "
-          f"a released artifact's stamp (task 70.7), a configuration-name collision "
-          f"(needs task 5.2's schema)")
+    print(
+        f"\ncoverage: {len(COMPONENTS)} component(s) reporting provenance | derived "
+        f"independently: commit, tree | excluded: contract (no toolchain, declared), "
+        f"a released artifact's stamp (task 70.7), a configuration-name collision "
+        f"(needs task 5.2's schema)"
+    )
     if problems:
         print(f"[FAIL] provenance: {len(problems)} problem(s)")
         for p in problems:

@@ -49,7 +49,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from _common import Report, load_manifest, main_guard, repo_root
+from _common import Report, main_guard
 
 GATE_ID = "fixture-declarations"
 RULE_NOTE = "docs/method/rules/fixtures-declare-their-failure.md"
@@ -67,17 +67,21 @@ def run_module(module: Path, args: list[str]) -> tuple[int, str]:
 
 
 def run(scan_root: Path, report_only: bool) -> int:
-    manifest = load_manifest(repo_root())
     fixtures = scan_root / "ci" / "broken-inputs"
     report = Report(GATE_ID, RULE_NOTE)
 
     if not fixtures.is_dir():
         report.fail(
-            f"ci/broken-inputs/ is absent -- this gate's subject is the set of "
-            f"violating trees, and there are none"
+            "ci/broken-inputs/ is absent -- this gate's subject is the set of "
+            "violating trees, and there are none"
         )
-        report.coverage(covered=[], excluded=[], kind="violating tree",
-                        source="scan", scan_root=scan_root)
+        report.coverage(
+            covered=[],
+            excluded=[],
+            kind="violating tree",
+            source="scan",
+            scan_root=scan_root,
+        )
         return report.finish(report_only=report_only)
 
     read, skipped = [], []
@@ -110,9 +114,13 @@ def run(scan_root: Path, report_only: bool) -> int:
         try:
             decl = json.loads(decl_path.read_text(encoding="utf-8"))
         except json.JSONDecodeError as exc:
-            report.fail(f"ci/broken-inputs/{gid}/expect.json: not valid JSON ({exc.msg})")
+            report.fail(
+                f"ci/broken-inputs/{gid}/expect.json: not valid JSON ({exc.msg})"
+            )
             continue
-        declared_trees = {k: v for k, v in decl.get("trees", {}).items() if not k.startswith("_")}
+        declared_trees = {
+            k: v for k, v in decl.get("trees", {}).items() if not k.startswith("_")
+        }
 
         # The other direction. The loop below walks trees ON DISK, so a tree named
         # in expect.json that does not exist was invisible: it demonstrated
@@ -149,7 +157,9 @@ def run(scan_root: Path, report_only: bool) -> int:
                     f"demonstrates reads as still current"
                 )
             # (3) each declared case matches at least one emitted failure.
-            emitted_lines = [l.strip() for l in output.splitlines() if l.strip().startswith("- ")]
+            emitted_lines = [
+                l.strip() for l in output.splitlines() if l.strip().startswith("- ")
+            ]
             for case in claim.get("cases", []):
                 if not any(case in l for l in emitted_lines):
                     report.fail(
@@ -199,7 +209,9 @@ def run(scan_root: Path, report_only: bool) -> int:
 
     report.coverage(
         covered=sorted(read),
-        excluded=sorted([*NOT_A_GATE, *(f"{g} (script-paired, not a gate module)" for g in skipped)]),
+        excluded=sorted(
+            [*NOT_A_GATE, *(f"{g} (script-paired, not a gate module)" for g in skipped)]
+        ),
         kind="violating tree or declared invocation",
         source="scan",
         scan_root=scan_root,

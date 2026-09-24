@@ -41,13 +41,13 @@ from pathlib import Path
 
 from _common import (
     Report,
+    _in_worktree,
     exempt_roots,
     load_manifest,
     main_guard,
     repo_root,
     scan_excludes,
     subject_source,
-    _in_worktree,
 )
 
 GATE_ID = "linter-config"
@@ -68,7 +68,8 @@ def _tracked(scan_root: Path) -> list[str] | None:
     try:
         out = subprocess.run(
             ["git", "-C", str(scan_root), "ls-files", "-z"],
-            capture_output=True, check=True,
+            capture_output=True,
+            check=True,
         ).stdout
     except (subprocess.CalledProcessError, FileNotFoundError):
         return None
@@ -83,8 +84,7 @@ def _walk(scan_root: Path, skip: set[str]):
         dirnames[:] = sorted(
             d
             for d in dirnames
-            if d not in {".git"}
-            and (f"{rel_dir}/{d}" if rel_dir else d) not in skip
+            if d not in {".git"} and (f"{rel_dir}/{d}" if rel_dir else d) not in skip
         )
         for name in sorted(filenames):
             yield (f"{rel_dir}/{name}" if rel_dir else name)

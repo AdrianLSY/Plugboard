@@ -45,7 +45,7 @@ import os
 import subprocess
 from pathlib import Path
 
-from _common import Report, main_guard, subject_source, _in_worktree
+from _common import Report, _in_worktree, main_guard, subject_source
 
 GATE_ID = "no-submodules"
 RULE_NOTE = "docs/code/rules/no-submodules.md"
@@ -105,7 +105,9 @@ def run(scan_root: Path, report_only: bool) -> int:
 
     # (2) the entry that actually pins a foreign revision.
     gitlinks = (
-        [p for mode, p in entries if mode == GITLINK_MODE] if entries is not None else []
+        [p for mode, p in entries if mode == GITLINK_MODE]
+        if entries is not None
+        else []
     )
     for path in gitlinks:
         report.fail(
@@ -116,9 +118,10 @@ def run(scan_root: Path, report_only: bool) -> int:
         )
 
     decided = (
-        "both cases" if entries is not None
+        "both cases"
+        if entries is not None
         else f"case 1 only ({MODULES_FILE}); mode {GITLINK_MODE} is recorded in "
-             f"the index and this run has none"
+        f"the index and this run has none"
     )
     report.coverage(
         covered=[f"{MODULES_FILE} at the tree root", f"mode {GITLINK_MODE} entries"],

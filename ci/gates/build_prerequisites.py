@@ -87,7 +87,9 @@ def compiling(cfg: dict) -> list[re.Pattern]:
             continue
         inv = "|".join(re.escape(i) for i in spec["invocations"])
         verbs = "|".join(re.escape(v) for v in spec["verbs"])
-        out.append(re.compile(rf"(?:^|[\s;&|(]){{0,1}}(?:{inv})\s+(?:{verbs})(?![\w-])"))
+        out.append(
+            re.compile(rf"(?:^|[\s;&|(]){{0,1}}(?:{inv})\s+(?:{verbs})(?![\w-])")
+        )
     for tool in cfg["standalone_tools"]:
         out.append(re.compile(rf"(?<![\w/-]){re.escape(tool)}(?![\w-])"))
     return out
@@ -96,6 +98,7 @@ def compiling(cfg: dict) -> list[re.Pattern]:
 def first_match(body: str, patterns: list[re.Pattern]) -> int:
     """Source line index of the first EXECUTED line matching any pattern, or -1."""
     from _workflow import executable_lines
+
     for i, text in executable_lines(body):
         for seg in re.split(r"&&|\|\||;|\|", text):
             if any(p.search(seg.strip()) for p in patterns):
@@ -109,12 +112,13 @@ def make_rules(text: str) -> dict[str, tuple[set[str], list[str]]]:
     current: str | None = None
     for line in text.splitlines():
         if line.startswith("\t"):
-            if current:
+            if current is not None:
                 out[current][1].append(line)
             continue
         m = _RULE.match(line)
         if m:
             current = m.group(1)
+            assert current is not None
             out.setdefault(current, (set(m.group(2).split()), []))
         elif line.strip() and not line.lstrip().startswith("#"):
             current = None
@@ -146,12 +150,18 @@ def run(scan_root: Path, report_only: bool) -> int:
     # once, and would miss a new component's Makefile the same way: a roster is
     # coverage that silently stops growing, and it reports a number while it does.
     manifest = load_manifest(repo_root())
-    make_files = sources(scan_root, {"languages": {s: "make" for s in cfg["build_file_suffixes"]}}, manifest)
+    make_files = sources(
+        scan_root,
+        {"languages": {s: "make" for s in cfg["build_file_suffixes"]}},
+        manifest,
+    )
     for rel in make_files:
         path = scan_root / rel
         if not path.is_file():
             continue
-        for name, (prereqs, recipe) in sorted(make_rules(path.read_text(encoding="utf-8")).items()):
+        for name, (prereqs, recipe) in sorted(
+            make_rules(path.read_text(encoding="utf-8")).items()
+        ):
             if not any(m.search(l) for l in recipe for m in markers):
                 continue
             report.examine(f"{rel}:{name}")
@@ -168,7 +178,9 @@ def run(scan_root: Path, report_only: bool) -> int:
     # 2. The workflow side.
     wf_dir = scan_root / cfg["workflows_dir"]
     globs = cfg["workflow_globs"]
-    found_wf = sorted({p for g in globs for p in wf_dir.glob(g)}) if wf_dir.is_dir() else []
+    found_wf = (
+        sorted({p for g in globs for p in wf_dir.glob(g)}) if wf_dir.is_dir() else []
+    )
     for path in found_wf:
         rel = str(path.relative_to(scan_root))
         for name, body in jobs(path.read_text(encoding="utf-8")):

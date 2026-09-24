@@ -55,7 +55,9 @@ def task_exists(root: Path, rel: str, task_id: str) -> bool:
     if not path.is_file():
         return False
     pattern = re.compile(rf"^- \[[ x]\] {re.escape(task_id)}\s")
-    return any(pattern.match(line) for line in path.read_text(encoding="utf-8").splitlines())
+    return any(
+        pattern.match(line) for line in path.read_text(encoding="utf-8").splitlines()
+    )
 
 
 def test_declared(root: Path, pkg: str, name: str) -> bool:
@@ -79,16 +81,26 @@ def run(scan_root: Path, report_only: bool) -> int:
             f"baseline, so a permanently red one makes every change unmergeable "
             f"and a gate that closes goes unnoticed"
         )
-        report.coverage(covered=[], excluded=[], kind="recorded gate",
-                        source="manifest", scan_root=scan_root)
+        report.coverage(
+            covered=[],
+            excluded=[],
+            kind="recorded gate",
+            source="manifest",
+            scan_root=scan_root,
+        )
         return report.finish(report_only=report_only)
 
     try:
         entries = json.loads(path.read_text(encoding="utf-8")).get("gates", {})
     except json.JSONDecodeError as exc:
         report.fail(f"{REGISTRY}: not valid JSON ({exc.msg})")
-        report.coverage(covered=[], excluded=[], kind="recorded gate",
-                        source="manifest", scan_root=scan_root)
+        report.coverage(
+            covered=[],
+            excluded=[],
+            kind="recorded gate",
+            source="manifest",
+            scan_root=scan_root,
+        )
         return report.finish(report_only=report_only)
 
     reds = 0
@@ -131,12 +143,16 @@ def run(scan_root: Path, report_only: bool) -> int:
 
     report.coverage(
         covered=[REGISTRY],
-        excluded=["whether a recorded outcome is the right one (the runner decides that, by running it)"],
+        excluded=[
+            "whether a recorded outcome is the right one (the runner decides that, by running it)"
+        ],
         kind="recorded gate",
         source="manifest",
         scan_root=scan_root,
     )
-    print(f"  recorded gates: {len(entries)} | red (a debt with a named closer): {reds}")
+    print(
+        f"  recorded gates: {len(entries)} | red (a debt with a named closer): {reds}"
+    )
     return report.finish(report_only=report_only)
 
 

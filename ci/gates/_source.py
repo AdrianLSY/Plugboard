@@ -14,7 +14,7 @@ import re
 import subprocess
 from pathlib import Path
 
-from _common import load_manifest, repo_root, scan_excludes, _in_worktree
+from _common import _in_worktree, load_manifest, repo_root, scan_excludes
 
 #: Per extension: the line-comment marker, and whether the language nests blocks
 #: by indentation (Elixir's `do`/`end`) or by braces (Go).
@@ -37,7 +37,8 @@ def sources(scan_root: Path, cfg: dict, manifest: dict) -> list[str]:
         try:
             out = subprocess.run(
                 ["git", "-C", str(scan_root), "ls-files", "-z"],
-                capture_output=True, check=True,
+                capture_output=True,
+                check=True,
             ).stdout
             paths = [p for p in out.decode("utf-8").split("\0") if p]
         except (subprocess.CalledProcessError, FileNotFoundError):
@@ -45,7 +46,8 @@ def sources(scan_root: Path, cfg: dict, manifest: dict) -> list[str]:
     else:
         paths = _walk(scan_root)
     return sorted(
-        p for p in paths
+        p
+        for p in paths
         if p.endswith(exts)
         and not any(p == e or p.startswith(e + "/") for e in excluded)
     )

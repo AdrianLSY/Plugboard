@@ -25,7 +25,9 @@ def current_branch() -> str:
 
 
 def repository() -> tuple[str, str]:
-    info = json.loads(command("gh", "repo", "view", "--json", "nameWithOwner,defaultBranchRef"))
+    info = json.loads(
+        command("gh", "repo", "view", "--json", "nameWithOwner,defaultBranchRef")
+    )
     return info["nameWithOwner"], info["defaultBranchRef"]["name"]
 
 
@@ -48,12 +50,33 @@ def impact_answered(body: str) -> bool:
     return True
 
 
-def publish(repo: str, base: str, branch: str, title: str, body_file: Path, draft: bool) -> str:
+def publish(
+    repo: str, base: str, branch: str, title: str, body_file: Path, draft: bool
+) -> str:
     url = f"https://github.com/{repo}.git"
-    command("git", "-c", "credential.helper=!gh auth git-credential", "push", url,
-            f"HEAD:refs/heads/{branch}")
-    args = ["gh", "pr", "create", "--repo", repo, "--base", base, "--head", branch,
-            "--title", title, "--body-file", str(body_file)]
+    command(
+        "git",
+        "-c",
+        "credential.helper=!gh auth git-credential",
+        "push",
+        url,
+        f"HEAD:refs/heads/{branch}",
+    )
+    args = [
+        "gh",
+        "pr",
+        "create",
+        "--repo",
+        repo,
+        "--base",
+        base,
+        "--head",
+        branch,
+        "--title",
+        title,
+        "--body-file",
+        str(body_file),
+    ]
     if draft:
         args.append("--draft")
     return command(*args)
@@ -63,9 +86,15 @@ def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--title", required=True)
     parser.add_argument("--body-file", required=True, type=Path)
-    parser.add_argument("--base", help="target branch (default: repository default branch)")
+    parser.add_argument(
+        "--base", help="target branch (default: repository default branch)"
+    )
     parser.add_argument("--draft", action="store_true")
-    parser.add_argument("--check-only", action="store_true", help="validate without pushing or opening a PR")
+    parser.add_argument(
+        "--check-only",
+        action="store_true",
+        help="validate without pushing or opening a PR",
+    )
     args = parser.parse_args(argv)
 
     try:
@@ -78,23 +107,42 @@ def main(argv: list[str]) -> int:
         repo, default_base = repository()
         base = args.base or default_base
         if branch == base:
-            print(f"[FAIL] cannot open a PR from its base branch ({base})", file=sys.stderr)
+            print(
+                f"[FAIL] cannot open a PR from its base branch ({base})",
+                file=sys.stderr,
+            )
             return 1
         url = f"https://github.com/{repo}.git"
-        command("git", "-c", "credential.helper=!gh auth git-credential", "fetch",
-                "--no-tags", url, base)
+        command(
+            "git",
+            "-c",
+            "credential.helper=!gh auth git-credential",
+            "fetch",
+            "--no-tags",
+            url,
+            base,
+        )
         changed = checks.changed_paths("FETCH_HEAD", "HEAD")
         if not preflight(body, changed):
             return 1
         if command("git", "status", "--porcelain"):
-            print("[FAIL] commit or remove uncommitted changes before opening a PR", file=sys.stderr)
+            print(
+                "[FAIL] commit or remove uncommitted changes before opening a PR",
+                file=sys.stderr,
+            )
             return 1
         if args.check_only:
             print("[ok] PR preflight; no branch pushed and no PR created")
             return 0
         print(publish(repo, base, branch, args.title, body_file, args.draft))
         return 0
-    except (OSError, UnicodeError, KeyError, ValueError, subprocess.CalledProcessError) as exc:
+    except (
+        OSError,
+        UnicodeError,
+        KeyError,
+        ValueError,
+        subprocess.CalledProcessError,
+    ) as exc:
         if isinstance(exc, subprocess.CalledProcessError):
             detail = (exc.stderr or exc.stdout or str(exc)).strip()
         else:

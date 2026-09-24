@@ -1,0 +1,17 @@
+[tool.black]
+target-version = ["py312"]
+extend-exclude = "ci/(broken-inputs|generator-inputs)/"
+
+[tool.ruff]
+target-version = "py312"
+extend-exclude = ["ci/broken-inputs", "ci/generator-inputs"]
+
+[tool.ruff.lint]
+select = ["F", "B", "I"]
+
+[tool.basedpyright]
+include = ["ci"]
+exclude = ["ci/broken-inputs", "ci/generator-inputs"]
+extraPaths = ["ci", "ci/gates", "ci/gen", "ci/pr"]
+pythonVersion = "3.12"
+typeCheckingMode = "standard"

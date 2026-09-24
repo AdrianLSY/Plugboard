@@ -76,7 +76,9 @@ def run(scan_root: Path, report_only: bool) -> int:
 
         # (2) routes, names an invariant, names a banned pattern
         links = [m.group(1) for m in LINK.finditer(text)]
-        if not any(l.startswith("docs/") or "/docs/" in l or l.endswith(".md") for l in links):
+        if not any(
+            l.startswith("docs/") or "/docs/" in l or l.endswith(".md") for l in links
+        ):
             report.fail(f"{rel}: links into no note -- an entry file is a router")
         if not any(inv.lower() in text.lower() for inv in invariants):
             report.fail(
@@ -98,11 +100,27 @@ def run(scan_root: Path, report_only: bool) -> int:
             if cand.startswith(("http", "-")) or " " in cand:
                 continue
             root = cand.split("/", 1)[0]
-            if root in {"docs", "ci", "openspec", "contract", "proxy", "sidecar",
-                        "terminator", "conformance", "graphify-out", "reference"}:
+            if root in {
+                "docs",
+                "ci",
+                "openspec",
+                "contract",
+                "proxy",
+                "sidecar",
+                "terminator",
+                "conformance",
+                "graphify-out",
+                "reference",
+            }:
                 target = scan_root / cand.rstrip("/")
-                if not target.exists() and root not in {"contract", "proxy", "sidecar",
-                                                        "terminator", "conformance", "reference"}:
+                if not target.exists() and root not in {
+                    "contract",
+                    "proxy",
+                    "sidecar",
+                    "terminator",
+                    "conformance",
+                    "reference",
+                }:
                     report.fail(
                         f"{rel}: names '{cand}', which the repository does not "
                         f"contain -- an entry file is read first, so a false claim "
@@ -117,7 +135,9 @@ def run(scan_root: Path, report_only: bool) -> int:
         scan_root=scan_root,
     )
     sizes = ", ".join(
-        f"{f}={(scan_root / f).stat().st_size}B" for f in declared if (scan_root / f).is_file()
+        f"{f}={(scan_root / f).stat().st_size}B"
+        for f in declared
+        if (scan_root / f).is_file()
     )
     print(f"  ceiling {ceiling}B | {sizes or 'no entry file exists'}")
     return report.finish(report_only=report_only)

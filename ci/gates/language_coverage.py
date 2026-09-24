@@ -31,7 +31,6 @@ from pathlib import Path
 
 from _common import Report, load_manifest, main_guard, repo_root
 
-
 GATE_ID = "language-coverage"
 RULE_NOTE = "docs/code/rules/language-conventions-keyed-on-source.md"
 
@@ -43,14 +42,20 @@ def tracked(root: Path) -> list[str]:
         ).stdout
         return [p for p in out.decode("utf-8").split("\0") if p]
     except (subprocess.CalledProcessError, FileNotFoundError):
-        return sorted(p.relative_to(root).as_posix() for p in root.rglob("*") if p.is_file())
+        return sorted(
+            p.relative_to(root).as_posix() for p in root.rglob("*") if p.is_file()
+        )
 
 
 def run(scan_root: Path, report_only: bool) -> int:
     manifest = load_manifest(repo_root())
     cfg = manifest["code_standards"]["languages"]
     globs = {k: v for k, v in cfg["source_globs"].items() if not k.startswith("_")}
-    exts = {k: v for k, v in cfg.get("source_extensions", {}).items() if not k.startswith("_")}
+    exts = {
+        k: v
+        for k, v in cfg.get("source_extensions", {}).items()
+        if not k.startswith("_")
+    }
     excl = tuple(cfg.get("exclude", []))
     ndir = cfg["note_dir"]
     report = Report(GATE_ID, RULE_NOTE)
@@ -58,10 +63,7 @@ def run(scan_root: Path, report_only: bool) -> int:
     files = [f for f in tracked(scan_root) if not any(f.startswith(e) for e in excl)]
     present = {}
     for lang, patterns in globs.items():
-        hits = [
-            f for f in files
-            if any(Path(f).match(pat) for pat in patterns)
-        ]
+        hits = [f for f in files if any(Path(f).match(pat) for pat in patterns)]
         if hits:
             present[lang] = len(hits)
 
@@ -80,9 +82,15 @@ def run(scan_root: Path, report_only: bool) -> int:
     for lang, n in sorted(ext_counts.items()):
         present.setdefault(lang, n)
 
-    notes = {
-        p.stem: p for p in sorted((scan_root / ndir).glob("*.md")) if p.stem != "index"
-    } if (scan_root / ndir).is_dir() else {}
+    notes = (
+        {
+            p.stem: p
+            for p in sorted((scan_root / ndir).glob("*.md"))
+            if p.stem != "index"
+        }
+        if (scan_root / ndir).is_dir()
+        else {}
+    )
 
     for lang, n in sorted(present.items()):
         if lang not in notes:

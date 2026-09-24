@@ -61,18 +61,18 @@ they are checked here so they are checked at all rather than remembered.
 from __future__ import annotations
 
 import re
+import subprocess
 from pathlib import Path
 
 from _common import (
     Report,
+    _in_worktree,
     load_manifest,
     main_guard,
     repo_root,
     scan_excludes,
     subject_source,
-    _in_worktree,
 )
-import subprocess
 
 GATE_ID = "banned-patterns"
 RULE_NOTE = "docs/code/rules/banned-defect-classes.md"
@@ -141,9 +141,7 @@ def run(scan_root: Path, report_only: bool) -> int:
         lines = text.splitlines()
         is_go = rel.endswith(".go")
         is_test = rel.endswith("_test.go") or rel.endswith("_test.exs")
-        exempt_lines = {
-            n for n, l in enumerate(lines, 1) if marker in l
-        } | {
+        exempt_lines = {n for n, l in enumerate(lines, 1) if marker in l} | {
             n + 1 for n, l in enumerate(lines, 1) if marker in l
         }
 
@@ -154,35 +152,56 @@ def run(scan_root: Path, report_only: bool) -> int:
             # (1) a one-value-per-name container over header fields.
             construct = GO_MAP.search(line) if is_go else EX_MAP.search(line)
             if construct and header_re.search(line):
-                fail(rel, n, "headers-as-a-map",
-                     f"`{construct.group(0)}` on a line naming a header field -- a "
-                     f"repeated field name is ordinary and the order is part of the "
-                     f"message, so `Set-Cookie` past the first is deleted silently")
+                fail(
+                    rel,
+                    n,
+                    "headers-as-a-map",
+                    f"`{construct.group(0)}` on a line naming a header field -- a "
+                    f"repeated field name is ordinary and the order is part of the "
+                    f"message, so `Set-Cookie` past the first is deleted silently",
+                )
 
             # (2) a body accumulated before it is emitted.
-            if is_go and not is_test and READ_ALL.search(line) and n not in exempt_lines:
-                fail(rel, n, "read-all-on-a-proxied-body",
-                     f"`{READ_ALL.search(line).group(0)}` with no `{marker}` comment "
-                     f"stating why this is not a body in transit -- a hop reads a "
-                     f"chunk and writes a chunk")
+            read_all = READ_ALL.search(line)
+            if is_go and not is_test and read_all and n not in exempt_lines:
+                fail(
+                    rel,
+                    n,
+                    "read-all-on-a-proxied-body",
+                    f"`{read_all.group(0)}` with no `{marker}` comment "
+                    f"stating why this is not a body in transit -- a hop reads a "
+                    f"chunk and writes a chunk",
+                )
 
             # (3) a term rendering that can reach a peer.
-            if (not is_go) and not is_test and INSPECT.search(line) \
-                    and not LOGGER.search(line) and n not in exempt_lines:
-                fail(rel, n, "inspect-on-a-wire-payload",
-                     f"`inspect/1` outside a log line and with no `{marker}` comment "
-                     f"-- a peer receives an enumerated code, not an Elixir term "
-                     f"rendering that changes shape when the internal term does")
+            if (
+                (not is_go)
+                and not is_test
+                and INSPECT.search(line)
+                and not LOGGER.search(line)
+                and n not in exempt_lines
+            ):
+                fail(
+                    rel,
+                    n,
+                    "inspect-on-a-wire-payload",
+                    f"`inspect/1` outside a log line and with no `{marker}` comment "
+                    f"-- a peer receives an enumerated code, not an Elixir term "
+                    f"rendering that changes shape when the internal term does",
+                )
 
         # (4) a GenServer that monitors and never traps exits. Module-scoped.
-        if not is_go and USES_GENSERVER.search(text) and MONITORS.search(text) \
-                and not TRAPS.search(text):
-            m = USES_GENSERVER.search(text)
-            fail(rel, text[: m.start()].count("\n") + 1, "monitor-without-trap-exit",
-                 "a GenServer that monitors and never calls "
-                 "`Process.flag(:trap_exit, true)` -- it dies before its `:DOWN` "
-                 "clause can run, which makes every recovery path below it "
-                 "unreachable ceremony")
+        genserver = USES_GENSERVER.search(text)
+        if not is_go and genserver and MONITORS.search(text) and not TRAPS.search(text):
+            fail(
+                rel,
+                text[: genserver.start()].count("\n") + 1,
+                "monitor-without-trap-exit",
+                "a GenServer that monitors and never calls "
+                "`Process.flag(:trap_exit, true)` -- it dies before its `:DOWN` "
+                "clause can run, which makes every recovery path below it "
+                "unreachable ceremony",
+            )
 
         # (5) `with` in a controller action, with no `else`.
         if not is_go and re.search(r"^\s*defmodule\s+\S*Controller\b", text, re.M):
@@ -193,18 +212,29 @@ def run(scan_root: Path, report_only: bool) -> int:
                 indent = m.group(1)
                 has_else = False
                 for follow in lines[n:]:
-                    if follow.strip() and not follow.startswith(indent + " ") \
-                            and not follow.startswith(indent + "\t"):
-                        if follow == indent + "else" or follow.rstrip() == indent + "else":
+                    if (
+                        follow.strip()
+                        and not follow.startswith(indent + " ")
+                        and not follow.startswith(indent + "\t")
+                    ):
+                        if (
+                            follow == indent + "else"
+                            or follow.rstrip() == indent + "else"
+                        ):
                             has_else = True
                         break
                 if not has_else:
-                    fail(rel, n, "with-without-else",
-                         "`with` in a controller action and no `else` clause -- every "
-                         "non-matching clause then falls through as its own raw value")
+                    fail(
+                        rel,
+                        n,
+                        "with-without-else",
+                        "`with` in a controller action and no `else` clause -- every "
+                        "non-matching clause then falls through as its own raw value",
+                    )
 
     report.coverage(
-        covered=sorted({p.rsplit(".", 1)[-1] for p in sources}) or ["(no Elixir or Go source)"],
+        covered=sorted({p.rsplit(".", 1)[-1] for p in sources})
+        or ["(no Elixir or Go source)"],
         excluded=[*excluded, "the general cases, which golangci-lint and Credo own"],
         kind="source file",
         source=subject_source(scan_root),
