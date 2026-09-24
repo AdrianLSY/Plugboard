@@ -278,6 +278,7 @@ and no command in this repository reproduces them, because that tree is not in i
 | `ci/` | The gate harness: one Python module per gate, a paired broken input per gate, and the generators for the indexes that must not drift. |
 | `.github/` | The runner. No path filter, no branch filter, no `continue-on-error` — each checked by a gate, so the workflow comment is not the enforcement. |
 | [`CLAUDE.md`](CLAUDE.md) · [`AGENTS.md`](AGENTS.md) | Routers for coding agents. Both are entry files under a size ceiling; neither carries content. |
+| [`.agents/`](.agents/README.md) | Project skills for Codex and other agents that read `.agents/skills/`. Includes OpenSpec workflows and Matt Pocock skills; the guide explains their place in this repository. |
 | `reference/` | Read-only prior art. Gitignored, absent, and **not a source of truth for behaviour**. |
 | `proxy/` `sidecar/` `terminator/` `contract/` `conformance/` | Declared, planned, and **not yet created**. |
 
