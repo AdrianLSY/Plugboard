@@ -130,12 +130,12 @@ from pathlib import Path
 
 from _common import (
     Report,
+    _in_worktree,
     load_manifest,
     main_guard,
     repo_root,
     scan_excludes,
     subject_source,
-    _in_worktree,
 )
 
 GATE_ID = "secret-scan"
@@ -195,8 +195,11 @@ BASE_REFS = ("origin/main", "main")
 # delimiters are spelled `-{5}` rather than as five hyphens, and each prefix is
 # followed here by a character class rather than by a value.
 PATTERNS: list[tuple[str, str, bool]] = [
-    ("aws-access-key-id",
-     r"(?:AKIA|ASIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ABIA|ACCA)[A-Z0-9]{16}", True),
+    (
+        "aws-access-key-id",
+        r"(?:AKIA|ASIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ABIA|ACCA)[A-Z0-9]{16}",
+        True,
+    ),
     ("github-token", r"gh[pousr]_[A-Za-z0-9]{36,}", True),
     ("github-fine-grained-token", r"github_pat_[A-Za-z0-9_]{60,}", True),
     ("slack-token", r"xox[abprse]-[A-Za-z0-9-]{12,}", True),
@@ -206,24 +209,35 @@ PATTERNS: list[tuple[str, str, bool]] = [
     ("openai-api-key", r"sk-proj-[A-Za-z0-9_\-]{20,}", True),
     ("npm-token", r"npm_[A-Za-z0-9]{36}", True),
     ("private-key-block", r"-{5}BEGIN [A-Z0-9 ]*PRIVATE KEY(?: BLOCK)?-{5}", False),
-    ("signed-json-web-token",
-     r"eyJ[A-Za-z0-9_\-]{10,}\.eyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{20,}", False),
+    (
+        "signed-json-web-token",
+        r"eyJ[A-Za-z0-9_\-]{10,}\.eyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{20,}",
+        False,
+    ),
     # Unprefixed, so it is admitted only where the line also names the field AWS
     # itself names -- the co-occurrence rule ci/gates/banned_patterns.py uses to
     # make "a map over header fields" decidable. Without it this matches a
     # 40-character commit SHA.
-    ("aws-secret-access-key",
-     r"(?<![A-Za-z0-9/+=])[A-Za-z0-9/+=]{40}(?![A-Za-z0-9/+=])", False),
+    (
+        "aws-secret-access-key",
+        r"(?<![A-Za-z0-9/+=])[A-Za-z0-9/+=]{40}(?![A-Za-z0-9/+=])",
+        False,
+    ),
     # A password in a URL's userinfo. Structural, not entropic: the shape is
     # `scheme://user:value@host`, and the conditions in `_url_password_leaks`
     # are what keep `${PGPASSWORD}` and `user:password@` out.
-    ("url-embedded-password",
-     r"[a-z][a-z0-9+.\-]{1,15}://[^\s/:@\"'`]{1,64}:"
-     r"(?P<url_password>[^\s/:@\"'`]{10,64})@[^\s\"'`]{2,}", False),
+    (
+        "url-embedded-password",
+        r"[a-z][a-z0-9+.\-]{1,15}://[^\s/:@\"'`]{1,64}:"
+        r"(?P<url_password>[^\s/:@\"'`]{10,64})@[^\s\"'`]{2,}",
+        False,
+    ),
 ]
 
 COMBINED = re.compile(
-    "|".join(f"(?P<{name.replace('-', '_')}>{pattern})" for name, pattern, _ in PATTERNS)
+    "|".join(
+        f"(?P<{name.replace('-', '_')}>{pattern})" for name, pattern, _ in PATTERNS
+    )
 )
 SHOW_PREFIX = {name: show for name, _p, show in PATTERNS}
 AWS_SECRET_FIELD = "aws_secret_access_key"
@@ -233,9 +247,7 @@ def _entropy(value: str) -> float:
     if not value:
         return 0.0
     total = len(value)
-    return -sum(
-        (n / total) * math.log2(n / total) for n in Counter(value).values()
-    )
+    return -sum((n / total) * math.log2(n / total) for n in Counter(value).values())
 
 
 def _is_placeholder(value: str) -> bool:
@@ -264,7 +276,14 @@ def _url_password_leaks(password: str) -> bool:
     if _is_placeholder(password):
         return False
     if password.lower() in {
-        "password", "pass", "secret", "token", "hunter2", "pw", "admin", "root"
+        "password",
+        "pass",
+        "secret",
+        "token",
+        "hunter2",
+        "pw",
+        "admin",
+        "root",
     }:
         return False
     if not any(c.isdigit() for c in password):
@@ -310,7 +329,7 @@ def _exemption(lines: list[str], index: int) -> tuple[str, str]:
         at = line.find(EXEMPTION_MARKER)
         if at == -1:
             continue
-        reason = line[at + len(EXEMPTION_MARKER):].strip()
+        reason = line[at + len(EXEMPTION_MARKER) :].strip()
         if len(reason) < MIN_REASON:
             refusal = refusal or (
                 f"states no reason (under {MIN_REASON} characters after the "
@@ -359,7 +378,9 @@ class Finding:
         return f". The `{EXEMPTION_MARKER}` marker on it {self.refusal}"
 
 
-def _suppression_lines(subject: str, hushed: list[tuple[int, str, str, str]]) -> list[str]:
+def _suppression_lines(
+    subject: str, hushed: list[tuple[int, str, str, str]]
+) -> list[str]:
     """One printable line per honoured suppression, naming where it is."""
     return [
         f"    {subject}:{line} {kind}, fingerprint {digest}: {reason}"
@@ -388,7 +409,10 @@ def scan_text(text: str) -> tuple[list[Finding], int, list[tuple[int, str, str, 
                 value = password
             else:
                 value = match.group(0)
-                if kind == "aws-secret-access-key" and AWS_SECRET_FIELD not in line.lower():
+                if (
+                    kind == "aws-secret-access-key"
+                    and AWS_SECRET_FIELD not in line.lower()
+                ):
                     continue
                 if _is_placeholder(value):
                     placeholders += 1
@@ -444,7 +468,9 @@ def resolve_range(root: Path, explicit: str | None) -> tuple[str | None, str]:
     if not _in_worktree(root):
         return None, "not a work tree"
     if explicit:
-        code, _ = _git(root, "rev-parse", "--verify", "--quiet", explicit.split("..")[0])
+        code, _ = _git(
+            root, "rev-parse", "--verify", "--quiet", explicit.split("..")[0]
+        )
         if code != 0:
             return None, f"{explicit} does not resolve"
         return explicit, f"{explicit} (given)"
@@ -486,7 +512,14 @@ def range_blobs(root: Path, spec: str) -> tuple[list[tuple[str, str, str]], list
     blobs: list[tuple[str, str, str]] = []
     for commit in commits:
         code, out = _git(
-            root, "diff-tree", "-r", "-z", "-c", "--no-commit-id", "--root", commit,
+            root,
+            "diff-tree",
+            "-r",
+            "-z",
+            "-c",
+            "--no-commit-id",
+            "--root",
+            commit,
         )
         if code != 0:
             continue
@@ -541,12 +574,14 @@ def blob_texts(root: Path, shas: list[str]) -> dict[str, str | None]:
     env = {**os.environ, "GIT_OPTIONAL_LOCKS": "0"}
     out: dict[str, str | None] = {}
     for start in range(0, len(shas), BATCH):
-        chunk = shas[start:start + BATCH]
+        chunk = shas[start : start + BATCH]
         try:
             done = subprocess.run(
                 ["git", "-C", str(root), "cat-file", "--batch"],
                 input=("\n".join(chunk) + "\n").encode(),
-                capture_output=True, check=False, env=env,
+                capture_output=True,
+                check=False,
+                env=env,
             )
         except FileNotFoundError:
             return out
@@ -560,7 +595,7 @@ def blob_texts(root: Path, shas: list[str]) -> dict[str, str | None]:
             if len(header) < 3 or header[1] != "blob":
                 continue  # `<oid> missing`, or a non-blob: no body follows
             sha, size = header[0], int(header[2])
-            body = data[pos:pos + size]
+            body = data[pos : pos + size]
             pos += size + 1
             if size > MAX_BYTES:
                 out[sha] = None
@@ -703,9 +738,12 @@ _PLANTED_GITHUB = "ghp_" + "0Vv7QeR2kLm9XbTn4CsD8JyH6WgZaP1uE3Ff"
 #: failed on a CI runner and passed on the author's machine, which is the whole
 #: argument for putting it here rather than at one call site.
 _IDENTITY = (
-    "-c", "user.name=gate",
-    "-c", "user.email=gate@invalid",
-    "-c", "commit.gpgsign=false",
+    "-c",
+    "user.name=gate",
+    "-c",
+    "user.email=gate@invalid",
+    "-c",
+    "commit.gpgsign=false",
 )
 
 
@@ -719,9 +757,14 @@ def _git_build(root: Path, *args: str) -> tuple[int, str]:
     }
     done = subprocess.run(
         ["git", "-C", str(root), *_IDENTITY, *args],
-        capture_output=True, check=False, env=env,
+        capture_output=True,
+        check=False,
+        env=env,
     )
-    return done.returncode, (done.stdout + done.stderr).decode("utf-8", "replace").strip()
+    return (
+        done.returncode,
+        (done.stdout + done.stderr).decode("utf-8", "replace").strip(),
+    )
 
 
 def _commit(root: Path, message: str) -> int:
@@ -760,11 +803,15 @@ def _merge_case(root: Path) -> list[str]:
     problems: list[str] = []
     root.mkdir(parents=True)
     (root / "deploy.env").write_text("baseline\n", encoding="utf-8")
-    if _git_build(root, "init", "-q", "-b", "scratch")[0] != 0 or _commit(root, "baseline"):
+    if _git_build(root, "init", "-q", "-b", "scratch")[0] != 0 or _commit(
+        root, "baseline"
+    ):
         return ["could not build the merge scenario (see the dependency note above)"]
     baseline = _head(root)
     for branch, body in (("side", "SIDE=1\n"), ("scratch", "TRUNK=1\n")):
-        if _git_build(root, "checkout", "-q", *(["-b"] if branch == "side" else []), branch)[0]:
+        if _git_build(
+            root, "checkout", "-q", *(["-b"] if branch == "side" else []), branch
+        )[0]:
             return [f"could not build the merge scenario: checkout {branch}"]
         (root / "deploy.env").write_text(body, encoding="utf-8")
         if _commit(root, f"{branch} edit"):
@@ -872,7 +919,9 @@ def _self_test() -> int:
         (root / "deploy" / "notes.txt").write_text("baseline\n", encoding="utf-8")
         # A branch name no BASE_REFS entry matches, so the unresolved-range case
         # below is testing what it claims rather than an empty range.
-        if _git_build(root, "init", "-q", "-b", "scratch")[0] != 0 or _commit(root, "baseline"):
+        if _git_build(root, "init", "-q", "-b", "scratch")[0] != 0 or _commit(
+            root, "baseline"
+        ):
             print(
                 f"[FAIL] {GATE_ID} --self-test: could not build the scenario. This "
                 f"is the one gate whose runner must be able to CREATE A COMMIT: it "
@@ -989,7 +1038,7 @@ def _take_range(argv: list[str]) -> str | None:
     if at + 1 >= len(argv):
         raise SystemExit("--range requires a revision range, for example main..HEAD")
     spec = argv[at + 1]
-    del argv[at:at + 2]
+    del argv[at : at + 2]
     return spec
 
 

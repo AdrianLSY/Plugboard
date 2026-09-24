@@ -27,7 +27,7 @@ anchor and a missing file as different findings.
 Two shapes follow from it, and both are visible across the modules. A failure names the consequence,
 not the rule number: a gate naming no rule note is refused because *a gate whose rule nobody can find
 becomes folklore the next contributor deletes*
-([`ci/gates/rule_gate_correspondence.py:88-90`](../../../../ci/gates/rule_gate_correspondence.py)). And
+([`ci/gates/rule_gate_correspondence.py:85-87`](../../../../ci/gates/rule_gate_correspondence.py)). And
 a failure hands over the command that fixes it — the index gates print the regeneration line rather
 than the word `drift`.
 

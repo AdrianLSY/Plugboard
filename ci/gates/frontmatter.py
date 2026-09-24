@@ -164,9 +164,7 @@ def read_frontmatter(text: str) -> tuple[dict[str, tuple[str, int]], bool]:
                 " scalar mapping; nested mappings and block values are refused",
             )
         if ":" not in stripped:
-            raise Malformed(
-                offset, f"expected 'key: value', got {stripped!r}"
-            )
+            raise Malformed(offset, f"expected 'key: value', got {stripped!r}")
         key, _, value = stripped.partition(":")
         key = key.strip()
         value = _unquote(value.strip())
@@ -180,7 +178,8 @@ def read_frontmatter(text: str) -> tuple[dict[str, tuple[str, int]], bool]:
             )
         if key in fields:
             raise Malformed(
-                offset, f"duplicate key {key!r} (first declared on line {fields[key][1]})"
+                offset,
+                f"duplicate key {key!r} (first declared on line {fields[key][1]})",
             )
         fields[key] = (value, offset)
 
@@ -224,7 +223,9 @@ def check_note_classes(
             if value is None or value == "":
                 unassigned.append(f"{field} (absent)")
             elif value not in enumerations[field]:
-                unassigned.append(f"{field} (value {value!r} is outside its enumeration)")
+                unassigned.append(
+                    f"{field} (value {value!r} is outside its enumeration)"
+                )
         if unassigned:
             # One line per class: the class is what gets fixed, so every field
             # it leaves unassigned is named together.
@@ -237,7 +238,9 @@ def check_note_classes(
     return checked
 
 
-def check_note(rel: str, text: str, manifest: dict, in_spine: bool, report: Report) -> None:
+def check_note(
+    rel: str, text: str, manifest: dict, in_spine: bool, report: Report
+) -> None:
     """Every classification obligation that applies to one note."""
     classification = manifest["classification"]
     required = list(classification["required_fields"])
@@ -248,9 +251,7 @@ def check_note(rel: str, text: str, manifest: dict, in_spine: bool, report: Repo
     try:
         fields, present = read_frontmatter(text)
     except Malformed as bad:
-        report.fail(
-            f"{rel}:{bad.line}: malformed frontmatter -- {bad.message}"
-        )
+        report.fail(f"{rel}:{bad.line}: malformed frontmatter -- {bad.message}")
         return
 
     if not present:
@@ -328,7 +329,9 @@ def run(scan_root: Path, report_only: bool) -> int:
         top = rel.split("/", 1)[0]
         check_note(rel, text, manifest, in_spine=(top == spine), report=report)
 
-    classes_checked = check_note_classes(manifest, manifest_file, manifest_label, report)
+    classes_checked = check_note_classes(
+        manifest, manifest_file, manifest_label, report
+    )
 
     covered = [d for d in directories if d not in planning]
     for _subject in subjects:
@@ -339,7 +342,10 @@ def run(scan_root: Path, report_only: bool) -> int:
             *(f"{d} (planning: format owned by an external tool)" for d in planning),
             *(f"{r} (exempt root)" for r in exempt_roots(manifest)),
             *(f"{r} (scan exclusion)" for r in scan_excludes(manifest)),
-            *(f"{f} (entry file: out of this gate's scope)" for f in sorted(root_files)),
+            *(
+                f"{f} (entry file: out of this gate's scope)"
+                for f in sorted(root_files)
+            ),
         ],
         kind="note",
         source="index" if from_index else "scan",

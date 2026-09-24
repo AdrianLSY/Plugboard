@@ -46,8 +46,14 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from _common import (Report, _in_worktree, load_manifest, main_guard, repo_root,
-                     subject_source)
+from _common import (
+    Report,
+    _in_worktree,
+    load_manifest,
+    main_guard,
+    repo_root,
+    subject_source,
+)
 from _source import COMMENT, code_lines, config, sources
 
 GATE_ID = "code-duplication"
@@ -58,10 +64,44 @@ SPACE = re.compile(r"\s+")
 #: Words that carry meaning even when identifiers do not. Blanking these too
 #: would make every ten-line block look like every other.
 KEEP = {
-    "func", "return", "if", "else", "for", "range", "var", "const", "type", "struct",
-    "interface", "map", "chan", "go", "defer", "switch", "case", "default", "nil",
-    "true", "false", "error", "string", "int", "byte", "def", "defp", "defmodule",
-    "do", "end", "when", "with", "cond", "fn", "use", "alias", "import", "require",
+    "func",
+    "return",
+    "if",
+    "else",
+    "for",
+    "range",
+    "var",
+    "const",
+    "type",
+    "struct",
+    "interface",
+    "map",
+    "chan",
+    "go",
+    "defer",
+    "switch",
+    "case",
+    "default",
+    "nil",
+    "true",
+    "false",
+    "error",
+    "string",
+    "int",
+    "byte",
+    "def",
+    "defp",
+    "defmodule",
+    "do",
+    "end",
+    "when",
+    "with",
+    "cond",
+    "fn",
+    "use",
+    "alias",
+    "import",
+    "require",
 }
 
 
@@ -70,7 +110,9 @@ def normalise(line: str) -> str:
 
 
 def blank(line: str) -> str:
-    return IDENT.sub(lambda m: m.group(0) if m.group(0) in KEEP else "_", normalise(line))
+    return IDENT.sub(
+        lambda m: m.group(0) if m.group(0) in KEEP else "_", normalise(line)
+    )
 
 
 #: A window has to carry some variety to be evidence of a copy. Ten consecutive
@@ -81,7 +123,7 @@ MIN_DISTINCT = 3
 
 def windows(lines: list[tuple[int, str]], size: int, shape):
     for i in range(0, max(0, len(lines) - size + 1)):
-        chunk = lines[i:i + size]
+        chunk = lines[i : i + size]
         shaped = [shape(t) for _n, t in chunk]
         if len(set(shaped)) < MIN_DISTINCT:
             continue
@@ -156,7 +198,8 @@ def run(scan_root: Path, report_only: bool) -> int:
     size = cfg["duplicate_lines"]
     declared = {
         frozenset(e["sites"]): e
-        for e in cfg.get("shape_collisions", []) if isinstance(e, dict)
+        for e in cfg.get("shape_collisions", [])
+        if isinstance(e, dict)
     }
     #: How many colliding regions each declared pair is allowed. An exemption at
     #: file level would hide a REAL copy made between those two files later; a
@@ -187,7 +230,7 @@ def run(scan_root: Path, report_only: bool) -> int:
     # eleven lines about one defect -- which is how a gate's output stops being
     # read.
     kept: list[list[str]] = []
-    for key, raw in sorted(verbatim.items()):
+    for _key, raw in sorted(verbatim.items()):
         sites = distinct_sites(raw, size)
         if len(sites) > 1 and not continues(kept, sites, size):
             kept.append(sites)
@@ -196,10 +239,13 @@ def run(scan_root: Path, report_only: bool) -> int:
                 f"{', '.join(sites[1:])} -- one copy and a call, not two copies"
             )
     verbatim_regions = list(kept)
-    for key, raw in sorted(renamed.items()):
+    for _key, raw in sorted(renamed.items()):
         sites = distinct_sites(raw, size)
-        if len(sites) > 1 and not continues(kept, sites, size) \
-                and not _already(sites, verbatim_regions):
+        if (
+            len(sites) > 1
+            and not continues(kept, sites, size)
+            and not _already(sites, verbatim_regions)
+        ):
             kept.append(sites)
             pair = frozenset(s.rpartition(":")[0] for s in sites)
             if pair in declared:
@@ -251,7 +297,9 @@ def run(scan_root: Path, report_only: bool) -> int:
                 f"delete or lower it"
             )
         else:
-            listed = "; ".join(", ".join(distinct_sites(r, size)) for r in found_regions)
+            listed = "; ".join(
+                ", ".join(distinct_sites(r, size)) for r in found_regions
+            )
             report.fail(
                 f"{names}: declared {entry['regions']} colliding region(s) and "
                 f"{len(found_regions)} collide. All of them are listed because "
@@ -261,7 +309,9 @@ def run(scan_root: Path, report_only: bool) -> int:
             )
 
     report.coverage(
-        covered=[f"windows of {size} non-comment lines, verbatim and identifier-blanked"],
+        covered=[
+            f"windows of {size} non-comment lines, verbatim and identifier-blanked"
+        ],
         excluded=["a paraphrase: the same logic written differently"],
         kind="source file",
         source=subject_source(scan_root),

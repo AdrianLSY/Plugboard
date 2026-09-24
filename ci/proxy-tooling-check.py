@@ -141,9 +141,11 @@ def lint_commands(root: Path) -> list[tuple[str, list[str]]]:
     try:
         start = next(i for i, l in enumerate(lines) if l.startswith("lint:"))
     except StopIteration:
-        raise SystemExit(f"{RECIPE}: declares no `lint` target, so there is no roster")
+        raise SystemExit(
+            f"{RECIPE}: declares no `lint` target, so there is no roster"
+        ) from None
     commands = []
-    for line in lines[start + 1:]:
+    for line in lines[start + 1 :]:
         if not line.startswith("\t"):
             break
         argv = line.strip().lstrip("@-").split()
@@ -161,7 +163,9 @@ def declaration(root: Path) -> tuple[dict, object]:
     """(the trees, whatever `checked_by` says). Both are read; see check_ownership."""
     path = root / FIXTURES / "expect.json"
     if not path.is_file():
-        raise SystemExit(f"{FIXTURES}/expect.json: absent, so nothing declares what these inputs do")
+        raise SystemExit(
+            f"{FIXTURES}/expect.json: absent, so nothing declares what these inputs do"
+        )
     document = json.loads(path.read_text(encoding="utf-8"))
     trees = document.get("trees", {})
     return (
@@ -186,7 +190,9 @@ def tar_copy(src: Path, dst: Path) -> None:
     producer = subprocess.Popen(
         ["tar", "-cf", "-", "-C", str(src), "."], stdout=subprocess.PIPE
     )
-    consumer = subprocess.run(["tar", "-xf", "-", "-C", str(dst)], stdin=producer.stdout)
+    consumer = subprocess.run(
+        ["tar", "-xf", "-", "-C", str(dst)], stdin=producer.stdout
+    )
     if producer.stdout is not None:
         producer.stdout.close()
     if producer.wait() != 0 or consumer.returncode != 0:
@@ -203,7 +209,9 @@ def run(cwd: Path, argv: list[str]) -> tuple[int, str]:
     return done.returncode, ANSI.sub("", done.stdout + done.stderr)
 
 
-def failing_set(proxy: Path, commands: list[tuple[str, list[str]]], mix: str) -> dict[str, tuple[int, str]]:
+def failing_set(
+    proxy: Path, commands: list[tuple[str, list[str]]], mix: str
+) -> dict[str, tuple[int, str]]:
     """Every tool's outcome, not the first failure: the SET is the assertion."""
     return {tid: run(proxy, [mix, *args]) for tid, args in commands}
 
@@ -285,9 +293,7 @@ def check_plants(root: Path, name: str, entry: dict, found: Findings) -> None:
     something else.
     """
     tree = root / FIXTURES / name
-    on_disk = sorted(
-        str(p.relative_to(tree)) for p in tree.rglob("*") if p.is_file()
-    )
+    on_disk = sorted(str(p.relative_to(tree)) for p in tree.rglob("*") if p.is_file())
     plants = entry.get("plants")
     if not isinstance(plants, list) or not plants:
         found.fail(
@@ -303,7 +309,9 @@ def check_plants(root: Path, name: str, entry: dict, found: Findings) -> None:
                 f"{FIXTURES}/{name}/{rel}: declared in `plants` and absent -- the "
                 f"violation the `fails` set is attributed to is not in the tree"
             )
-        elif (root / COMPONENT / rel).exists() and rel not in (entry.get("derived_from") or {}):
+        elif (root / COMPONENT / rel).exists() and rel not in (
+            entry.get("derived_from") or {}
+        ):
             found.fail(
                 f"{FIXTURES}/{name}/{rel}: plants over the real {COMPONENT}/{rel} and "
                 f"is not declared `derived_from` it -- a fixture that REPLACES a file "
@@ -367,7 +375,9 @@ def check_ownership(root: Path, declared_by: object, found: Findings) -> None:
             f"{FIXTURES}/expect.json: `checked_by` is {declared_by!r} and this script "
             f"is {SELF} -- the inputs name a checker that is not the one running them"
         )
-    policy = json.loads((root / VAULT).read_text(encoding="utf-8")).get("gate_policy", {})
+    policy = json.loads((root / VAULT).read_text(encoding="utf-8")).get(
+        "gate_policy", {}
+    )
     entry = policy.get("script_paired_inputs", {}).get(FIXTURES)
     if not isinstance(entry, dict):
         found.fail(
@@ -481,7 +491,8 @@ def check_roster(root: Path, commands, declared, found: Findings) -> None:
     # still a tree laid over the component, and matching on a prefix means the
     # one that is misnamed is the one nothing asserts about.
     on_disk = {
-        p.name for p in (root / FIXTURES).iterdir()
+        p.name
+        for p in (root / FIXTURES).iterdir()
         if p.is_dir() and not p.name.startswith((".", "_"))
     }
     for name in sorted(on_disk - set(declared)):
@@ -503,11 +514,14 @@ def check_derivation(root: Path, name: str, entry: dict, found: Findings) -> Non
         fixture = root / FIXTURES / name / rel
         source = root / source_rel
         if not fixture.is_file() or not source.is_file():
-            found.fail(f"{FIXTURES}/{name}/{rel}: declared as derived from {source_rel}, and one of the two is absent")
+            found.fail(
+                f"{FIXTURES}/{name}/{rel}: declared as derived from {source_rel}, and one of the two is absent"
+            )
             continue
         held = set(fixture.read_text(encoding="utf-8").splitlines())
         missing = [
-            l for l in source.read_text(encoding="utf-8").splitlines()
+            l
+            for l in source.read_text(encoding="utf-8").splitlines()
             if l.strip() and l not in held
         ]
         if missing:
@@ -553,7 +567,8 @@ def main(argv: list[str]) -> int:
             raise SystemExit("--only takes a tool id or a tree name; see --list")
         only = argv[at]
     selected = {
-        n: e for n, e in sorted(declared.items())
+        n: e
+        for n, e in sorted(declared.items())
         if only is None or e.get("tool") == only or n == only
     }
     if only is not None and not selected:
@@ -583,6 +598,8 @@ def main(argv: list[str]) -> int:
             found.exclude(task_by_tool[tid], "nothing ran: toolchain or build absent")
         return found.finish(RECIPE, len(commands))
 
+    assert mix is not None
+
     scratch = Path(tempfile.mkdtemp(prefix="proxy-tooling-"))
     keep = "--keep" in argv
     try:
@@ -607,7 +624,9 @@ def main(argv: list[str]) -> int:
         code, _ = run(base, ["make", "-C", COMPONENT, "lint"])
         if code != 0:
             clean = False
-            found.fail(f"baseline: `make -C {COMPONENT} lint` fails on an unmodified copy (exit {code})")
+            found.fail(
+                f"baseline: `make -C {COMPONENT} lint` fails on an unmodified copy (exit {code})"
+            )
         print(
             f"  [{'ok  ' if clean else 'FAIL'}] baseline: {len(outcomes)} tools and "
             f"`make -C {COMPONENT} lint` on a clean copy of {COMPONENT}/"
@@ -672,13 +691,12 @@ def main(argv: list[str]) -> int:
             shutil.rmtree(scratch, ignore_errors=True)
 
     # What the run did NOT reach, named rather than absorbed into the count.
-    for tid, task in sorted(task_by_tool.items()):
+    for _tid, task in sorted(task_by_tool.items()):
         if task in found.examined:
             continue
         found.exclude(
             task,
-            f"--only {only}" if only is not None
-            else "no violating input names it",
+            f"--only {only}" if only is not None else "no violating input names it",
         )
     return found.finish(RECIPE, len(commands))
 

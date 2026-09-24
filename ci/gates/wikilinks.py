@@ -197,8 +197,7 @@ def locate(target: str, files: list[str]) -> str | None:
         (
             f
             for f in files
-            if posixpath.basename(f) == stem
-            or posixpath.basename(f) == stem + ".md"
+            if posixpath.basename(f) == stem or posixpath.basename(f) == stem + ".md"
         ),
         key=len,
     )
@@ -225,9 +224,15 @@ def markdown_form(
 
     found = locate(raw, files)
     if found is None:
-        placeholder = (raw.strip("/") or "target") + ("" if raw.endswith(".md") else ".md")
-        return f"[{label}](<relative-path-to>/{posixpath.basename(placeholder)}{suffix})", (
-            note or "target not found in the tree; the shape is shown with a placeholder"
+        placeholder = (raw.strip("/") or "target") + (
+            "" if raw.endswith(".md") else ".md"
+        )
+        return (
+            f"[{label}](<relative-path-to>/{posixpath.basename(placeholder)}{suffix})",
+            (
+                note
+                or "target not found in the tree; the shape is shown with a placeholder"
+            ),
         )
     rel = posixpath.relpath(found, posixpath.dirname(source) or ".")
     return f"[{label}]({rel}{suffix})", note
@@ -318,7 +323,9 @@ def scan_note(rel: str, scan_root: Path, files: list[str], report: Report) -> di
             elif is_root_anchored(target):
                 counts["root-anchored"] += 1
                 spans.append(match.span())
-                probe = target[len("file://") :] if target.startswith("file://") else target
+                probe = (
+                    target[len("file://") :] if target.startswith("file://") else target
+                )
                 form, note = markdown_form(rel, probe, label, files)
                 report.fail(
                     f"{rel}:{lineno}:{match.start() + 1}: root-anchored link `{target}` "

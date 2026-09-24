@@ -17,7 +17,7 @@
 .PHONY: test-fast-unbudgeted
 .PHONY: check check-report check-links check-gates \
         fmt lint test test-fast test-integration test-conformance \
-        gen dev precommit hooks components help
+        gen dev precommit hooks components help fmt-python lint-python
 
 # Named literally rather than read from ci/vault.json, so a reader of this file
 # can see what wraps the fast tier. That makes it a second encoding of
@@ -50,6 +50,15 @@ check-links:          ## the link resolution gate alone
 
 check-gates:          ## the meta-check: every gate proven to fail on its own input
 	@python3 ci/gates/meta.py
+
+fmt-python:           ## format repository Python tooling (install requirements-dev.txt first)
+	@ruff check --select I --fix ci
+	@black ci
+
+lint-python:          ## check repository Python tooling (install requirements-dev.txt first)
+	@black --check ci
+	@ruff check ci
+	@basedpyright
 
 ## -- per component ----------------------------------------------------------
 

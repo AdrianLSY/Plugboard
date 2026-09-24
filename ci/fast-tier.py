@@ -65,7 +65,10 @@ def main(argv: list[str]) -> int:
 
     print(f"\nfast tier: {elapsed:.1f}s against a {budget}s budget", file=sys.stderr)
     if code != 0:
-        print("fast tier: the suite failed; the budget is not the finding here", file=sys.stderr)
+        print(
+            "fast tier: the suite failed; the budget is not the finding here",
+            file=sys.stderr,
+        )
         return code
     if elapsed > budget:
         print(

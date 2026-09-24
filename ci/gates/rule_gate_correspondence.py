@@ -51,6 +51,7 @@ GATE_ID = "rule-gate-correspondence"
 RULE_NOTE = "docs/code/rules/rule-gate-correspondence.md"
 
 from _common import RULE_NOTE_DECL  # the one declaration, shared with ci/gen
+
 GATE_LINE = re.compile(r"^\*\*Gate:\*\*\s*(.+)$", re.M)
 NO_GATE = re.compile(r"^\*\*Gate:\*\*\s*none\b", re.M | re.I)
 # A third state the requirement did not anticipate, and which the banned patterns
@@ -103,7 +104,7 @@ def run(scan_root: Path, report_only: bool) -> int:
                 f"{rel}: named by {len(stems)} gates ("
                 + ", ".join(f"ci/gates/{s}.py" for s in sorted(stems))
                 + ") -- the correspondence is one-to-one, and two gates over one "
-                f"obligation is two enforcements that can disagree while both pass"
+                "obligation is two enforcements that can disagree while both pass"
             )
 
     # (3), (4) and (6): the note's side of the correspondence.

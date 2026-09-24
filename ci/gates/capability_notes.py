@@ -96,7 +96,9 @@ def run(scan_root: Path, report_only: bool) -> int:
             continue
         spec_text = spec_path.read_text(encoding="utf-8")
         note_text = note_path.read_text(encoding="utf-8")
-        linked = {t.split("/")[-1] for t in (m.group(1) for m in LINK.finditer(note_text))}
+        linked = {
+            t.split("/")[-1] for t in (m.group(1) for m in LINK.finditer(note_text))
+        }
         named = sorted(
             {m.group(1) for m in CAP_REF.finditer(spec_text)} & set(specs) - {cap}
         )

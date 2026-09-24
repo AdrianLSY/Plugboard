@@ -127,7 +127,7 @@ def paragraph_at(lines: list[tuple[int, str, bool]], n: int) -> str:
     end = idx
     while end + 1 < len(lines) and lines[end + 1][1].strip():
         end += 1
-    return " ".join(t for _l, t, _f in lines[start:end + 1])
+    return " ".join(t for _l, t, _f in lines[start : end + 1])
 
 
 _LINE_COUNTS: dict[Path, int] = {}
@@ -156,22 +156,32 @@ def revision_state(path: Path, pinned: str) -> tuple[str, str | None]:
     try:
         top = subprocess.run(
             ["git", "-C", str(path), "rev-parse", "--show-toplevel"],
-            capture_output=True, text=True, check=True,
+            capture_output=True,
+            text=True,
+            check=True,
         ).stdout.strip()
         if Path(top).resolve() != path.resolve():
             return "not-a-checkout", None
         head = subprocess.run(
             ["git", "-C", str(path), "rev-parse", "HEAD"],
-            capture_output=True, text=True, check=True,
+            capture_output=True,
+            text=True,
+            check=True,
         ).stdout.strip()
     except (subprocess.CalledProcessError, FileNotFoundError):
         return "not-a-checkout", None
-    return ("match" if head.startswith(pinned) else "mismatch"), head[: max(len(pinned), 7)]
+    return ("match" if head.startswith(pinned) else "mismatch"), head[
+        : max(len(pinned), 7)
+    ]
 
 
 def run(scan_root: Path, report_only: bool) -> int:
     manifest = load_manifest(repo_root())
-    artifacts = {k: v for k, v in manifest.get("cited_artifacts", {}).items() if not k.startswith("_")}
+    artifacts = {
+        k: v
+        for k, v in manifest.get("cited_artifacts", {}).items()
+        if not k.startswith("_")
+    }
     modals = manifest["normative_modals"]["words"]
     spine = manifest["spine"]
     prior_art_default = artifacts.pop("prior_art_default", None)
@@ -238,7 +248,9 @@ def run(scan_root: Path, report_only: bool) -> int:
     # run that folded it into "resolved" would be claiming a check it did not do.
     unverifiable = {"artifact_absent": 0, "unqualified": 0, "line_ambiguous": 0}
     lines_checked = 0
-    modal_re = re.compile(r"\b(" + "|".join(sorted(modals, key=len, reverse=True)) + r")\b")
+    modal_re = re.compile(
+        r"\b(" + "|".join(sorted(modals, key=len, reverse=True)) + r")\b"
+    )
     cite_count = modal_count = 0
 
     for rel in subjects:
@@ -256,7 +268,14 @@ def run(scan_root: Path, report_only: bool) -> int:
                 cited_last = int(m.group(3) or m.group(2))
                 cite_count += 1
 
-                def check_line(file_path: Path, shown: str) -> None:
+                def check_line(
+                    file_path: Path,
+                    shown: str,
+                    rel: str,
+                    n: int,
+                    m: re.Match[str],
+                    cited_last: int,
+                ) -> None:
                     """(3) the cited line exists in the cited file."""
                     nonlocal lines_checked
                     count = line_count(file_path)
@@ -274,7 +293,7 @@ def run(scan_root: Path, report_only: bool) -> int:
 
                 if (scan_root / target).is_file():
                     resolved["tracked"] += 1
-                    check_line(scan_root / target, target)
+                    check_line(scan_root / target, target, rel, n, m, cited_last)
                     continue
                 if "/" not in target:
                     # An unqualified citation: resolve by basename against the
@@ -286,7 +305,9 @@ def run(scan_root: Path, report_only: bool) -> int:
                         resolved["tracked"] += 1
                         owners = note_paths[target]
                         if len(owners) == 1:
-                            check_line(scan_root / owners[0], owners[0])
+                            check_line(
+                                scan_root / owners[0], owners[0], rel, n, m, cited_last
+                            )
                         else:
                             unverifiable["line_ambiguous"] += 1
                         continue
@@ -305,10 +326,11 @@ def run(scan_root: Path, report_only: bool) -> int:
                     resolved["declared_artifact"] += 1
                     path = scan_root / target
                     sub = next(
-                        (k for k in artifact_subpaths if target.startswith(k + "/")), None
+                        (k for k in artifact_subpaths if target.startswith(k + "/")),
+                        None,
                     )
                     if path.is_file():
-                        check_line(path, target)
+                        check_line(path, target, rel, n, m, cited_last)
                     elif sub and (scan_root / sub).is_dir():
                         report.fail(
                             f"{rel}:{n}: cites '{target}:{m.group(2)}', and {sub} is "
@@ -333,8 +355,12 @@ def run(scan_root: Path, report_only: bool) -> int:
                 # these field line values" wraps across two lines, and a
                 # line-scoped exemption refused the second half of a quotation.
                 para = paragraph_at(rel_lines, n)
-                if (line.lstrip().startswith(">") or '"' in line
-                        or '"' in para or STANDARD_REF.search(para)):
+                if (
+                    line.lstrip().startswith(">")
+                    or '"' in line
+                    or '"' in para
+                    or STANDARD_REF.search(para)
+                ):
                     continue
                 for m in modal_re.finditer(strip_for_modals(line)):
                     modal_count += 1
@@ -370,8 +396,12 @@ def run(scan_root: Path, report_only: bool) -> int:
     )
     print(
         "  artifact revisions: "
-        + (", ".join(f"{sub}={verdict}" for sub, verdict in sorted(revision_verdicts.items()))
-           or "none declared")
+        + (
+            ", ".join(
+                f"{sub}={verdict}" for sub, verdict in sorted(revision_verdicts.items())
+            )
+            or "none declared"
+        )
     )
     print(
         "  NOT decided by this gate: an unsourced claim written in the indicative. "

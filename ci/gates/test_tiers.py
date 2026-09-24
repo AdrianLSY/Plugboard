@@ -57,7 +57,8 @@ def run(scan_root: Path, report_only: bool) -> int:
     includes = [i for i in cfg["includes"] if not i.startswith("_")]
     budget_tool = cfg["budget_tool"]
     components = [
-        c for c in manifest["code_standards"]["components"]["candidates"]
+        c
+        for c in manifest["code_standards"]["components"]["candidates"]
         if not c.startswith("_")
     ]
     report = Report(GATE_ID, RULE_NOTE)

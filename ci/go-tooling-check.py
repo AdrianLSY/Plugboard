@@ -49,7 +49,13 @@ GO_MK = ROOT / "ci" / "make" / "go.mk"
 #: rewriter is not a check: `go fmt` edits the file and always succeeds, which is
 #: why gofmt is reached through golangci-lint's formatter instead.
 COMMANDS = {
-    "golangci-lint": lambda d: ["golangci-lint", "run", "--config", str(ROOT / ".golangci.yml"), "./..."],
+    "golangci-lint": lambda d: [
+        "golangci-lint",
+        "run",
+        "--config",
+        str(ROOT / ".golangci.yml"),
+        "./...",
+    ],
     "go-test-race": lambda d: ["go", "test", "-race", "./..."],
 }
 
@@ -94,14 +100,18 @@ def main(argv: list[str]) -> int:
                 f"by the label alone"
             )
         if not spec["fails"]:
-            problems.append(f"'{name}' declares an empty `fails`, which no tool can satisfy")
+            problems.append(
+                f"'{name}' declares an empty `fails`, which no tool can satisfy"
+            )
 
     for name, spec in sorted(trees.items()):
         if only and only not in name:
             continue
         source = INPUTS / name
         if not source.is_dir():
-            problems.append(f"'{name}' is declared and ci/broken-inputs/go-tooling/{name} is absent")
+            problems.append(
+                f"'{name}' is declared and ci/broken-inputs/go-tooling/{name} is absent"
+            )
             continue
         with tempfile.TemporaryDirectory() as tmp:
             work = Path(tmp) / name
@@ -125,12 +135,22 @@ def main(argv: list[str]) -> int:
                     f"the declared case {spec['case']!r}"
                 )
             else:
-                print(f"  [ok  ] {name}: refused by {', '.join(failing)} ({spec['case']})")
+                print(
+                    f"  [ok  ] {name}: refused by {', '.join(failing)} ({spec['case']})"
+                )
 
             # (4) reachability through the recipe, not only by hand
             if "golangci-lint" in spec["fails"]:
-                code, _ = run_in(work, ["golangci-lint", "run", "--config",
-                                        str(ROOT / ".golangci.yml"), "./..."])
+                code, _ = run_in(
+                    work,
+                    [
+                        "golangci-lint",
+                        "run",
+                        "--config",
+                        str(ROOT / ".golangci.yml"),
+                        "./...",
+                    ],
+                )
                 if code == 0:
                     problems.append(
                         f"'{name}': the configuration ci/make/go.mk passes does not "
@@ -138,9 +158,11 @@ def main(argv: list[str]) -> int:
                     )
 
     covered = sorted(declared_tools)
-    print(f"\ncoverage: {len(trees)} violating module(s) from ci/broken-inputs/go-tooling "
-          f"| covered: {', '.join(covered)} | excluded: "
-          f"{'a rewriter (`go fmt` edits and always succeeds, so it checks nothing)'}")
+    print(
+        f"\ncoverage: {len(trees)} violating module(s) from ci/broken-inputs/go-tooling "
+        f"| covered: {', '.join(covered)} | excluded: "
+        f"{'a rewriter (`go fmt` edits and always succeeds, so it checks nothing)'}"
+    )
     if problems:
         print(f"[FAIL] go tooling: {len(problems)} problem(s)")
         for p in problems:

@@ -92,7 +92,7 @@ class Finding(NamedTuple):
     """
 
     kind: str
-    index: str
+    path: str
     detail: str
     line: int | None
 
@@ -168,16 +168,22 @@ def _children(directory: str, all_dirs: list[str]) -> list[str]:
     """Immediate child directories of `directory` that have an index."""
     prefix = directory + "/"
     return sorted(
-        d
-        for d in all_dirs
-        if d.startswith(prefix) and "/" not in d[len(prefix) :]
+        d for d in all_dirs if d.startswith(prefix) and "/" not in d[len(prefix) :]
     )
 
 
-def render(scan_root: Path, directory: str, subjects: list[str], children: list[str]) -> str:
+def render(
+    scan_root: Path, directory: str, subjects: list[str], children: list[str]
+) -> str:
     """The exact bytes of one directory's index. Sorted, fixed, newline-terminated."""
     lines: list[str] = [*FRONTMATTER, "", DECLARATION, REGENERATE, "", f"# {directory}"]
-    lines += ["", f"Generated index of the notes in `{directory}/`.", "", "## Notes", ""]
+    lines += [
+        "",
+        f"Generated index of the notes in `{directory}/`.",
+        "",
+        "## Notes",
+        "",
+    ]
     if subjects:
         for rel in subjects:
             label = _escape(title_of(scan_root / rel))
@@ -224,7 +230,9 @@ def declares_generated(text: str) -> bool:
     return GENERATED_MARKER in text and GENERATOR in text
 
 
-def check(scan_root: Path, manifest: dict) -> tuple[list[Finding], dict[str, str], bool]:
+def check(
+    scan_root: Path, manifest: dict
+) -> tuple[list[Finding], dict[str, str], bool]:
     """Regenerate into memory and compare against what is tracked.
 
     Returns (findings, expected, from_index). Reads only; never writes. A stale
@@ -331,7 +339,7 @@ def main(argv: list[str]) -> int:
     findings, expected, _ = check(scan_root, manifest)
     for finding in findings:
         where = f":{finding.line}" if finding.line else ""
-        print(f"{finding.kind}: {finding.index}{where}: {finding.detail}")
+        print(f"{finding.kind}: {finding.path}{where}: {finding.detail}")
     print(f"{len(expected)} index file(s) expected, {len(findings)} finding(s)")
     return 1 if findings else 0
 

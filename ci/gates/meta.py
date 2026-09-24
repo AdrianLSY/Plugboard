@@ -145,20 +145,26 @@ def run(scan_root: Path, report_only: bool) -> int:
 
         trees = fixture_trees(fixture_dir)
         if not trees:
-            report.fail(f"{gid}: no tree*/ scenario directory under its violating input")
+            report.fail(
+                f"{gid}: no tree*/ scenario directory under its violating input"
+            )
             continue
 
         # (2) the violating input names its gate and that gate's rule note
         gate_md = fixture_dir / "GATE.md"
         if not gate_md.is_file():
-            report.fail(f"{gid}: violating input has no GATE.md naming what it exercises")
+            report.fail(
+                f"{gid}: violating input has no GATE.md naming what it exercises"
+            )
         else:
             text = gate_md.read_text(encoding="utf-8")
             if module not in text:
                 report.fail(f"{gid}/GATE.md: does not name its gate ({module})")
             note = declared_rule_note(module_path)
             if note and note.split("#")[0] not in text:
-                report.fail(f"{gid}/GATE.md: does not name its gate's rule note ({note})")
+                report.fail(
+                    f"{gid}/GATE.md: does not name its gate's rule note ({note})"
+                )
 
         for tree in trees:
             label = f"{gid}/{tree.name}"
@@ -205,8 +211,10 @@ def run(scan_root: Path, report_only: bool) -> int:
     # and it is still a gate the policy may legitimately name.
     real = {gate_id_for(m) for m in modules} | {GATE_ID}
     policy = manifest["gate_policy"]
-    for key, names in (("whole_tree_gates.gates", whole_tree),
-                       ("blocking", set(policy.get("blocking", [])))):
+    for key, names in (
+        ("whole_tree_gates.gates", whole_tree),
+        ("blocking", set(policy.get("blocking", []))),
+    ):
         for ghost in sorted(names - real):
             report.fail(
                 f"ci/vault.json gate_policy.{key} names `{ghost}`, which is not a "
@@ -215,7 +223,7 @@ def run(scan_root: Path, report_only: bool) -> int:
             )
 
     cross = 0
-    for module, module_path in modules.items():
+    for module, _module_path in modules.items():
         gid = gate_id_for(module)
         for tree in fixture_trees(broken / gid):
             for other, other_path in modules.items():
@@ -236,9 +244,11 @@ def run(scan_root: Path, report_only: bool) -> int:
         source="scan",
         scan_root=scan_root,
     )
-    print(f"  gates: {len(modules)} | scenarios proven to fail by their own logic: "
+    print(
+        f"  gates: {len(modules)} | scenarios proven to fail by their own logic: "
         f"{checked} | per-file cross-gate failures: {cross} "
-        f"(whole-tree gates excluded: {len(whole_tree)})")
+        f"(whole-tree gates excluded: {len(whole_tree)})"
+    )
     return report.finish(report_only=report_only)
 
 

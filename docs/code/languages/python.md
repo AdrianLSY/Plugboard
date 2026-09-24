@@ -6,16 +6,16 @@ authority: rationale
 
 # Python conventions
 
-Python is the only language holding tracked source today: the gate modules under `ci/gates/`, the
-generators under `ci/gen/`, and the aggregating runner `ci/run-gates.py`. Which languages appear here
-is [keyed on that set](../rules/language-conventions-keyed-on-source.md), so Elixir and Go conventions
-arrive with their source and not before — the tree's single `.ex` file is a link-gate fixture under
-`ci/broken-inputs/`, a test input rather than source.
+Python holds the repository tooling under `ci/`: gates, generators, test and build helpers, and PR
+checks. The language notes are [keyed on tracked source](../rules/language-conventions-keyed-on-source.md).
 
-**Formatter and linters: none is pinned, and that is a gap rather than a position.** So nothing below
-is layout, quoting or import order — a formatter's business. These are the project's own obligations,
-each stating what holds it up; the two that are not decidable over English are quarantined as
-preference rather than written here as requirements.
+**Formatter and linters:** Black formats Python source; Ruff checks for common errors and import
+order; basedpyright checks types. Their versions are pinned in
+[requirements-dev.txt](../../../requirements-dev.txt), their scope and settings are in
+[pyproject.toml](../../../pyproject.toml), and [`make lint-python`](../../../Makefile) runs all three.
+`make fmt-python` applies formatting and import order. The deliberately broken inputs under
+`ci/broken-inputs/` and `ci/generator-inputs/` are outside that scope. The obligations below are this
+project's own, rather than restatements of what those tools enforce.
 
 ## Standard library only
 

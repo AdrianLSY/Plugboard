@@ -40,7 +40,9 @@ def triggers(body: str) -> set[str]:
         return set()
     rest = m.group(1).strip()
     if rest.startswith("["):
-        return {t.strip().strip("'\"") for t in rest.strip("[]").split(",") if t.strip()}
+        return {
+            t.strip().strip("'\"") for t in rest.strip("[]").split(",") if t.strip()
+        }
     return {rest}
 
 
@@ -75,8 +77,7 @@ def executable_lines(body: str):
         if key in ("run", "with") and rest.strip() in _BLOCK_SCALAR:
             i += 1
             while i < len(lines) and (
-                not lines[i].strip()
-                or len(lines[i]) - len(lines[i].lstrip()) > indent
+                not lines[i].strip() or len(lines[i]) - len(lines[i].lstrip()) > indent
             ):
                 yield i, lines[i]
                 i += 1
@@ -86,8 +87,9 @@ def executable_lines(body: str):
 
 def _runs(text: str, command: str) -> bool:
     """Whether `text` runs `command` at a position a shell would run it."""
-    return any(seg.strip().startswith(command)
-               for seg in re.split(r"&&|\|\||;|\|", text))
+    return any(
+        seg.strip().startswith(command) for seg in re.split(r"&&|\|\||;|\|", text)
+    )
 
 
 def first_execution(body: str, commands) -> int:

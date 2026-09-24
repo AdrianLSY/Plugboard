@@ -36,6 +36,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+
 #: A module whose name starts with `_` is a shared library, not a gate. This
 #: was six hardcoded copies of {"_common"} until ci/gates/_source.py arrived
 #: and made every one of them wrong in the same commit.
@@ -65,7 +66,9 @@ def main(argv: list[str]) -> int:
     manifest = json.loads((root / "ci" / "vault.json").read_text(encoding="utf-8"))
     policy = manifest["gate_policy"]
     blocking = set(policy["blocking"])
-    deferred = {k: v for k, v in policy["report_only_until"].items() if not k.startswith("_")}
+    deferred = {
+        k: v for k, v in policy["report_only_until"].items() if not k.startswith("_")
+    }
 
     modules = sorted(
         p.stem for p in (root / "ci" / "gates").glob("*.py") if is_gate(p.stem)
@@ -74,7 +77,9 @@ def main(argv: list[str]) -> int:
     # A gate in neither list is unclassified: fail rather than guess, so adding a
     # gate forces a decision about whether it blocks.
     unclassified = [
-        m for m in modules if gate_id_for(m) not in blocking and gate_id_for(m) not in deferred
+        m
+        for m in modules
+        if gate_id_for(m) not in blocking and gate_id_for(m) not in deferred
     ]
 
     mode = "REPORT-ONLY (forced)" if force_report_only else f"phase {policy['phase']}"
@@ -87,12 +92,16 @@ def main(argv: list[str]) -> int:
         args = [sys.executable, str(root / "ci" / "gates" / f"{module}.py")]
         if not is_blocking:
             args.append("--report-only")
-        proc = subprocess.run(args, capture_output=True, text=True, cwd=str(root / "ci" / "gates"))
+        proc = subprocess.run(
+            args, capture_output=True, text=True, cwd=str(root / "ci" / "gates")
+        )
         out = (proc.stdout or "") + (proc.stderr or "")
         failed = "[FAIL]" in out
         warned = "[warn]" in out
         crashed = "Traceback" in out
-        results.append((gid, is_blocking, proc.returncode, failed, warned, crashed, out))
+        results.append(
+            (gid, is_blocking, proc.returncode, failed, warned, crashed, out)
+        )
 
     width = max(len(g) for g, *_ in results)
     print("-- inventory")
@@ -106,11 +115,15 @@ def main(argv: list[str]) -> int:
         else:
             state = "ok"
         policy_label = "blocking" if is_blocking else "report-only"
-        note = "" if is_blocking or force_report_only else f"  (blocks at {deferred.get(gid, '?')})"
+        note = (
+            ""
+            if is_blocking or force_report_only
+            else f"  (blocks at {deferred.get(gid, '?')})"
+        )
         print(f"   {gid:<{width}}  {policy_label:<11}  {state:<5}  exit={code}{note}")
 
     print("\n-- output")
-    for gid, _b, _c, _f, _w, _cr, out in results:
+    for _gid, _b, _c, _f, _w, _cr, out in results:
         for line in out.rstrip("\n").splitlines():
             print(f"   {line}")
         print()

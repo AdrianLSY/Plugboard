@@ -51,10 +51,12 @@ def run(scan_root: Path, report_only: bool) -> int:
 
     wait_re = re.compile("|".join(re.escape(w) for w in waiting), re.I)
     repair_re = re.compile(
-        r"\b(" + "|".join(re.escape(w) for w in repairing) + r")\w*\s*\(", re.I)
+        r"\b(" + "|".join(re.escape(w) for w in repairing) + r")\w*\s*\(", re.I
+    )
 
     files = [
-        rel for rel in sources(scan_root, cfg, manifest)
+        rel
+        for rel in sources(scan_root, cfg, manifest)
         if "_test." in rel or any(rel.startswith(p) for p in harness_paths)
     ]
     for rel in files:

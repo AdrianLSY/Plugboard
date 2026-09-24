@@ -218,8 +218,10 @@ where a false claim is guaranteed to be read first*.
 
 ## Run it yourself
 
-Requirements: **Python 3** (standard library only — no dependencies, no lockfile) and a full-history
-clone. [OpenSpec](openspec/config.yaml) is needed only for the two planning commands.
+Requirements: **Python 3** (repository scripts use the standard library only),
+[OpenSpec](openspec/config.yaml) for the vault gates and planning commands, and a full-history clone.
+The optional Python quality tools are pinned in [requirements-dev.txt](requirements-dev.txt); there is
+no lockfile.
 
 ```bash
 make check          # every vault gate; one command, and CI runs it
@@ -235,6 +237,14 @@ make check-links    # the link-resolution gate alone
 
 ```bash
 make check-report   # every gate, report-only; always exits zero
+```
+
+To check or format the repository's Python tooling:
+
+```bash
+python3 -m pip install -r requirements-dev.txt
+make lint-python
+make fmt-python
 ```
 
 ```bash

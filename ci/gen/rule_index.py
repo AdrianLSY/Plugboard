@@ -59,11 +59,15 @@ def repo_root() -> Path:
 
 
 def build(root: Path) -> str:
-    cfg = json.loads((root / "ci" / "vault.json").read_text(encoding="utf-8"))["code_standards"]
+    cfg = json.loads((root / "ci" / "vault.json").read_text(encoding="utf-8"))[
+        "code_standards"
+    ]
     rows, counts = [], {"gated": 0, "planned": 0, "preference": 0}
     for _rel, path in sorted(rule_notes(root, cfg).items()):
         text = path.read_text(encoding="utf-8")
-        title = next((l[2:].strip() for l in text.splitlines() if l.startswith("# ")), path.stem)
+        title = next(
+            (l[2:].strip() for l in text.splitlines() if l.startswith("# ")), path.stem
+        )
         m = re.search(r"^\*\*Gate:\*\*\s*(.+)$", text, re.M)
         raw = (m.group(1) if m else "").strip()
         if re.match(r"none\b", raw, re.I):
@@ -80,11 +84,12 @@ def build(root: Path) -> str:
     total = sum(counts.values())
     pct = (100 * counts["preference"] // total) if total else 0
     out = [HEADER, ""]
-    out.append(f"**{total} rules** — {counts['gated']} gated, {counts['planned']} gate planned, "
-               f"{counts['preference']} preference ({pct}% unenforced).")
+    out.append(
+        f"**{total} rules** — {counts['gated']} gated, {counts['planned']} gate planned, "
+        f"{counts['preference']} preference ({pct}% unenforced)."
+    )
     out += ["", "| rule | status | gate | note |", "|---|---|---|---|"]
     for title, status, gate, rel in sorted(rows, key=lambda r: (r[1] != "gated", r[0])):
-        depth = rel.count("/")
         link = ("../" * 0) + rel
         out.append(f"| {title} | **{status}** | `{gate}` | [note]({link}) |")
     out.append("")

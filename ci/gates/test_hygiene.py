@@ -47,8 +47,11 @@ ISSUE = re.compile(r"https?://\S+|#\d+|[A-Z]{2,}-\d+|tasks\.md")
 def run(scan_root: Path, report_only: bool) -> int:
     manifest = load_manifest(repo_root())
     cfg = config(manifest)
-    markers = [m for m in manifest["code_standards"]["test_hygiene"]["uncertainty_markers"]
-               if not m.startswith("_")]
+    markers = [
+        m
+        for m in manifest["code_standards"]["test_hygiene"]["uncertainty_markers"]
+        if not m.startswith("_")
+    ]
     report = Report(GATE_ID, RULE_NOTE)
     marker_re = re.compile("|".join(re.escape(m) for m in markers), re.I)
 
@@ -60,7 +63,7 @@ def run(scan_root: Path, report_only: bool) -> int:
         report.examine(rel)
         lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
         for n, line in enumerate(lines, 1):
-            near = " ".join(lines[max(0, n - 3):n + 2])
+            near = " ".join(lines[max(0, n - 3) : n + 2])
 
             if marker_re.search(line):
                 report.fail(
@@ -88,9 +91,7 @@ def run(scan_root: Path, report_only: bool) -> int:
         source=subject_source(scan_root),
         scan_root=scan_root,
     )
-    print(
-        f"  test files: {len(files)} | uncertainty markers declared: {len(markers)}"
-    )
+    print(f"  test files: {len(files)} | uncertainty markers declared: {len(markers)}")
     return report.finish(report_only=report_only)
 
 
@@ -98,8 +99,9 @@ def _explained(lines: list[str], n: int) -> bool:
     """A comment on the same line or the one above counts as the stated reason."""
     same = lines[n - 1]
     above = lines[n - 2] if n >= 2 else ""
-    return "#" in same.split("async:")[0] + same.split("async:")[-1] or \
-        above.strip().startswith("#")
+    return "#" in same.split("async:")[0] + same.split("async:")[
+        -1
+    ] or above.strip().startswith("#")
 
 
 main_guard(run)

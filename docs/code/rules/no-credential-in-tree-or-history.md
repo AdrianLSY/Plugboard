@@ -97,7 +97,7 @@ Dependency and vulnerability scanning is the neighbouring concern and is owned e
   that would catch them is deferred rather than guessed at — see below.
 - **A URL userinfo password holding no digit.** `postgres://u:SuperSecretPass@h/db` is not reported.
   The digit is a separate and stricter condition than the entropy floor beside it
-  (`ci/gates/secret_scan.py:268`), not a subtlety of it, and it is the condition that decides most of
+  (`ci/gates/secret_scan.py:289`), not a subtlety of it, and it is the condition that decides most of
   the misses in this shape: dropping it fires on `postgres://user:ReplaceThisValue@host`, which a
   runbook writes for a reader to fill in. It is named in the run's own coverage line as its own
   exclusion rather than described as entropy.
@@ -135,4 +135,4 @@ temporary directory. Nothing is written to the repository under review — the r
 `GIT_OPTIONAL_LOCKS=0`, no global or system git config is read (`GIT_CONFIG_GLOBAL` and
 `GIT_CONFIG_SYSTEM` are pinned to `os.devnull`), and identity and `commit.gpgsign=false` are passed
 per command. When the build fails anyway the self-test prints that dependency rather than a bare
-error (`ci/gates/secret_scan.py:853`).
+error (`ci/gates/secret_scan.py:926`).
