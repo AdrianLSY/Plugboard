@@ -1,0 +1,7 @@
+{
+  "_why": "A risk answer does not replace a description of what changed and why.",
+  "check": "description",
+  "body": "## What breaks if this is wrong?\nA missing guard could let an incomplete PR through.\n",
+  "changed": [],
+  "expect": "fail"
+}

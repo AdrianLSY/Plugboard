@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""The two checks whose subject is a PULL REQUEST rather than the tree.
+"""Checks whose subject is a PULL REQUEST rather than the tree.
 
 `make check` runs the vault gates, and every one of them decides a property of a
-directory. These two cannot: one reads the pull-request body, the other reads the
-set of paths a change touched. Neither exists outside a forge, so neither is a
-vault gate and ci/gates/meta.py does not cover them.
+directory. These cannot: they read the pull-request body or the set of paths a
+change touched. These subjects do not exist outside a forge, so the checks are not
+vault gates and ci/gates/meta.py does not cover them.
 
 That leaves the demonstration obligation unmet unless something else meets it, so
 each check carries RECORDED CASES under ci/pr/cases/ -- a body, a path set, and
@@ -13,6 +13,9 @@ disagrees. The workflow runs `--self-test` before it runs the checks, so a check
 that has stopped deciding fails the pull request that revealed it rather than
 passing quietly. It is the same property ci/gates/meta.py asserts, by the only
 means available to a check with no tree.
+
+  description            A human-authored PR says what changed and why. A heading
+                         or the template's unfilled prompt is not an answer.
 
   wire-contract-impact   rebuild-plugboard task 1.5. The body declares the
                          change's effect on the wire schema -- none, additive, or
@@ -28,11 +31,12 @@ means available to a check with no tree.
                          path list of its own -- the task asks for exactly that,
                          and a second list would drift from the first.
 
-## What neither decides
+## What these checks do not decide
 
-Whether the box ticked is the RIGHT one, and whether the `docs: n/a` reason is a
-good one. docs/method/documentation-rules.md states the second explicitly: CI
-checks for the marker's presence, the reviewer checks its correctness. Saying so
+Whether the description explains the change well, the box ticked is the RIGHT
+one, or the `docs: n/a` reason is a good one. docs/method/documentation-rules.md
+states the last explicitly: CI checks for the marker's presence, the reviewer
+checks its correctness. Saying so
 here because a check whose limits are undocumented gets read as a guarantee.
 """
 
@@ -51,6 +55,9 @@ CASES = HERE / "cases"
 
 TICKED = re.compile(r"^\s*[-*]\s*\[[xX]\]", re.M)
 IMPACT_HEADING = re.compile(r"^#+\s*wire contract impact\s*$", re.I | re.M)
+DESCRIPTION_HEADING = re.compile(r"^#+\s*description\s*$", re.I | re.M)
+HTML_COMMENT = re.compile(r"<!--.*?-->", re.S)
+FENCE = re.compile(r"^ {0,3}(`{3,}|~{3,})(.*)$")
 # `docs: n/a` followed by a reason on the same line. The marker convention is
 # stated in docs/method/documentation-rules.md and is not restated here: this is
 # the regex that recognises it, which is a different artifact from the rule.
@@ -82,17 +89,38 @@ def manifest() -> dict:
 
 
 def _section(body: str, heading_re: re.Pattern[str]) -> str | None:
-    """The lines under the first heading matching `heading_re`, to the next heading."""
-    lines = body.splitlines()
-    start = next((i for i, l in enumerate(lines) if heading_re.match(l)), None)
-    if start is None:
-        return None
-    out = []
-    for line in lines[start + 1 :]:
-        if line.startswith("#"):
-            break
-        out.append(line)
-    return "\n".join(out)
+    """The first matching heading's content, ignoring headings inside code fences."""
+    found = False
+    fence: str | None = None
+    out: list[str] = []
+    for line in body.splitlines():
+        marker = FENCE.match(line)
+        if marker:
+            run, suffix = marker.groups()
+            if fence is None:
+                fence = run
+            elif run[0] == fence[0] and len(run) >= len(fence) and not suffix.strip():
+                fence = None
+        elif fence is None:
+            if not found:
+                if heading_re.match(line):
+                    found = True
+                continue
+            if line.startswith("#"):
+                break
+        if found:
+            out.append(line)
+    return "\n".join(out) if found else None
+
+
+def description(body: str, changed: list[str], _mf: dict) -> str | None:
+    """Require an actual summary under Description, not the template prompt."""
+    section = _section(body, DESCRIPTION_HEADING)
+    if section is None:
+        return "the change description has no 'Description' section"
+    if not re.search(r"\w", HTML_COMMENT.sub("", section)):
+        return "the 'Description' section is empty; summarize what changed and why"
+    return None
 
 
 def wire_contract_impact(body: str, changed: list[str], _mf: dict) -> str | None:
@@ -153,7 +181,11 @@ def docs_touched(body: str, changed: list[str], mf: dict) -> str | None:
     )
 
 
-CHECKS = {"wire-contract-impact": wire_contract_impact, "docs-touched": docs_touched}
+CHECKS = {
+    "description": description,
+    "wire-contract-impact": wire_contract_impact,
+    "docs-touched": docs_touched,
+}
 
 
 def changed_paths(base: str, head: str) -> list[str]:

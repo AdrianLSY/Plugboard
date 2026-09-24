@@ -1,0 +1,7 @@
+{
+  "_why": "A sample Markdown heading inside a code fence is not the PR's Description section.",
+  "check": "description",
+  "body": "```markdown\n## Description\nThis is an example, not the PR summary.\n```\n\n## What breaks if this is wrong?\nThe heading could be mistaken for a real section.\n",
+  "changed": [],
+  "expect": "fail"
+}

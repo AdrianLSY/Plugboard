@@ -7,7 +7,10 @@ from unittest.mock import patch
 
 import create
 
-VALID_BODY = """## What breaks if this is wrong?
+VALID_BODY = """## Description
+Add a PR guard so authors learn about incomplete descriptions before publishing.
+
+## What breaks if this is wrong?
 The PR guard might let an incomplete description through.
 
 ## Wire contract impact
@@ -35,7 +38,19 @@ class CreateTests(unittest.TestCase):
     def test_missing_impact_stops_before_any_command(self):
         with patch.object(create, "command") as command:
             result = self.run_with_body(
+                "## Description\nAdd a guard before publishing.\n\n"
                 "## What breaks if this is wrong?\nThe check is bypassed.\n"
+            )
+        self.assertEqual(result, 1)
+        command.assert_not_called()
+
+    def test_missing_description_stops_before_any_command(self):
+        with patch.object(create, "command") as command:
+            result = self.run_with_body(
+                VALID_BODY.replace(
+                    "## Description\nAdd a PR guard so authors learn about incomplete descriptions before publishing.\n\n",
+                    "",
+                )
             )
         self.assertEqual(result, 1)
         command.assert_not_called()
