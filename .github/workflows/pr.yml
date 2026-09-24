@@ -38,6 +38,9 @@ jobs:
       - name: the checks are demonstrated to decide before they are trusted
         run: python3 ci/pr/checks.py --self-test
 
+      - name: the PR creation preflight refuses invalid descriptions
+        run: python3 -m unittest discover -s ci/pr -p 'test_create.py'
+
       - name: record the description
         env:
           PR_BODY: ${{ github.event.pull_request.body }}

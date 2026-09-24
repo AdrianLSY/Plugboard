@@ -101,6 +101,12 @@ behind. The standard the *Tests* answer is judged against is
 enumerations has one home is itself a rule:
 [review obligations are single-sourced](rules/review-obligations-single-sourced.md).
 
+Create a PR with `python3 ci/pr/create.py --title "..." --body-file .scratch/pr-body.md`
+from a committed feature branch. The command uses the repository template's answers, checks them
+against the branch's changed paths, then pushes and opens the PR. Use `--check-only` to run the
+preflight without publishing. A generic PR skill may help draft the prose, but its template does not
+replace this repository's required wire-contract answer. CI runs the same checks after creation.
+
 ---
 
 ## Code review
