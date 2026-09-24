@@ -45,8 +45,8 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from _workflow import triggers
 from _common import Report, load_manifest, main_guard, repo_root
+from _workflow import triggers
 
 GATE_ID = "runner"
 RULE_NOTE = "docs/method/rules/the-gates-actually-run.md"
@@ -56,13 +56,14 @@ def uncommented(text: str) -> str:
     return "\n".join(l for l in text.splitlines() if not l.lstrip().startswith("#"))
 
 
-
 def run(scan_root: Path, report_only: bool) -> int:
     manifest = load_manifest(repo_root())
     cfg = manifest["runner"]
     target = cfg["aggregating_target"]
     workflows = {k: v for k, v in cfg["workflows"].items() if not k.startswith("_")}
-    forbidden = {k: v for k, v in cfg["forbidden_clauses"].items() if not k.startswith("_")}
+    forbidden = {
+        k: v for k, v in cfg["forbidden_clauses"].items() if not k.startswith("_")
+    }
     report = Report(GATE_ID, RULE_NOTE)
 
     # Every declared workflow, not just the aggregating one. A second blocking
@@ -105,11 +106,17 @@ def run(scan_root: Path, report_only: bool) -> int:
     # (4) the aggregating target must not swallow a failure.
     makefile = scan_root / "Makefile"
     if not makefile.is_file():
-        report.fail("Makefile: absent, so the declared aggregating target does not exist")
+        report.fail(
+            "Makefile: absent, so the declared aggregating target does not exist"
+        )
     else:
         name = target.split()[-1]
         report.examine(f"Makefile:{name}")
-        m = re.search(rf"^{re.escape(name)}:.*?\n((?:\t.*\n)+)", makefile.read_text(encoding="utf-8"), re.M)
+        m = re.search(
+            rf"^{re.escape(name)}:.*?\n((?:\t.*\n)+)",
+            makefile.read_text(encoding="utf-8"),
+            re.M,
+        )
         if not m:
             report.fail(f"Makefile: declares no `{name}` target")
         else:
@@ -130,7 +137,9 @@ def run(scan_root: Path, report_only: bool) -> int:
 
     report.coverage(
         covered=[*sorted(workflows), f"Makefile:{target.split()[-1]}"],
-        excluded=["whether the hosting service refuses a merge (server-side, unreadable here)"],
+        excluded=[
+            "whether the hosting service refuses a merge (server-side, unreadable here)"
+        ],
         kind="runner declaration",
         source="manifest",
         scan_root=scan_root,

@@ -15,6 +15,16 @@ on:
   pull_request:
 
 jobs:
+  python-tooling:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - run: python3 -m pip install -r requirements-dev.txt
+      - run: make lint-python
+
   fast:
     runs-on: ubuntu-latest
     # No `services:` block. That absence is the check.

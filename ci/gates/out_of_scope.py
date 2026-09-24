@@ -89,7 +89,9 @@ def _git(root: Path, *args: str) -> tuple[int, bytes]:
 
 
 def _zsplit(payload: bytes) -> list[str]:
-    return [item for item in payload.decode("utf-8", "surrogateescape").split("\0") if item]
+    return [
+        item for item in payload.decode("utf-8", "surrogateescape").split("\0") if item
+    ]
 
 
 def _under_any(rel: str, prefixes: list[str]) -> str | None:
@@ -140,7 +142,9 @@ def _changed_paths(root: Path, ref: str, prefix: str) -> list[tuple[str, str]] |
 
 
 def _untracked(root: Path, prefix: str) -> list[str]:
-    _code, out = _git(root, "ls-files", "-z", "--others", "--exclude-standard", "--", prefix)
+    _code, out = _git(
+        root, "ls-files", "-z", "--others", "--exclude-standard", "--", prefix
+    )
     return sorted(_zsplit(out))
 
 
@@ -173,8 +177,13 @@ def run(scan_root: Path, report_only: bool) -> int:
             f"gate's subject is a declared set plus its baseline, so there is nothing "
             f"here to assert; not applicable"
         )
-        report.coverage(covered=[], excluded=[scan_root.name],
-                        kind="specification", source="scan", scan_root=scan_root)
+        report.coverage(
+            covered=[],
+            excluded=[scan_root.name],
+            kind="specification",
+            source="scan",
+            scan_root=scan_root,
+        )
         return report.finish(report_only=report_only)
 
     manifest = load_manifest(scan_root)
@@ -227,7 +236,9 @@ def run(scan_root: Path, report_only: bool) -> int:
     baseline_sha = None
     subject_files: list[str] = []
     if from_index and baseline_ref:
-        code, out = _git(scan_root, "rev-parse", "--verify", f"{baseline_ref}^{{commit}}")
+        code, out = _git(
+            scan_root, "rev-parse", "--verify", f"{baseline_ref}^{{commit}}"
+        )
         if code != 0:
             report.fail(
                 f"baseline ref '{baseline_ref}' (ci/vault.json out_of_scope.baseline_ref) "
@@ -237,7 +248,9 @@ def run(scan_root: Path, report_only: bool) -> int:
             baseline_sha = out.decode().strip()
             subject_files = _files_at_ref(scan_root, baseline_sha, prefixes) or []
             for prefix in prefixes:
-                for status, rel in _changed_paths(scan_root, baseline_sha, prefix) or []:
+                for status, rel in (
+                    _changed_paths(scan_root, baseline_sha, prefix) or []
+                ):
                     where = _first_changed_line(scan_root, baseline_sha, rel)
                     at = f" (first change at line {where})" if where else ""
                     report.fail(
@@ -305,12 +318,18 @@ def run(scan_root: Path, report_only: bool) -> int:
         )
 
     if not subject_files:
-        subject_files = [rel for rel in listing if _under_any(rel, prefixes) is not None]
+        subject_files = [
+            rel for rel in listing if _under_any(rel, prefixes) is not None
+        ]
     for _subject in subject_files:
         report.examine(_subject)
     report.coverage(
         covered=prefixes,
-        excluded=[*exempt_roots(manifest), *scan_excludes(manifest), *excluded_from_run],
+        excluded=[
+            *exempt_roots(manifest),
+            *scan_excludes(manifest),
+            *excluded_from_run,
+        ],
         kind="specification",
         source="index" if from_index else "scan",
         scan_root=scan_root,
@@ -348,7 +367,11 @@ _SELF_TEST_OWNER = "restructure-docs-as-vault"
 
 
 def _git_quiet(root: Path, *args: str) -> tuple[int, bytes]:
-    env = {**os.environ, "GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_SYSTEM": os.devnull}
+    env = {
+        **os.environ,
+        "GIT_CONFIG_GLOBAL": os.devnull,
+        "GIT_CONFIG_SYSTEM": os.devnull,
+    }
     done = subprocess.run(
         ["git", "-C", str(root), *args], capture_output=True, check=False, env=env
     )
@@ -377,7 +400,9 @@ def _committed_edit_case() -> list[str]:
     problems: list[str] = []
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp) / "tree"
-        specs = [f"{SPEC_SET_ROOT}/cap{n:02d}/spec.md" for n in range(EXPECTED_SPEC_FILES)]
+        specs = [
+            f"{SPEC_SET_ROOT}/cap{n:02d}/spec.md" for n in range(EXPECTED_SPEC_FILES)
+        ]
         for rel in specs:
             target = root / rel
             target.parent.mkdir(parents=True, exist_ok=True)
@@ -387,7 +412,11 @@ def _committed_edit_case() -> list[str]:
         def manifest(baseline: str) -> None:
             (root / "ci" / "vault.json").write_text(
                 _SELF_TEST_MANIFEST
-                % {"prefix": SPEC_SET_ROOT, "owner": _SELF_TEST_OWNER, "baseline": baseline},
+                % {
+                    "prefix": SPEC_SET_ROOT,
+                    "owner": _SELF_TEST_OWNER,
+                    "baseline": baseline,
+                },
                 encoding="utf-8",
             )
 
@@ -395,8 +424,18 @@ def _committed_edit_case() -> list[str]:
         for args in (
             ["init", "-q"],
             ["add", "-A"],
-            ["-c", "user.name=gate", "-c", "user.email=gate@invalid",
-             "-c", "commit.gpgsign=false", "commit", "-q", "-m", "baseline"],
+            [
+                "-c",
+                "user.name=gate",
+                "-c",
+                "user.email=gate@invalid",
+                "-c",
+                "commit.gpgsign=false",
+                "commit",
+                "-q",
+                "-m",
+                "baseline",
+            ],
         ):
             code, _ = _git_quiet(root, *args)
             if code != 0:
@@ -414,8 +453,18 @@ def _committed_edit_case() -> list[str]:
         )
         for args in (
             ["add", "-A"],
-            ["-c", "user.name=gate", "-c", "user.email=gate@invalid",
-             "-c", "commit.gpgsign=false", "commit", "-q", "-m", "edit a frozen spec"],
+            [
+                "-c",
+                "user.name=gate",
+                "-c",
+                "user.email=gate@invalid",
+                "-c",
+                "commit.gpgsign=false",
+                "commit",
+                "-q",
+                "-m",
+                "edit a frozen spec",
+            ],
         ):
             code, _ = _git_quiet(root, *args)
             if code != 0:
@@ -465,25 +514,48 @@ def _self_test() -> int:
         )
         # The set must cover exactly sixteen spec.md files, so the only failure
         # the planted modification can produce is the byte change itself.
-        specs = [f"{SPEC_SET_ROOT}/cap{n:02d}/spec.md" for n in range(EXPECTED_SPEC_FILES)]
+        specs = [
+            f"{SPEC_SET_ROOT}/cap{n:02d}/spec.md" for n in range(EXPECTED_SPEC_FILES)
+        ]
         for rel in specs:
             target = root / rel
             target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_text("# spec\n\nbaseline line one\nbaseline line two\n", encoding="utf-8")
+            target.write_text(
+                "# spec\n\nbaseline line one\nbaseline line two\n", encoding="utf-8"
+            )
 
-        env = {**os.environ, "GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_SYSTEM": os.devnull}
+        env = {
+            **os.environ,
+            "GIT_CONFIG_GLOBAL": os.devnull,
+            "GIT_CONFIG_SYSTEM": os.devnull,
+        }
         for args in (
             ["init", "-q"],
             ["add", "-A"],
-            ["-c", "user.name=gate", "-c", "user.email=gate@invalid",
-             "-c", "commit.gpgsign=false", "commit", "-q", "-m", "baseline"],
+            [
+                "-c",
+                "user.name=gate",
+                "-c",
+                "user.email=gate@invalid",
+                "-c",
+                "commit.gpgsign=false",
+                "commit",
+                "-q",
+                "-m",
+                "baseline",
+            ],
         ):
             done = subprocess.run(
-                ["git", "-C", str(root), *args], capture_output=True, check=False, env=env
+                ["git", "-C", str(root), *args],
+                capture_output=True,
+                check=False,
+                env=env,
             )
             if done.returncode != 0:
-                print(f"[FAIL] {GATE_ID} --self-test: could not build the scenario: "
-                      f"git {' '.join(args)} -> {done.stderr.decode().strip()}")
+                print(
+                    f"[FAIL] {GATE_ID} --self-test: could not build the scenario: "
+                    f"git {' '.join(args)} -> {done.stderr.decode().strip()}"
+                )
                 return 1
 
         # One byte, on a path the set covers, exactly as task 1.12 prescribes --

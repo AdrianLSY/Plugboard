@@ -56,7 +56,9 @@ RULE_NOTE = "docs/method/rules/currency-both-directions.md"
 FM = re.compile(r"^---\n(.*?)\n---\n", re.S)
 # `status: planned` notes declare their subject with this marker.
 SUBJECT = re.compile(r"^\s*(?:\*\*)?Planned subject(?:\*\*)?:\s*`([^`]+)`", re.M)
-SUPERSEDED_BY = re.compile(r"^\s*(?:\*\*)?Superseded by(?:\*\*)?:\s*\[[^\]]+\]\(([^)]+)\)", re.M)
+SUPERSEDED_BY = re.compile(
+    r"^\s*(?:\*\*)?Superseded by(?:\*\*)?:\s*\[[^\]]+\]\(([^)]+)\)", re.M
+)
 LINK = re.compile(r"\]\(([^)]+)\)")
 
 
@@ -119,7 +121,9 @@ def run(scan_root: Path, report_only: bool) -> int:
         # unscoped read reported "rebuild-plugboard task 1.1" as complete because
         # a *different* change's 1.1 was done. A task id means nothing without
         # the list it belongs to.
-        for label, target in re.findall(r"\[([^\]]*task \d+\.\d+[a-z]?[^\]]*)\]\(([^)]+)\)", text):
+        for label, target in re.findall(
+            r"\[([^\]]*task \d+\.\d+[a-z]?[^\]]*)\]\(([^)]+)\)", text
+        ):
             m3 = re.search(r"task (\d+\.\d+[a-z]?)", label)
             if not m3:
                 continue
@@ -143,9 +147,7 @@ def run(scan_root: Path, report_only: bool) -> int:
         source=subject_source(scan_root),
         scan_root=scan_root,
     )
-    print(
-        f"  notes: {current} current, {planned} planned, {superseded} superseded"
-    )
+    print(f"  notes: {current} current, {planned} planned, {superseded} superseded")
     return report.finish(report_only=report_only)
 
 

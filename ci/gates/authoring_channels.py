@@ -73,7 +73,11 @@ def _openspec(scan_root: Path, *args: str) -> str | None:
 
 def run(scan_root: Path, report_only: bool) -> int:
     manifest = load_manifest(repo_root())
-    items = {k: v for k, v in manifest["conventions"]["items"].items() if not k.startswith("_")}
+    items = {
+        k: v
+        for k, v in manifest["conventions"]["items"].items()
+        if not k.startswith("_")
+    }
     report = Report(GATE_ID, RULE_NOTE)
 
     note_rel = "docs/method/conventions.md"
@@ -113,15 +117,18 @@ def run(scan_root: Path, report_only: bool) -> int:
             listing = ""
         change = None
         try:
-            change = json.loads(listing[listing.index("{"):])["changes"][0]["name"]
+            change = json.loads(listing[listing.index("{") :])["changes"][0]["name"]
         except Exception:
             change = None
         if change:
-            got = _openspec(
-                scan_root, "instructions", "apply", "--change", change, "--json"
-            ) or ""
+            got = (
+                _openspec(
+                    scan_root, "instructions", "apply", "--change", change, "--json"
+                )
+                or ""
+            )
             try:
-                d = json.loads(got[got.index("{"):])
+                d = json.loads(got[got.index("{") :])
                 delivered = json.dumps(
                     [d.get("context") or "", d.get("operationGuidance") or []]
                 )
@@ -156,7 +163,9 @@ def run(scan_root: Path, report_only: bool) -> int:
     for cid, it in sorted(items.items()):
         if note_text and cid not in note_text:
             missing_note += 1
-            report.fail(f"convention '{cid}': absent from the note-authoring channel ({note_rel})")
+            report.fail(
+                f"convention '{cid}': absent from the note-authoring channel ({note_rel})"
+            )
         if cfg_text and cid not in delivered:
             missing_cfg += 1
             report.fail(

@@ -57,7 +57,9 @@ def repo_root() -> Path:
 
 
 def build(root: Path) -> str:
-    items = json.loads((root / "ci" / "vault.json").read_text(encoding="utf-8"))["conventions"]["items"]
+    items = json.loads((root / "ci" / "vault.json").read_text(encoding="utf-8"))[
+        "conventions"
+    ]["items"]
     out = [HEADER, "", "| convention | what it requires | gate |", "|---|---|---|"]
     for cid in sorted(items):
         it = items[cid]

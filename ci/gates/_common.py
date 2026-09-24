@@ -37,7 +37,9 @@ def repo_root(start: Path | None = None) -> Path:
 
 
 def load_manifest(root: Path | None = None) -> dict:
-    with ((root or repo_root()) / "ci" / MANIFEST_NAME).open(encoding="utf-8") as handle:
+    with ((root or repo_root()) / "ci" / MANIFEST_NAME).open(
+        encoding="utf-8"
+    ) as handle:
         return json.load(handle)
 
 
@@ -103,11 +105,15 @@ def tracked_markdown(root: Path) -> list[str] | None:
 
 def _in_worktree(root: Path) -> bool:
     try:
-        top = subprocess.run(
-            ["git", "-C", str(root), "rev-parse", "--show-toplevel"],
-            capture_output=True,
-            check=True,
-        ).stdout.decode().strip()
+        top = (
+            subprocess.run(
+                ["git", "-C", str(root), "rev-parse", "--show-toplevel"],
+                capture_output=True,
+                check=True,
+            )
+            .stdout.decode()
+            .strip()
+        )
     except (subprocess.CalledProcessError, FileNotFoundError):
         return False
     return Path(top).resolve() == root.resolve()
@@ -128,7 +134,7 @@ def on_tracked_tree(scan_root: Path) -> bool:
 
 
 def subject_source(root: Path) -> str:
-    """"index" when `root` is a work tree, otherwise "scan".
+    """ "index" when `root` is a work tree, otherwise "scan".
 
     A gate should not decide this by hand. Five hardcoded "the tracked index"
     and reported it while walking a fixture tree; six hardcoded the opposite and
@@ -237,7 +243,9 @@ class Report:
     def subject_count(self) -> int:
         return len(self._subjects)
 
-    def coverage(self, *, covered, excluded, kind="file", source, scan_root=None) -> None:
+    def coverage(
+        self, *, covered, excluded, kind="file", source, scan_root=None
+    ) -> None:
         if source not in self.SOURCES:
             raise SystemExit(
                 f"{self.gate_id}: coverage source {source!r} is not one of "
@@ -250,7 +258,11 @@ class Report:
         # A run whose scan root is not a work tree cannot have read its set from
         # version control. This is the one half of the source claim that is
         # decidable without an oracle, so it is the half the build checks.
-        if source == "index" and scan_root is not None and not _in_worktree(Path(scan_root)):
+        if (
+            source == "index"
+            and scan_root is not None
+            and not _in_worktree(Path(scan_root))
+        ):
             self.fail(
                 f"{self.gate_id}: reports its subjects came from version control, but "
                 f"'{scan_root}' is not a work tree -- a coverage line naming a source "

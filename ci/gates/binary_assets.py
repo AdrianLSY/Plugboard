@@ -45,13 +45,13 @@ from pathlib import Path
 
 from _common import (
     Report,
+    _in_worktree,
     load_manifest,
     main_guard,
     on_tracked_tree,
     repo_root,
     scan_excludes,
     subject_source,
-    _in_worktree,
 )
 
 GATE_ID = "binary-assets"
@@ -98,7 +98,9 @@ def is_binary(path: Path) -> bool:
 def run(scan_root: Path, report_only: bool) -> int:
     manifest = load_manifest(repo_root())
     declared = {
-        k: v for k, v in manifest.get("binary_assets", {}).items() if not k.startswith("_")
+        k: v
+        for k, v in manifest.get("binary_assets", {}).items()
+        if not k.startswith("_")
     }
     report = Report(GATE_ID, RULE_NOTE)
 

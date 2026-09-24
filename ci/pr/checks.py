@@ -72,7 +72,9 @@ def template_lines() -> set[str]:
     path = ROOT / TEMPLATE
     if not path.is_file():
         return set()
-    return {l.strip() for l in path.read_text(encoding="utf-8").splitlines() if l.strip()}
+    return {
+        l.strip() for l in path.read_text(encoding="utf-8").splitlines() if l.strip()
+    }
 
 
 def manifest() -> dict:
@@ -86,7 +88,7 @@ def _section(body: str, heading_re: re.Pattern[str]) -> str | None:
     if start is None:
         return None
     out = []
-    for line in lines[start + 1:]:
+    for line in lines[start + 1 :]:
         if line.startswith("#"):
             break
         out.append(line)
@@ -114,7 +116,9 @@ def wire_contract_impact(body: str, changed: list[str], _mf: dict) -> str | None
 def docs_touched(body: str, changed: list[str], mf: dict) -> str | None:
     spine = mf["spine"]
     components = [
-        c for c in mf["code_standards"]["components"]["candidates"] if not c.startswith("_")
+        c
+        for c in mf["code_standards"]["components"]["candidates"]
+        if not c.startswith("_")
     ]
     triggering = sorted(
         p for p in changed if any(p == c or p.startswith(c + "/") for c in components)
@@ -155,7 +159,9 @@ CHECKS = {"wire-contract-impact": wire_contract_impact, "docs-touched": docs_tou
 def changed_paths(base: str, head: str) -> list[str]:
     out = subprocess.run(
         ["git", "-C", str(ROOT), "diff", "--name-only", f"{base}...{head}"],
-        capture_output=True, text=True, check=True,
+        capture_output=True,
+        text=True,
+        check=True,
     ).stdout
     return [p for p in out.splitlines() if p]
 
@@ -164,7 +170,9 @@ def self_test() -> int:
     mf = manifest()
     cases = sorted(CASES.glob("*.json"))
     if not cases:
-        print("self-test: no recorded cases -- a check with no demonstration is untested")
+        print(
+            "self-test: no recorded cases -- a check with no demonstration is untested"
+        )
         return 1
     failures = 0
     for path in cases:
@@ -175,7 +183,9 @@ def self_test() -> int:
         ok = got == case["expect"]
         failures += 0 if ok else 1
         mark = "ok  " if ok else "WRONG"
-        print(f"  [{mark}] {path.name}: {case['check']} expected {case['expect']}, got {got}")
+        print(
+            f"  [{mark}] {path.name}: {case['check']} expected {case['expect']}, got {got}"
+        )
         if not ok and verdict:
             print(f"          {verdict}")
     print(
@@ -186,9 +196,13 @@ def self_test() -> int:
 
 
 def main(argv: list[str]) -> int:
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--self-test", action="store_true",
-                    help="run every recorded case and fail on any disagreement")
+    description = __doc__ or "Check a pull request description"
+    ap = argparse.ArgumentParser(description=description.splitlines()[0])
+    ap.add_argument(
+        "--self-test",
+        action="store_true",
+        help="run every recorded case and fail on any disagreement",
+    )
     ap.add_argument("--check", choices=sorted(CHECKS))
     ap.add_argument("--body", type=Path, help="file holding the pull-request body")
     ap.add_argument("--base", help="base ref, for the changed-path set")

@@ -78,7 +78,9 @@ _INLINE = re.compile(
     r"(?:\s+(?:\"[^\"]*\"|'[^']*'|\([^)]*\)))?\s*\)"
 )
 # [label]: target -- a reference definition is a relation too.
-_REFDEF = re.compile(r"^\s{0,3}\[(?:[^\]\\]|\\.)+\]:\s*(?:<(?P<angle>[^>]*)>|(?P<bare>\S+))")
+_REFDEF = re.compile(
+    r"^\s{0,3}\[(?:[^\]\\]|\\.)+\]:\s*(?:<(?P<angle>[^>]*)>|(?P<bare>\S+))"
+)
 
 
 def outbound(note_path: Path) -> list[tuple[int, str]]:
@@ -147,11 +149,15 @@ def _tracked_all(root: Path) -> list[str] | None:
             capture_output=True,
             check=True,
         ).stdout
-        top = subprocess.run(
-            ["git", "-C", str(root), "rev-parse", "--show-toplevel"],
-            capture_output=True,
-            check=True,
-        ).stdout.decode().strip()
+        top = (
+            subprocess.run(
+                ["git", "-C", str(root), "rev-parse", "--show-toplevel"],
+                capture_output=True,
+                check=True,
+            )
+            .stdout.decode()
+            .strip()
+        )
     except (subprocess.CalledProcessError, FileNotFoundError):
         return None
     if Path(top).resolve() != root.resolve():
@@ -241,7 +247,7 @@ def run(scan_root: Path, report_only: bool) -> int:
 
     # --- link graph ---------------------------------------------------------
     # Sources are governed markdown notes only (see the module docstring).
-    edges: dict[str, list[tuple[str, int]]] = {}   # source -> [(target, line)]
+    edges: dict[str, list[tuple[str, int]]] = {}  # source -> [(target, line)]
     inbound: dict[str, list[tuple[str, int]]] = {}  # target -> [(source, line)]
     for rel in md_notes:
         disk = scan_root / rel
@@ -273,8 +279,8 @@ def run(scan_root: Path, report_only: bool) -> int:
         failure elsewhere can see exactly which line a path hangs off.
         """
         chain, hops, cursor = [rel], [], rel
-        while parent.get(cursor) is not None:
-            source, lineno = parent[cursor]
+        while (hop := parent.get(cursor)) is not None:
+            source, lineno = hop
             hops.append(lineno)
             chain.append(source)
             cursor = source
@@ -282,7 +288,7 @@ def run(scan_root: Path, report_only: bool) -> int:
         hops.reverse()
         if not hops:
             return f"{chain[0]} (declared entry point)"
-        steps = [f"{node}:{line}" for node, line in zip(chain, hops)]
+        steps = [f"{node}:{line}" for node, line in zip(chain, hops, strict=False)]
         return " -> ".join([*steps, chain[-1]])
 
     reachable = sorted(parent)
@@ -314,7 +320,9 @@ def run(scan_root: Path, report_only: bool) -> int:
         sources = sorted(inbound.get(rel, []))
         if not sources:
             continue  # already named by the unreachable check above
-        outside = [(src, line) for src, line in sources if not is_planning(src, manifest)]
+        outside = [
+            (src, line) for src, line in sources if not is_planning(src, manifest)
+        ]
         if not outside:
             named = ", ".join(f"{src}:{line}" for src, line in sources)
             report.fail(

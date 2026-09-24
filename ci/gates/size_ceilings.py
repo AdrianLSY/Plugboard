@@ -48,8 +48,9 @@ def run(scan_root: Path, report_only: bool) -> int:
     cfg = config(manifest)
     module_max = cfg["module_lines"]
     function_max = cfg["function_lines"]
-    excluded_langs = {k: v for k, v in cfg["excluded_languages"].items()
-                      if not k.startswith("_")}
+    excluded_langs = {
+        k: v for k, v in cfg["excluded_languages"].items() if not k.startswith("_")
+    }
     report = Report(GATE_ID, RULE_NOTE)
 
     files = sources(scan_root, cfg, manifest)
@@ -79,7 +80,9 @@ def run(scan_root: Path, report_only: bool) -> int:
 
     report.coverage(
         covered=sorted(set(languages(cfg).values())),
-        excluded=[f"{ext} ({v['reason'][:48]}...)" for ext, v in excluded_langs.items()],
+        excluded=[
+            f"{ext} ({v['reason'][:48]}...)" for ext, v in excluded_langs.items()
+        ],
         kind="source file",
         source=subject_source(scan_root),
         scan_root=scan_root,
@@ -89,7 +92,9 @@ def run(scan_root: Path, report_only: bool) -> int:
         f"{function_max} per clause | widest module seen: {widest}"
     )
     for ext, entry in sorted(excluded_langs.items()):
-        print(f"  {ext} excluded: {entry['reason']}\n     ends with: {entry['ends_with']}")
+        print(
+            f"  {ext} excluded: {entry['reason']}\n     ends with: {entry['ends_with']}"
+        )
     return report.finish(report_only=report_only)
 
 

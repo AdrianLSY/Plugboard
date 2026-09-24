@@ -73,7 +73,8 @@ def spec_requirements(root: Path, manifest: dict) -> dict[str, list[str]]:
     for p in sorted(root.glob(glob)):
         rel = p.relative_to(root).as_posix()
         titles = [
-            t for t in REQ_TITLE.findall(p.read_text(encoding="utf-8"))
+            t
+            for t in REQ_TITLE.findall(p.read_text(encoding="utf-8"))
             if len(t.split()) >= MIN_WORDS
         ]
         if titles:
@@ -106,7 +107,9 @@ def run(scan_root: Path, report_only: bool) -> int:
         lower = text.lower()
         for spec_rel, titles in reqs.items():
             spec_name = spec_rel.rsplit("/", 3)
-            cap = f"{spec_name[-3]}/{spec_name[-2]}" if len(spec_name) >= 3 else spec_rel
+            cap = (
+                f"{spec_name[-3]}/{spec_name[-2]}" if len(spec_name) >= 3 else spec_rel
+            )
             for title in titles:
                 if title.lower() not in lower:
                     continue
@@ -114,25 +117,27 @@ def run(scan_root: Path, report_only: bool) -> int:
                 links_owner = spec_rel.rsplit("/", 1)[0] in text or cap in text
                 if not links_owner:
                     report.fail(
-                        f"{rel}: reproduces the requirement title \"{title}\" and "
+                        f'{rel}: reproduces the requirement title "{title}" and '
                         f"does not link its owner -- that requirement belongs to "
                         f"`{cap}` ({spec_rel}); link it, or say it in your own words"
                     )
                 elif not NON_NORMATIVE.search(text):
                     report.fail(
-                        f"{rel}: reproduces the requirement title \"{title}\" owned "
+                        f'{rel}: reproduces the requirement title "{title}" owned '
                         f"by `{cap}` and marks no summary as non-normative -- add "
-                        f"the deferral (\"the owning artifact wins where the two "
-                        f"disagree\") or drop the title"
+                        f'the deferral ("the owning artifact wins where the two '
+                        f'disagree") or drop the title'
                     )
 
     report.coverage(
         covered=[manifest["spine"]],
-        excluded=["generated indexes (mechanical, held to byte-identity)",
-                  "rule notes (a rule names its own rule; see rule_gate_correspondence)",
-                  "normative modals (ci/gates/citations.py)",
-                  "verbatim requirement text (ci/gates/duplication.py)",
-                  "paraphrase (undecidable; owned by review)"],
+        excluded=[
+            "generated indexes (mechanical, held to byte-identity)",
+            "rule notes (a rule names its own rule; see rule_gate_correspondence)",
+            "normative modals (ci/gates/citations.py)",
+            "verbatim requirement text (ci/gates/duplication.py)",
+            "paraphrase (undecidable; owned by review)",
+        ],
         kind="note",
         source=subject_source(scan_root),
         scan_root=scan_root,

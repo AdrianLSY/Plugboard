@@ -80,13 +80,16 @@ def resolve(side: dict, scan_root: Path, manifest: dict) -> tuple[set[str], str 
             # continue-on-error nothing reads. Three of five were in exactly that
             # state until rebuild-plugboard task 3.1 was settled.
             d = scan_root / side["path"]
-            return {
-                (Path(side["path"]) / p.name).as_posix()
-                for p in d.glob("*.yml")
-            } if d.is_dir() else set(), None
+            return (
+                {(Path(side["path"]) / p.name).as_posix() for p in d.glob("*.yml")}
+                if d.is_dir()
+                else set()
+            ), None
         if kind == "manifest_keys":
             return {
-                str(k) for k in _dig(manifest, side["path"]) if not str(k).startswith("_")
+                str(k)
+                for k in _dig(manifest, side["path"])
+                if not str(k).startswith("_")
             }, None
         return set(), f"unknown resolver kind {kind!r}"
     except Exception as exc:  # a resolver that cannot run is a finding, not a crash

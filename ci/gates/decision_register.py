@@ -46,6 +46,7 @@ from _common import Report, candidates, classify, load_manifest, main_guard, rep
 GATE_ID = "decision-register"
 RULE_NOTE = "docs/method/rules/decision-register.md"
 
+
 # An assignment: a markdown heading whose first token is the identifier. The
 # prefix comes from ci/vault.json rather than from this line: a gate never
 # decides its own scope, and the rule is that an identifier belongs to a
@@ -87,7 +88,9 @@ def run(scan_root: Path, report_only: bool) -> int:
     retired = {k: v for k, v in reg["retired"].items() if not k.startswith("_")}
     ns_map = reg["per_change_namespaces"]
     namespaces = {ns_map[k] for k in _keys(ns_map)}
-    superseded = {k: v for k, v in reg["superseded_registers"].items() if not k.startswith("_")}
+    superseded = {
+        k: v for k, v in reg["superseded_registers"].items() if not k.startswith("_")
+    }
     report = Report(GATE_ID, RULE_NOTE)
 
     paths, from_index = candidates(scan_root, manifest)
@@ -104,7 +107,9 @@ def run(scan_root: Path, report_only: bool) -> int:
         in_citation_scope = any(
             rel == p or rel.startswith(p + "/") for p in citation_paths
         )
-        links_to_register = register_rel.rsplit("/", 1)[-1] in body and "design.md" in body
+        links_to_register = (
+            register_rel.rsplit("/", 1)[-1] in body and "design.md" in body
+        )
         for n, line in enumerate(body.splitlines(), 1):
             m = ASSIGNMENT.match(line)
             if not m or m.group(1):

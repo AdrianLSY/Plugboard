@@ -30,7 +30,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from _common import Report, load_manifest, main_guard, repo_root, on_tracked_tree
+from _common import Report, load_manifest, main_guard, on_tracked_tree, repo_root
 
 # ci/gen is the generator's home and is not a package; the gate invokes the
 # generator rather than duplicating its renderer, so it reproduces the one
@@ -56,7 +56,9 @@ EXPLANATION = {
 #: the contributor to guess. The remedy is per-kind: regenerating fixes three of
 #: the four, and telling someone to regenerate a path the tool does not produce
 #: sends them in a circle.
-_REGENERATE = f"regenerate with `python3 {indexes.GENERATOR} --write` and commit the result"
+_REGENERATE = (
+    f"regenerate with `python3 {indexes.GENERATOR} --write` and commit the result"
+)
 REMEDY = {
     "missing": _REGENERATE,
     "drift": _REGENERATE,
@@ -77,7 +79,7 @@ def run(scan_root: Path, report_only: bool) -> int:
     for finding in findings:
         where = f":{finding.line}" if finding.line else ""
         report.fail(
-            f"{finding.index}{where}: {EXPLANATION[finding.kind]} -- {finding.detail}; "
+            f"{finding.path}{where}: {EXPLANATION[finding.kind]} -- {finding.detail}; "
             f"{REMEDY[finding.kind]}"
         )
 
@@ -95,8 +97,13 @@ def run(scan_root: Path, report_only: bool) -> int:
     # what made this fixture emit six violations against the four it states.
     on_tracked = on_tracked_tree(scan_root)
     import subprocess as _sp
+
     extra = (
-        {k: v for k, v in manifest.get("generated_files", {}).items() if not k.startswith("_")}
+        {
+            k: v
+            for k, v in manifest.get("generated_files", {}).items()
+            if not k.startswith("_")
+        }
         if on_tracked
         else {}
     )
@@ -105,7 +112,12 @@ def run(scan_root: Path, report_only: bool) -> int:
         if not tool_path.is_file():
             report.fail(f"{rel}: declares generator {tool}, which does not exist")
             continue
-        proc = _sp.run(["python3", str(tool_path)], capture_output=True, text=True, cwd=str(scan_root))
+        proc = _sp.run(
+            ["python3", str(tool_path)],
+            capture_output=True,
+            text=True,
+            cwd=str(scan_root),
+        )
         if proc.returncode != 0:
             report.fail(
                 f"{rel}: differs from a fresh regeneration -- regenerate with "

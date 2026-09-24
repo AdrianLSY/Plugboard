@@ -53,11 +53,15 @@ def tracked_paths(root: Path) -> tuple[set[str], bool]:
             capture_output=True,
             check=True,
         ).stdout
-        top = subprocess.run(
-            ["git", "-C", str(root), "rev-parse", "--show-toplevel"],
-            capture_output=True,
-            check=True,
-        ).stdout.decode().strip()
+        top = (
+            subprocess.run(
+                ["git", "-C", str(root), "rev-parse", "--show-toplevel"],
+                capture_output=True,
+                check=True,
+            )
+            .stdout.decode()
+            .strip()
+        )
         if Path(top).resolve() == root.resolve():
             return {p for p in out.decode("utf-8").split("\0") if p}, True
     except (subprocess.CalledProcessError, FileNotFoundError):
@@ -105,7 +109,9 @@ def run(scan_root: Path, report_only: bool) -> int:
         try:
             settings = json.loads(app.read_text(encoding="utf-8"))
         except json.JSONDecodeError as exc:
-            report.fail(f".obsidian/app.json: not valid JSON ({exc.msg} at line {exc.lineno})")
+            report.fail(
+                f".obsidian/app.json: not valid JSON ({exc.msg} at line {exc.lineno})"
+            )
         else:
             for key, expected in REQUIRED_SETTINGS.items():
                 actual = settings.get(key)

@@ -76,7 +76,7 @@ import re
 from pathlib import Path
 
 from _common import Report, load_manifest, main_guard, repo_root, subject_source
-from _source import config, scan_excludes, sources
+from _source import config, sources
 
 GATE_ID = "provenance"
 RULE_NOTE = "docs/code/rules/build-provenance-from-one-place.md"
@@ -111,7 +111,7 @@ def _scan(text: str, line: tuple, block: list, quotes: list, keep: tuple) -> str
             j = i + len(quote)
             while j < n:
                 if text[j] == "\\" and quote != "`":
-                    out.append(text[j:j + 2])
+                    out.append(text[j : j + 2])
                     j += 2
                     continue
                 if text.startswith(quote, j):
@@ -162,16 +162,20 @@ def derives(source: Path) -> list[str]:
     missing = []
     runs_git = any(
         isinstance(node, ast.Call)
-        and any(isinstance(a, ast.Constant) and a.value == "git"
-                for arg in node.args
-                for a in (arg.elts if isinstance(arg, (ast.List, ast.Tuple)) else [arg]))
+        and any(
+            isinstance(a, ast.Constant) and a.value == "git"
+            for arg in node.args
+            for a in (arg.elts if isinstance(arg, (ast.List, ast.Tuple)) else [arg])
+        )
         for node in ast.walk(tree)
     )
     if not runs_git:
         missing.append("any call passing `git` as a command argument")
-    names = {n.id for n in ast.walk(tree) if isinstance(n, ast.Name)} | {
-        n.attr for n in ast.walk(tree) if isinstance(n, ast.Attribute)} | {
-        a.name for n in ast.walk(tree) if isinstance(n, ast.Import) for a in n.names}
+    names = (
+        {n.id for n in ast.walk(tree) if isinstance(n, ast.Name)}
+        | {n.attr for n in ast.walk(tree) if isinstance(n, ast.Attribute)}
+        | {a.name for n in ast.walk(tree) if isinstance(n, ast.Import) for a in n.names}
+    )
     if "subprocess" not in names:
         missing.append("any use of `subprocess`")
     return missing
@@ -232,11 +236,15 @@ def _fields_of(source: Path) -> list[str]:
         return []
     for node in ast.walk(tree):
         if isinstance(node, ast.Assign) and any(
-                isinstance(x, ast.Name) and x.id == "FIELDS" for x in node.targets):
+            isinstance(x, ast.Name) and x.id == "FIELDS" for x in node.targets
+        ):
             value = node.value
             if isinstance(value, (ast.Tuple, ast.List)):
-                return [e.value for e in value.elts
-                        if isinstance(e, ast.Constant) and isinstance(e.value, str)]
+                return [
+                    e.value
+                    for e in value.elts
+                    if isinstance(e, ast.Constant) and isinstance(e.value, str)
+                ]
     return []
 
 
@@ -252,8 +260,9 @@ def run(scan_root: Path, report_only: bool) -> int:
     # the listed version of this gate passed over it because the list did not
     # name it. Every tracked source under a declared component root is held.
     roots = tuple(r for r in cfg["component_roots"] if not r.startswith("_"))
-    discovered = [s for s in sources(scan_root, config(manifest), manifest)
-                  if s.startswith(roots)]
+    discovered = [
+        s for s in sources(scan_root, config(manifest), manifest) if s.startswith(roots)
+    ]
     # Build files are discovered too. Listing them missed every per-component
     # Makefile -- conformance/Makefile among them -- so a component's own build
     # file could derive provenance freely while the gate reported green over the
@@ -304,8 +313,11 @@ def run(scan_root: Path, report_only: bool) -> int:
         body = strip_prose(raw, path.suffix if path.suffix else ".mk")
         # One finding per FILE, not per primitive: `exec.Command("git", ...)`
         # trips two markers and is one defect.
-        hits = [m for m in forbidden
-                if re.search(rf"(?<![\w.]){re.escape(m)}(?![\w])", body)]
+        hits = [
+            m
+            for m in forbidden
+            if re.search(rf"(?<![\w.]){re.escape(m)}(?![\w])", body)
+        ]
         if hits and rel in permitted:
             used.add(rel)
         elif hits:
@@ -326,7 +338,7 @@ def run(scan_root: Path, report_only: bool) -> int:
         if rel in used or not (scan_root / rel).is_file():
             continue
         report.fail(
-            f"{rel}: declared a permitted use of git -- \"{reason[:70]}...\" -- "
+            f'{rel}: declared a permitted use of git -- "{reason[:70]}..." -- '
             f"but it no longer names git. The exemption outlived what earned it; "
             f"delete it"
         )
@@ -342,9 +354,11 @@ def run(scan_root: Path, report_only: bool) -> int:
         source=subject_source(scan_root),
         scan_root=scan_root,
     )
-    print(f"  one place: {one_place} | discovered sources: {len(discovered)} | "
-          f"build files: {len(builds)} | scripts they invoke: {len(reached)} | "
-          f"execution primitives refused: {len(forbidden)}")
+    print(
+        f"  one place: {one_place} | discovered sources: {len(discovered)} | "
+        f"build files: {len(builds)} | scripts they invoke: {len(reached)} | "
+        f"execution primitives refused: {len(forbidden)}"
+    )
     return report.finish(report_only=report_only)
 
 

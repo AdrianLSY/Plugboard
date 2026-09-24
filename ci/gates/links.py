@@ -137,7 +137,11 @@ def _content_lines(text: str) -> list[tuple[int, str]]:
                 fence = match.group(1)[0] * len(match.group(1))
                 continue
         else:
-            if match and match.group(1)[0] == fence[0] and len(match.group(1)) >= len(fence):
+            if (
+                match
+                and match.group(1)[0] == fence[0]
+                and len(match.group(1)) >= len(fence)
+            ):
                 fence = None
             continue
         kept.append((idx + 1, _mask_code_spans(line)))
@@ -290,7 +294,13 @@ def run(scan_root: Path, report_only: bool) -> int:
 
     subjects, from_index = _subjects(scan_root, manifest)
     anchor_cache: dict[Path, set[str]] = {}
-    counts = {"links": 0, "external": 0, "resolved": 0, MISSING_FILE: 0, MISSING_ANCHOR: 0}
+    counts = {
+        "links": 0,
+        "external": 0,
+        "resolved": 0,
+        MISSING_FILE: 0,
+        MISSING_ANCHOR: 0,
+    }
 
     for rel in subjects:
         source = scan_root / rel

@@ -55,11 +55,13 @@ BLIND_SPOT = "does not reach"
 def first_difference(want: Path, got: Path) -> str:
     a = want.read_text(encoding="utf-8").splitlines()
     b = got.read_text(encoding="utf-8").splitlines() if got.is_file() else []
-    for n, (x, y) in enumerate(zip(a, b), 1):
+    for n, (x, y) in enumerate(zip(a, b, strict=False), 1):
         if x != y:
             return f"line {n}: expected {x!r}, got {y!r}"
     if len(a) != len(b):
-        return f"line {min(len(a), len(b)) + 1}: expected {len(a)} line(s), got {len(b)}"
+        return (
+            f"line {min(len(a), len(b)) + 1}: expected {len(a)} line(s), got {len(b)}"
+        )
     return "no textual difference (permissions or encoding)"
 
 
@@ -70,10 +72,11 @@ def run(scan_root: Path, report_only: bool) -> int:
     gen_dir = scan_root / cfg["dir"]
     report = Report(GATE_ID, RULE_NOTE)
 
-    on_disk = {
-        p.relative_to(scan_root).as_posix()
-        for p in sorted(gen_dir.glob("*.py"))
-    } if gen_dir.is_dir() else set()
+    on_disk = (
+        {p.relative_to(scan_root).as_posix() for p in sorted(gen_dir.glob("*.py"))}
+        if gen_dir.is_dir()
+        else set()
+    )
 
     # (2) and (3): the declaration is complete in both directions.
     for rel in sorted(on_disk - set(declared)):
@@ -110,7 +113,9 @@ def run(scan_root: Path, report_only: bool) -> int:
             shutil.copytree(tree, work)
             done = subprocess.run(
                 [sys.executable, str(scan_root / rel), "--root", str(work), "--write"],
-                capture_output=True, text=True, cwd=str(scan_root),
+                capture_output=True,
+                text=True,
+                cwd=str(scan_root),
             )
             if done.returncode != 0:
                 report.fail(
@@ -139,8 +144,10 @@ def run(scan_root: Path, report_only: bool) -> int:
         source="manifest",
         scan_root=scan_root,
     )
-    print(f"  generators declared: {len(declared)} | on disk: {len(on_disk)} | "
-          f"pinned expectations compared: {len(set(declared) & on_disk)}")
+    print(
+        f"  generators declared: {len(declared)} | on disk: {len(on_disk)} | "
+        f"pinned expectations compared: {len(set(declared) & on_disk)}"
+    )
     return report.finish(report_only=report_only)
 
 

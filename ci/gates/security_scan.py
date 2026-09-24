@@ -49,7 +49,6 @@ RULE_NOTE = "docs/method/rules/declared-scanners-are-invoked.md"
 STEP = re.compile(r"^\s*-\s", re.M)
 
 
-
 def run(scan_root: Path, report_only: bool) -> int:
     manifest = load_manifest(repo_root())
     cfg = manifest["security_scan"]
@@ -64,8 +63,13 @@ def run(scan_root: Path, report_only: bool) -> int:
             f"{rel}: the security workflow ci/vault.json declares is absent, so "
             f"nothing scans either side on any trigger"
         )
-        report.coverage(covered=[], excluded=[], kind="declared scanner",
-                        source="manifest", scan_root=scan_root)
+        report.coverage(
+            covered=[],
+            excluded=[],
+            kind="declared scanner",
+            source="manifest",
+            scan_root=scan_root,
+        )
         return report.finish(report_only=report_only)
 
     body = path.read_text(encoding="utf-8")
@@ -111,8 +115,10 @@ def run(scan_root: Path, report_only: bool) -> int:
         source="manifest",
         scan_root=scan_root,
     )
-    print(f"  scanners invoked: {invoked} of {len(scanners)} | triggers required: "
-          f"{', '.join(required_triggers)}")
+    print(
+        f"  scanners invoked: {invoked} of {len(scanners)} | triggers required: "
+        f"{', '.join(required_triggers)}"
+    )
     return report.finish(report_only=report_only)
 
 
