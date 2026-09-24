@@ -5,7 +5,7 @@
     "hyperedges": [
       {
         "id": "outbound_proxy_tunnel_sidecar_flow",
-        "label": "Outbound proxy\u2013tunnel\u2013sidecar flow",
+        "label": "Outbound proxy–tunnel–sidecar flow",
         "nodes": [
           "docs_start_here_proxy",
           "docs_glossary_tunnel",
@@ -4911,7 +4911,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "rationale": "Adversarial, preimplementation fixtures tested against defective counterparts outrank either implementation\u2019s self tests on wire behavior.",
+      "rationale": "Adversarial, preimplementation fixtures tested against defective counterparts outrank either implementation’s self tests on wire behavior.",
       "community": 8,
       "norm_label": "conformance suite authority",
       "id": "docs_code_rules_conformance_suite_is_the_authority_conformance_suite_authority"
@@ -5146,7 +5146,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "rationale": "A change may not declare paths in its own tree out of scope. The prior manifest declaration froze the owner\u2019s specifications unconditionally; containment is decidable but weaker than immutability.",
+      "rationale": "A change may not declare paths in its own tree out of scope. The prior manifest declaration froze the owner’s specifications unconditionally; containment is decidable but weaker than immutability.",
       "community": 12,
       "norm_label": "d31 out-of-scope declaration containment",
       "id": "docs_decisions_d31_out_of_scope_containment_d31_out_of_scope_declaration_containment"
@@ -5285,7 +5285,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "rationale": "Tenant ownership belongs in projection keys and each mutation\u2019s acting-principal signature; relying on individual query filters or writer habits cannot structurally ensure isolation.",
+      "rationale": "Tenant ownership belongs in projection keys and each mutation’s acting-principal signature; relying on individual query filters or writer habits cannot structurally ensure isolation.",
       "community": 12,
       "norm_label": "d8 tenant scoping in keys and signatures",
       "id": "docs_decisions_d08_tenant_scoping_d8_tenant_scoping_in_keys_and_signatures"
@@ -5333,7 +5333,7 @@
       "id": "docs_decisions_d02_frame_shaped_tunnel_d2_frame_shaped_tunnel_exchange"
     },
     {
-      "label": "D22 \u2014 One repository",
+      "label": "D22 — One repository",
       "file_type": "rationale",
       "source_file": "docs/decisions/d22-one-repository.md",
       "source_location": "docs/decisions/d22-one-repository.md:7",
@@ -5343,7 +5343,7 @@
       "contributor": null,
       "rationale": "One schema should generate both components and eliminate unreviewed submodule pointer updates.",
       "community": 35,
-      "norm_label": "d22 \u2014 one repository",
+      "norm_label": "d22 — one repository",
       "id": "docs_decisions_d22_one_repository_d22"
     },
     {
@@ -5373,7 +5373,7 @@
       "id": "docs_decisions_d22_one_repository_no_submodules_ci_guard"
     },
     {
-      "label": "D19 \u2014 v1 tunnel transport",
+      "label": "D19 — v1 tunnel transport",
       "file_type": "rationale",
       "source_file": "docs/decisions/d19-tunnel-transport.md",
       "source_location": "docs/decisions/d19-tunnel-transport.md:7",
@@ -5383,7 +5383,7 @@
       "contributor": null,
       "rationale": "WebSocket over TLS on port 443 survives tenant egress controls; framing remains transport independent.",
       "community": 41,
-      "norm_label": "d19 \u2014 v1 tunnel transport",
+      "norm_label": "d19 — v1 tunnel transport",
       "id": "docs_decisions_d19_tunnel_transport_d19"
     },
     {
@@ -5413,7 +5413,7 @@
       "id": "docs_decisions_d19_tunnel_transport_transport_independent_framing"
     },
     {
-      "label": "D7 \u2014 Timeout taxonomy",
+      "label": "D7 — Timeout taxonomy",
       "file_type": "rationale",
       "source_file": "docs/decisions/d07-timeout-taxonomy.md",
       "source_location": "docs/decisions/d07-timeout-taxonomy.md:7",
@@ -5423,7 +5423,7 @@
       "contributor": null,
       "rationale": "Streams and watches may have no total duration; each observable bound needs its own owner and reason.",
       "community": 28,
-      "norm_label": "d7 \u2014 timeout taxonomy",
+      "norm_label": "d7 — timeout taxonomy",
       "id": "docs_decisions_d07_timeout_taxonomy_d7"
     },
     {
@@ -5453,7 +5453,7 @@
       "id": "docs_decisions_d07_timeout_taxonomy_unbounded_route_class"
     },
     {
-      "label": "D6 \u2014 Per-hop framing authority",
+      "label": "D6 — Per-hop framing authority",
       "file_type": "rationale",
       "source_file": "docs/decisions/d06-framing-authority.md",
       "source_location": "docs/decisions/d06-framing-authority.md:7",
@@ -5463,7 +5463,7 @@
       "contributor": null,
       "rationale": "Discard upstream framing declarations to prevent contradictory lengths and request smuggling.",
       "community": 21,
-      "norm_label": "d6 \u2014 per-hop framing authority",
+      "norm_label": "d6 — per-hop framing authority",
       "id": "docs_decisions_d06_framing_authority_d6"
     },
     {
@@ -5493,7 +5493,7 @@
       "id": "docs_decisions_d06_framing_authority_contradictory_framing_refusal"
     },
     {
-      "label": "D1 \u2014 Three transport primitives",
+      "label": "D1 — Three transport primitives",
       "file_type": "rationale",
       "source_file": "docs/decisions/d01-three-primitives.md",
       "source_location": "docs/decisions/d01-three-primitives.md:7",
@@ -5503,7 +5503,7 @@
       "contributor": null,
       "rationale": "Protocol-specific handlers diverged; most named protocols differ only in content type and method.",
       "community": 17,
-      "norm_label": "d1 \u2014 three transport primitives",
+      "norm_label": "d1 — three transport primitives",
       "id": "docs_decisions_d01_three_primitives_d1"
     },
     {
@@ -5546,7 +5546,7 @@
       "id": "docs_decisions_d01_three_primitives_quic_streams_datagrams"
     },
     {
-      "label": "D26 \u2014 WebTransport deferred",
+      "label": "D26 — WebTransport deferred",
       "file_type": "rationale",
       "source_file": "docs/decisions/d26-webtransport-deferred.md",
       "source_location": "docs/decisions/d26-webtransport-deferred.md:7",
@@ -5556,7 +5556,7 @@
       "contributor": null,
       "rationale": "Reserve independent streams and datagrams now so a future QUIC edge does not require redesign.",
       "community": 17,
-      "norm_label": "d26 \u2014 webtransport deferred",
+      "norm_label": "d26 — webtransport deferred",
       "id": "docs_decisions_d26_webtransport_deferred_d26"
     },
     {
@@ -5586,7 +5586,7 @@
       "id": "docs_decisions_d26_webtransport_deferred_deferred_quic_edge"
     },
     {
-      "label": "D9 \u2014 Domain ownership before issuance",
+      "label": "D9 — Domain ownership before issuance",
       "file_type": "rationale",
       "source_file": "docs/decisions/d09-domain-ownership.md",
       "source_location": "docs/decisions/d09-domain-ownership.md:7",
@@ -5596,7 +5596,7 @@
       "contributor": null,
       "rationale": "Unverified domain claims could produce publicly trusted certificates for names tenants do not own.",
       "community": 44,
-      "norm_label": "d9 \u2014 domain ownership before issuance",
+      "norm_label": "d9 — domain ownership before issuance",
       "id": "docs_decisions_d09_domain_ownership_d9"
     },
     {
@@ -5613,7 +5613,7 @@
       "id": "docs_decisions_d09_domain_ownership_claim_proof_issuance"
     },
     {
-      "label": "D5 \u2014 Dedicated proxied traffic path",
+      "label": "D5 — Dedicated proxied traffic path",
       "file_type": "rationale",
       "source_file": "docs/decisions/d05-pipeline-before-middleware.md",
       "source_location": "docs/decisions/d05-pipeline-before-middleware.md:7",
@@ -5623,7 +5623,7 @@
       "contributor": null,
       "rationale": "Framework middleware consumes or normalizes bytes before forwarding, breaking fidelity.",
       "community": 27,
-      "norm_label": "d5 \u2014 dedicated proxied traffic path",
+      "norm_label": "d5 — dedicated proxied traffic path",
       "id": "docs_decisions_d05_pipeline_before_middleware_d5"
     },
     {
@@ -5653,7 +5653,7 @@
       "id": "docs_decisions_d05_pipeline_before_middleware_admin_pipeline"
     },
     {
-      "label": "D18 \u2014 Generated binary frame codecs",
+      "label": "D18 — Generated binary frame codecs",
       "file_type": "rationale",
       "source_file": "docs/decisions/d18-frame-payload-encoding.md",
       "source_location": "docs/decisions/d18-frame-payload-encoding.md:7",
@@ -5663,7 +5663,7 @@
       "contributor": null,
       "rationale": "Field numbering preserves additive compatibility across language implementations.",
       "community": 21,
-      "norm_label": "d18 \u2014 generated binary frame codecs",
+      "norm_label": "d18 — generated binary frame codecs",
       "id": "docs_decisions_d18_frame_payload_encoding_d18"
     },
     {
@@ -5706,7 +5706,7 @@
       "id": "docs_decisions_d18_frame_payload_encoding_raw_body_octets"
     },
     {
-      "label": "D10 \u2014 Explicit cited carry-forward",
+      "label": "D10 — Explicit cited carry-forward",
       "file_type": "rationale",
       "source_file": "docs/decisions/d10-carry-forward.md",
       "source_location": "docs/decisions/d10-carry-forward.md:7",
@@ -5716,7 +5716,7 @@
       "contributor": null,
       "rationale": "Reuse a cited idea without inheriting broken implementation details.",
       "community": 34,
-      "norm_label": "d10 \u2014 explicit cited carry-forward",
+      "norm_label": "d10 — explicit cited carry-forward",
       "id": "docs_decisions_d10_carry_forward_d10"
     },
     {
@@ -5733,7 +5733,7 @@
       "id": "docs_decisions_d10_carry_forward_cited_prior_art_inventory"
     },
     {
-      "label": "D3 \u2014 Capability negotiation and refusal",
+      "label": "D3 — Capability negotiation and refusal",
       "file_type": "rationale",
       "source_file": "docs/decisions/d03-capability-negotiation.md",
       "source_location": "docs/decisions/d03-capability-negotiation.md:7",
@@ -5743,7 +5743,7 @@
       "contributor": null,
       "rationale": "Mixed sidecar versions must not silently change fidelity for identical requests.",
       "community": 33,
-      "norm_label": "d3 \u2014 capability negotiation and refusal",
+      "norm_label": "d3 — capability negotiation and refusal",
       "id": "docs_decisions_d03_capability_negotiation_d3"
     },
     {
@@ -5773,7 +5773,7 @@
       "id": "docs_decisions_d03_capability_negotiation_reasoned_refusal"
     },
     {
-      "label": "D27 \u2014 Observability before hot path",
+      "label": "D27 — Observability before hot path",
       "file_type": "rationale",
       "source_file": "docs/decisions/d27-observability-first.md",
       "source_location": "docs/decisions/d27-observability-first.md:7",
@@ -5783,7 +5783,7 @@
       "contributor": null,
       "rationale": "An emitted event without an attached consumer provides no operational visibility.",
       "community": 19,
-      "norm_label": "d27 \u2014 observability before hot path",
+      "norm_label": "d27 — observability before hot path",
       "id": "docs_decisions_d27_observability_first_d27"
     },
     {
@@ -9393,9 +9393,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "readme_plugboard",
       "community": 5,
-      "norm_label": "plugboard dynamic ingress"
+      "norm_label": "plugboard dynamic ingress",
+      "id": "readme_plugboard"
     },
     {
       "label": "Plugboard proxy",
@@ -9406,9 +9406,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "readme_plugboard_proxy",
       "community": 5,
-      "norm_label": "plugboard proxy"
+      "norm_label": "plugboard proxy",
+      "id": "readme_plugboard_proxy"
     },
     {
       "label": "Telephone sidecar",
@@ -9419,9 +9419,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "readme_telephone_sidecar",
       "community": 4,
-      "norm_label": "telephone sidecar"
+      "norm_label": "telephone sidecar",
+      "id": "readme_telephone_sidecar"
     },
     {
       "label": "Persistent outbound tunnel",
@@ -9433,9 +9433,9 @@
       "author": null,
       "contributor": null,
       "rationale": "The sidecar dials out so tenant backends need no inbound port or public IP.",
-      "id": "readme_outbound_tunnel",
       "community": 4,
-      "norm_label": "persistent outbound tunnel"
+      "norm_label": "persistent outbound tunnel",
+      "id": "readme_outbound_tunnel"
     },
     {
       "label": "Tenant-scoped mount point",
@@ -9446,9 +9446,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "readme_mount_point",
       "community": 5,
-      "norm_label": "tenant-scoped mount point"
+      "norm_label": "tenant-scoped mount point",
+      "id": "readme_mount_point"
     },
     {
       "label": "Permanent asymmetric version skew",
@@ -9460,9 +9460,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Tenants upgrade sidecars independently of the proxy, so the wire schema must anticipate old clients.",
-      "id": "readme_version_skew",
       "community": 5,
-      "norm_label": "permanent asymmetric version skew"
+      "norm_label": "permanent asymmetric version skew",
+      "id": "readme_version_skew"
     },
     {
       "label": "Versioned wire schema",
@@ -9474,9 +9474,9 @@
       "author": null,
       "contributor": null,
       "rationale": "The wire schema is treated as the only irreversible artifact; work is ordered by reversibility.",
-      "id": "readme_wire_schema",
       "community": 5,
-      "norm_label": "versioned wire schema"
+      "norm_label": "versioned wire schema",
+      "id": "readme_wire_schema"
     },
     {
       "label": "Three protocol primitives",
@@ -9488,9 +9488,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Most requested protocols differ only in method or content type; protocol fidelity matters more than protocol-specific code.",
-      "id": "readme_three_primitives",
       "community": 5,
-      "norm_label": "three protocol primitives"
+      "norm_label": "three protocol primitives",
+      "id": "readme_three_primitives"
     },
     {
       "label": "Frame-shaped streaming tunnel",
@@ -9502,9 +9502,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Frames with stream IDs avoid whole-message aggregation and head-of-line blocking.",
-      "id": "readme_frame_shaped_tunnel",
       "community": 5,
-      "norm_label": "frame-shaped streaming tunnel"
+      "norm_label": "frame-shaped streaming tunnel",
+      "id": "readme_frame_shaped_tunnel"
     },
     {
       "label": "Refuse, never degrade",
@@ -9516,9 +9516,9 @@
       "author": null,
       "contributor": null,
       "rationale": "A capability mismatch must yield an explicit refusal so round-robin selection does not make identical requests behave differently.",
-      "id": "readme_refuse_never_degrade",
       "community": 5,
-      "norm_label": "refuse, never degrade"
+      "norm_label": "refuse, never degrade",
+      "id": "readme_refuse_never_degrade"
     },
     {
       "label": "Contract-first development",
@@ -9530,9 +9530,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Adversarial conformance fixtures precede the implementation they gate.",
-      "id": "readme_contract_first",
       "community": 5,
-      "norm_label": "contract-first development"
+      "norm_label": "contract-first development",
+      "id": "readme_contract_first"
     },
     {
       "label": "Tenant scoping",
@@ -9544,9 +9544,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Tenant keys and acting-principal signatures structurally enforce isolation.",
-      "id": "readme_tenant_scoping",
       "community": 5,
-      "norm_label": "tenant scoping"
+      "norm_label": "tenant scoping",
+      "id": "readme_tenant_scoping"
     },
     {
       "label": "Documentation vault gates",
@@ -9558,9 +9558,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Documentation claims are mechanically checked because a rule without a gate cannot be relied upon.",
-      "id": "readme_vault_gates",
       "community": 5,
-      "norm_label": "documentation vault gates"
+      "norm_label": "documentation vault gates",
+      "id": "readme_vault_gates"
     },
     {
       "label": "Authority precedence",
@@ -9571,9 +9571,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "readme_authority_precedence",
       "community": 5,
-      "norm_label": "authority precedence"
+      "norm_label": "authority precedence",
+      "id": "readme_authority_precedence"
     },
     {
       "label": "Python quality tooling",
@@ -9585,9 +9585,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Optional pinned quality tools format, lint, and type-check repository Python tooling.",
-      "id": "readme_python_quality_tooling",
       "community": 9,
-      "norm_label": "python quality tooling"
+      "norm_label": "python quality tooling",
+      "id": "readme_python_quality_tooling"
     },
     {
       "label": "Component test workflow",
@@ -9598,9 +9598,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "_github_workflows_test_component_test_workflow",
       "community": 9,
-      "norm_label": "component test workflow"
+      "norm_label": "component test workflow",
+      "id": "_github_workflows_test_component_test_workflow"
     },
     {
       "label": "Python tooling CI job",
@@ -9611,9 +9611,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "_github_workflows_test_python_tooling_job",
       "community": 9,
-      "norm_label": "python tooling ci job"
+      "norm_label": "python tooling ci job",
+      "id": "_github_workflows_test_python_tooling_job"
     },
     {
       "label": "Fast test job",
@@ -9624,9 +9624,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "_github_workflows_test_fast_job",
       "community": 9,
-      "norm_label": "fast test job"
+      "norm_label": "fast test job",
+      "id": "_github_workflows_test_fast_job"
     },
     {
       "label": "Integration test job",
@@ -9637,9 +9637,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "_github_workflows_test_integration_job",
       "community": 9,
-      "norm_label": "integration test job"
+      "norm_label": "integration test job",
+      "id": "_github_workflows_test_integration_job"
     },
     {
       "label": "Component lint job",
@@ -9650,9 +9650,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "_github_workflows_test_lint_job",
       "community": 9,
-      "norm_label": "component lint job"
+      "norm_label": "component lint job",
+      "id": "_github_workflows_test_lint_job"
     },
     {
       "label": "Expected-outcome gating tests",
@@ -9663,9 +9663,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "_github_workflows_test_gating_job",
       "community": 9,
-      "norm_label": "expected-outcome gating tests"
+      "norm_label": "expected-outcome gating tests",
+      "id": "_github_workflows_test_gating_job"
     },
     {
       "label": "Conformance build job",
@@ -9676,9 +9676,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "_github_workflows_test_conformance_build_job",
       "community": 9,
-      "norm_label": "conformance build job"
+      "norm_label": "conformance build job",
+      "id": "_github_workflows_test_conformance_build_job"
     },
     {
       "label": "Python gate conventions",
@@ -9690,9 +9690,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Gate modules use the standard library, report all violations and coverage, and accept common test flags.",
-      "id": "docs_code_languages_python_python_conventions",
       "community": 9,
-      "norm_label": "python gate conventions"
+      "norm_label": "python gate conventions",
+      "id": "docs_code_languages_python_python_conventions"
     },
     {
       "label": "Passing-run gate coverage",
@@ -9704,9 +9704,9 @@
       "author": null,
       "contributor": null,
       "rationale": "A green gate must state what roots and subjects it actually covered.",
-      "id": "docs_code_languages_python_gate_coverage",
       "community": 9,
-      "norm_label": "passing-run gate coverage"
+      "norm_label": "passing-run gate coverage",
+      "id": "docs_code_languages_python_gate_coverage"
     },
     {
       "label": "Python quality toolchain",
@@ -9718,9 +9718,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Black formats, Ruff checks errors and imports, and basedpyright checks types; versions are pinned and configuration has an explicit scope.",
-      "id": "docs_code_languages_python_quality_toolchain",
       "community": 9,
-      "norm_label": "python quality toolchain"
+      "norm_label": "python quality toolchain",
+      "id": "docs_code_languages_python_quality_toolchain"
     },
     {
       "label": "Standard library only CI gate modules",
@@ -9732,9 +9732,9 @@
       "author": null,
       "contributor": null,
       "rationale": "A gate with an undeclared dependency can stop running without failing.",
-      "id": "docs_code_languages_python_standard_library_only",
       "community": 9,
-      "norm_label": "standard library only ci gate modules"
+      "norm_label": "standard library only ci gate modules",
+      "id": "docs_code_languages_python_standard_library_only"
     },
     {
       "label": "All violations in one run",
@@ -9746,9 +9746,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Collecting all findings prevents slow one-at-a-time feedback.",
-      "id": "docs_code_languages_python_all_violations_in_one_run",
       "community": 9,
-      "norm_label": "all violations in one run"
+      "norm_label": "all violations in one run",
+      "id": "docs_code_languages_python_all_violations_in_one_run"
     },
     {
       "label": "Common --root and --report-only gate flags",
@@ -9760,9 +9760,9 @@
       "author": null,
       "contributor": null,
       "rationale": "A gate that cannot run against a deliberately broken tree has not been demonstrated to fail.",
-      "id": "docs_code_languages_python_common_gate_flags",
       "community": 9,
-      "norm_label": "common --root and --report-only gate flags"
+      "norm_label": "common --root and --report-only gate flags",
+      "id": "docs_code_languages_python_common_gate_flags"
     },
     {
       "label": "Credential scan of tree and review range",
@@ -9774,9 +9774,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Secrets removed from the working tree remain disclosed in branch history, so both tracked content and changed blobs are scanned.",
-      "id": "docs_code_rules_no_credential_in_tree_or_history_credential_scan",
       "community": 26,
-      "norm_label": "credential scan of tree and review range"
+      "norm_label": "credential scan of tree and review range",
+      "id": "docs_code_rules_no_credential_in_tree_or_history_credential_scan"
     },
     {
       "label": "Combined-diff merge scan",
@@ -9788,9 +9788,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Conflict resolutions may introduce credentials present in no parent and need a combined-diff scan.",
-      "id": "docs_code_rules_no_credential_in_tree_or_history_merge_commit_scan",
       "community": 26,
-      "norm_label": "combined-diff merge scan"
+      "norm_label": "combined-diff merge scan",
+      "id": "docs_code_rules_no_credential_in_tree_or_history_merge_commit_scan"
     },
     {
       "label": "Dated credential scan suppression",
@@ -9802,9 +9802,9 @@
       "author": null,
       "contributor": null,
       "rationale": "A per-line escape is auditable only with a past revocation date and printed path, line, shape, and reason.",
-      "id": "docs_code_rules_no_credential_in_tree_or_history_scoped_suppression",
       "community": 26,
-      "norm_label": "dated credential scan suppression"
+      "norm_label": "dated credential scan suppression",
+      "id": "docs_code_rules_no_credential_in_tree_or_history_scoped_suppression"
     },
     {
       "label": "Prefix-anchored credential detection",
@@ -9816,9 +9816,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Deliberate false negatives keep the gate usable and avoid an entropy heuristic that would be disabled.",
-      "id": "docs_code_rules_no_credential_in_tree_or_history_prefix_anchored_detection",
       "community": 26,
-      "norm_label": "prefix-anchored credential detection"
+      "norm_label": "prefix-anchored credential detection",
+      "id": "docs_code_rules_no_credential_in_tree_or_history_prefix_anchored_detection"
     },
     {
       "label": "Non-disclosing credential findings",
@@ -9830,9 +9830,9 @@
       "author": null,
       "contributor": null,
       "rationale": "A scanner must not echo matched secrets into build logs.",
-      "id": "docs_code_rules_no_credential_in_tree_or_history_non_disclosing_findings",
       "community": 26,
-      "norm_label": "non-disclosing credential findings"
+      "norm_label": "non-disclosing credential findings",
+      "id": "docs_code_rules_no_credential_in_tree_or_history_non_disclosing_findings"
     },
     {
       "label": "Failure messages name the consequence",
@@ -9844,9 +9844,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Human-facing gate failures should identify location and consequence in a sentence; this is an unenforced preference because linguistic quality is not decidable.",
-      "id": "docs_code_rules_preferences_failure_messages_are_sentences_failure_messages_name_the_consequence",
       "community": 32,
-      "norm_label": "failure messages name the consequence"
+      "norm_label": "failure messages name the consequence",
+      "id": "docs_code_rules_preferences_failure_messages_are_sentences_failure_messages_name_the_consequence"
     },
     {
       "label": "Pinned Python quality dependencies",
@@ -9857,9 +9857,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "requirements_dev_python_quality_dependencies",
       "community": 9,
-      "norm_label": "pinned python quality dependencies"
+      "norm_label": "pinned python quality dependencies",
+      "id": "requirements_dev_python_quality_dependencies"
     },
     {
       "label": "Black formatter 26.5.1",
@@ -9870,9 +9870,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "requirements_dev_black",
       "community": 9,
-      "norm_label": "black formatter 26.5.1"
+      "norm_label": "black formatter 26.5.1",
+      "id": "requirements_dev_black"
     },
     {
       "label": "Ruff linter 0.16.8",
@@ -9883,9 +9883,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "requirements_dev_ruff",
       "community": 9,
-      "norm_label": "ruff linter 0.16.8"
+      "norm_label": "ruff linter 0.16.8",
+      "id": "requirements_dev_ruff"
     },
     {
       "label": "basedpyright type checker 1.40.1",
@@ -9896,9 +9896,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "requirements_dev_basedpyright",
       "community": 9,
-      "norm_label": "basedpyright type checker 1.40.1"
+      "norm_label": "basedpyright type checker 1.40.1",
+      "id": "requirements_dev_basedpyright"
     },
     {
       "label": "Python quality tool configuration",
@@ -9909,9 +9909,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "pyproject_python_quality_configuration",
       "community": 9,
-      "norm_label": "python quality tool configuration"
+      "norm_label": "python quality tool configuration",
+      "id": "pyproject_python_quality_configuration"
     },
     {
       "label": "Black Python 3.12 configuration",
@@ -9922,9 +9922,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "pyproject_black",
       "community": 9,
-      "norm_label": "black python 3.12 configuration"
+      "norm_label": "black python 3.12 configuration",
+      "id": "pyproject_black"
     },
     {
       "label": "Ruff Python 3.12 configuration",
@@ -9935,9 +9935,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "pyproject_ruff",
       "community": 9,
-      "norm_label": "ruff python 3.12 configuration"
+      "norm_label": "ruff python 3.12 configuration",
+      "id": "pyproject_ruff"
     },
     {
       "label": "basedpyright CI tooling configuration",
@@ -9948,9 +9948,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "pyproject_basedpyright",
       "community": 9,
-      "norm_label": "basedpyright ci tooling configuration"
+      "norm_label": "basedpyright ci tooling configuration",
+      "id": "pyproject_basedpyright"
     },
     {
       "label": "Excluded CI fixture trees",
@@ -9961,9 +9961,63 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "pyproject_excluded_fixtures",
       "community": 9,
-      "norm_label": "excluded ci fixture trees"
+      "norm_label": "excluded ci fixture trees",
+      "id": "pyproject_excluded_fixtures"
+    },
+    {
+      "label": "Graphify refresh before a PR",
+      "file_type": "concept",
+      "source_file": "docs/code/reviewing.md",
+      "source_location": "docs/code/reviewing.md:56",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "community": 5,
+      "rationale": "An agent updates structural and document-semantic relationships before publishing a PR whose indexed sources changed.",
+      "id": "docs_code_reviewing_graphify_refresh",
+      "norm_label": "graphify refresh before a pr"
+    },
+    {
+      "label": "PR description requirement",
+      "file_type": "concept",
+      "source_file": "docs/code/reviewing.md",
+      "source_location": "docs/code/reviewing.md:79",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "community": 5,
+      "rationale": "The reviewer needs to know what changed and why before assessing the risks.",
+      "id": "docs_code_reviewing_pr_description",
+      "norm_label": "pr description requirement"
+    },
+    {
+      "label": "Pull request description",
+      "file_type": "concept",
+      "source_file": ".github/pull_request_template.md",
+      "source_location": ".github/pull_request_template.md:1",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "community": 5,
+      "id": "_github_pull_request_template_description",
+      "norm_label": "pull request description"
+    },
+    {
+      "label": "PR description check",
+      "file_type": "concept",
+      "source_file": ".github/workflows/pr.yml",
+      "source_location": ".github/workflows/pr.yml:49",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "community": 5,
+      "id": "_github_workflows_pr_description_check",
+      "norm_label": "pr description check"
     }
   ],
   "links": [
@@ -12970,6 +13024,26 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
+      "source_file": "CONTRIBUTING.md",
+      "source_location": "CONTRIBUTING.md:70",
+      "weight": 1.0,
+      "source": "contributing_pull_request_policy",
+      "target": "docs_code_reviewing_pr_description"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "AGENTS.md",
+      "source_location": "AGENTS.md:67",
+      "weight": 1.0,
+      "source": "agents_agent_router",
+      "target": "docs_code_reviewing_graphify_refresh"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
       "source_file": "AGENTS.md",
       "source_location": "AGENTS.md:53",
       "weight": 1.0,
@@ -13025,6 +13099,16 @@
       "weight": 1.0,
       "source": "agents_agent_router",
       "target": "readme_version_skew"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CLAUDE.md",
+      "source_location": "CLAUDE.md:67",
+      "weight": 1.0,
+      "source": "claude_claude_router",
+      "target": "docs_code_reviewing_graphify_refresh"
     },
     {
       "relation": "references",
@@ -13131,6 +13215,16 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": ".github/pull_request_template.md",
+      "source_location": ".github/pull_request_template.md:1",
+      "weight": 1.0,
+      "source": "_github_pull_request_template_pull_request_template",
+      "target": "_github_pull_request_template_description"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".github/pull_request_template.md",
       "source_location": ".github/pull_request_template.md:3",
       "weight": 1.0,
       "source": "_github_pull_request_template_pull_request_template",
@@ -13185,6 +13279,16 @@
       "weight": 1.0,
       "source": "_github_workflows_security_security_workflow",
       "target": "_github_workflows_security_go_vulnerability_scan"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".github/workflows/pr.yml",
+      "source_location": ".github/workflows/pr.yml:49",
+      "weight": 1.0,
+      "source": "_github_workflows_pr_pull_request_checks",
+      "target": "_github_workflows_pr_description_check"
     },
     {
       "relation": "references",
@@ -15485,6 +15589,26 @@
       "weight": 1.0,
       "source": "docs_code_reviewing_document",
       "target": "docs_code_reviewing_change_description_questions"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/code/reviewing.md",
+      "source_location": "docs/code/reviewing.md:56",
+      "weight": 1.0,
+      "source": "docs_code_reviewing_document",
+      "target": "docs_code_reviewing_graphify_refresh"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/code/reviewing.md",
+      "source_location": "docs/code/reviewing.md:79",
+      "weight": 1.0,
+      "source": "docs_code_reviewing_document",
+      "target": "docs_code_reviewing_pr_description"
     },
     {
       "relation": "references",
@@ -21405,12 +21529,32 @@
       "weight": 1.0,
       "source": "pyproject_basedpyright",
       "target": "pyproject_excluded_fixtures"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/code/reviewing.md",
+      "source_location": "docs/code/reviewing.md:92",
+      "weight": 1.0,
+      "source": "docs_code_reviewing_pr_description",
+      "target": "_github_pull_request_template_description"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": ".github/workflows/pr.yml",
+      "source_location": ".github/workflows/pr.yml:49",
+      "weight": 1.0,
+      "source": "_github_workflows_pr_description_check",
+      "target": "_github_pull_request_template_description"
     }
   ],
   "hyperedges": [
     {
       "id": "outbound_proxy_tunnel_sidecar_flow",
-      "label": "Outbound proxy\u2013tunnel\u2013sidecar flow",
+      "label": "Outbound proxy–tunnel–sidecar flow",
       "nodes": [
         "docs_start_here_proxy",
         "docs_glossary_tunnel",
@@ -21504,5 +21648,5 @@
       "source_file": "docs/why/what-it-is.md"
     }
   ],
-  "built_at_commit": "f5fef470bee954e6d0dc5c59d20f7bcb8a0371c3"
+  "built_at_commit": "81265ad9156c8c9c1a57a40eb184951fd40b583d"
 }

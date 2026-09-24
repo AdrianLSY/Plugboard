@@ -53,6 +53,23 @@ be while the exemption stands, is the refusal itself taking effect.
 solo-maintainer project with outside contributors, because unreviewable PRs are either merged unread or
 abandoned — and both happened in the reference.
 
+### Graphify refresh
+
+When asked to create a PR, compare the branch with its base. If the branch changes code or documents
+that Graphify indexes (see [`.graphifyignore`](../../.graphifyignore)), run an agent-backed incremental
+Graphify update after the source edits and before opening the PR. In Claude Code, use
+`/graphify . --update`; in Codex, perform the equivalent structural and semantic extraction with the
+agent. The CLI command `graphify update .` only rebuilds structural relationships and does not refresh
+the document semantics. Skip the refresh when the branch changes only paths outside Graphify's corpus.
+
+Inspect changes to [`graph.json`](../../graphify-out/graph.json),
+[`graph.html`](../../graphify-out/graph.html), and
+[`GRAPH_REPORT.md`](../../graphify-out/GRAPH_REPORT.md) for unexplained losses or unrelated churn.
+Commit any refreshed outputs on the PR branch with the source changes, then run `make check` and the
+normal PR preflight. State in the PR's Tests answer whether the refresh ran, produced no output change,
+or was skipped because no indexed source changed. If semantic extraction cannot be completed, report
+the blocker before publishing the PR.
+
 ### The change-description questions
 
 The canonical enumeration. Five questions, cited by number; every artifact that asks for a change
