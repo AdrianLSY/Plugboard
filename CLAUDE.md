@@ -18,6 +18,7 @@ gitignored and **does not work**; cite it with a `file:line` or not at all, and 
 make check                                    # every vault gate; CI runs this one command
 openspec list                                 # task progress
 openspec validate rebuild-plugboard --strict  # gate for any openspec/ commit
+python3 ci/pr/create.py --title "..." --body-file .scratch/pr-body.md  # check, push, open PR
 ```
 
 Work tasks with `/opsx:apply`, revise the plan with `/opsx:update`; never hand-edit checkboxes while
@@ -62,3 +63,7 @@ that enforces it. A first draft that violates one fails the build rather than a 
 
 [reviewing](docs/code/reviewing.md) · [testing](docs/code/testing.md) ·
 [documentation rules](docs/method/documentation-rules.md)
+
+For a PR, fill the repository [template](.github/pull_request_template.md) and use the command
+above, not a direct `gh pr create` or a generic skill's body template. The command checks the body
+and changed paths before it pushes or opens the PR; CI repeats the checks.
