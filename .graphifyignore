@@ -2,3 +2,4 @@ ci/
 .agents/
 .claude/
 openspec/
+graphify-out/
