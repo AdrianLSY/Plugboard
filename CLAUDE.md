@@ -64,6 +64,7 @@ that enforces it. A first draft that violates one fails the build rather than a 
 [reviewing](docs/code/reviewing.md) · [testing](docs/code/testing.md) ·
 [documentation rules](docs/method/documentation-rules.md)
 
-For a PR, fill the repository [template](.github/pull_request_template.md) and use the command
-above, not a direct `gh pr create` or a generic skill's body template. The command checks the body
-and changed paths before it pushes or opens the PR; CI repeats the checks.
+Before creating a PR, follow the [Graphify refresh](docs/code/reviewing.md#graphify-refresh) for
+indexed changes. Then fill the repository [template](.github/pull_request_template.md) and use the
+command above, not a direct `gh pr create` or a generic skill's body template. The command checks the
+body and changed paths before it pushes or opens the PR; CI repeats the checks.
