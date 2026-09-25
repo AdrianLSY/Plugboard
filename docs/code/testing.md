@@ -22,6 +22,11 @@ For any new test, the author states: *name a one-line change to the code under t
 would not catch.* If the answer is "none", good. If the answer is easy, the test is weak. This is the
 probe that surfaced most of the audit's test findings, and it is cheap to apply in review.
 
+Whether a stand-in rather than the real subject can carry a verification is settled by one criterion
+the plan applies, stated once in
+[the change's design register](../../openspec/changes/rebuild-plugboard/design.md#staged-delivery-and-the-task-that-closes-each-stage)
+rather than here.
+
 ## Conformance fixtures, seeded adversarially
 
 The suite starts from cases that break naive implementations, **written before the implementation**:

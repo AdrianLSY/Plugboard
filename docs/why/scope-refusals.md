@@ -56,14 +56,15 @@ Encrypted Client Hello (RFC 9849) encrypts the single field such a mode routes o
 
 ### Full gRPC at the ingress
 
-As distinct from gRPC-Web, which *is* in scope. The gRPC-Web ↔ gRPC bridge belongs **in the sidecar**,
-the only component adjacent to an HTTP/2 backend — the same position Envoy's `grpc_web` filter
-occupies. The reason first given for the refusal — `grpc-status` travels as an HTTP trailer even on
-success, and `Plug.Conn` has no trailers API — was retired by
-[D16](../decisions/d16-http2-to-clients.md), which replaces the Plug edge with a contract-speaking
-terminator. What stands is a refusal of **scope**: no section of the plan builds an ingress gRPC
-path, and whether it survives on any other ground is carried as an open question in
-[the change's design register](../../openspec/changes/rebuild-plugboard/design.md).
+As distinct from gRPC-Web, which *is* in scope. The gRPC-Web ↔ gRPC bridge belongs **in the
+sidecar**, the only component adjacent to an HTTP/2 backend — the same position Envoy's `grpc_web`
+filter occupies. The reason first given for the refusal — `grpc-status` travels as an HTTP trailer
+even on success, and `Plug.Conn` has no trailers API — was retired by
+[D16](../decisions/d16-http2-to-clients.md) for any deployment fronted by the contract-speaking
+terminator it places in v1, the proxy-alone edge remaining a defined topology. What stands is a
+refusal of **scope**: no section of the plan builds an ingress gRPC path, and whether it survives on
+any other ground is carried as an open question in [the change's design
+register](../../openspec/changes/rebuild-plugboard/design.md).
 
 ### Caching
 

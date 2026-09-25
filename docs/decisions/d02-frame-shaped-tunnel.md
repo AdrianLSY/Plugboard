@@ -11,8 +11,9 @@ carrying a whole request or a whole response. That forecloses any design in whic
 one unit on the wire, and with it the correlation-id bookkeeping such a design needs.
 
 The practical consequence is that the frame vocabulary is fixed up front and larger than v1 uses:
-every frame type is reserved at v1 even where nothing implements it, and every frame participates in
-a credit window even where the window is effectively infinite. Reserving costs nothing now; adding a
+every frame type is reserved at v1 even where nothing implements it, and every body octet
+participates in both credit windows even where a window is effectively infinite; the liveness exchange
+and the datagram class are exempt from credit. Reserving costs nothing now; adding a
 frame type after sidecars are deployed splits the fleet, which is the asymmetry the whole contract is
 organised around. One thing is deliberately still open, and a reader should know it before treating
 the vocabulary as final: the register records a standards-track alternative — capsule framing from

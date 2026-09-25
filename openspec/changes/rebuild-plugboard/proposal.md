@@ -28,7 +28,7 @@ Documented refusals, not omissions:
 - **NTLM / Negotiate to tenant backends.** Connection-bound authentication cannot work through a multiplexed tunnel.
 - **TLS passthrough.** Encrypted Client Hello encrypts the single field such a mode routes on.
 - **WebTransport in v1.** Designed for and reserved in the contract, shipped later as a separate HTTP/3 terminator that speaks the wire contract. Not a reason to make the tunnel QUIC.
-- **Full gRPC at the ingress** in this change — no section of `tasks.md` builds an ingress gRPC path, and the gRPC-Web ↔ gRPC bridge sits in the sidecar, the one component adjacent to an HTTP/2 backend. The reason first given (`grpc-status` travels as a trailer even on success, which a Plug-based edge cannot express) was retired by D16, which replaces that edge with a contract-speaking terminator; whether the refusal survives on another ground is carried in `design.md` — Open Questions rather than re-argued here.
+- **Full gRPC at the ingress** in this change — no section of `tasks.md` builds an ingress gRPC path, and the gRPC-Web ↔ gRPC bridge sits in the sidecar, the one component adjacent to an HTTP/2 backend. The reason first given (`grpc-status` travels as a trailer even on success, which a Plug-based edge cannot express) was retired by D16 for any deployment fronted by the contract-speaking terminator it places in v1, the proxy-alone edge remaining a defined topology; whether the refusal survives on another ground is carried in `design.md` — Open Questions rather than re-argued here.
 
 ## Capabilities
 
@@ -61,11 +61,11 @@ Named here because eleven specs already lean on them, so their absence is a know
 
 ### Modified Capabilities
 
-None. This is a greenfield repository; `openspec/specs/` is empty and the reference system carries no specs.
+None. `openspec/specs/` holds only the `docs/code-standards` and `docs/knowledge-base` specifications archived on 2026-09-12, which this change does not modify, and the reference system carries no specs.
 
 ## Impact
 
-- **New repository layout**: contract, proxy, sidecar, conformance suite, and docs in one repo. No submodules.
+- **New repository layout**: contract, proxy, sidecar, terminator, conformance suite, and docs in one repo. No submodules.
 - **Runtime decision**: Elixir/Phoenix for the proxy, Go for the sidecar, and a separate Go edge terminator that D16 places in v1 — it terminates HTTP/2 from clients first and gains HTTP/3 and WebTransport when those ship. Recorded with its reversal history in `design.md` — an earlier Rust recommendation was overturned when adversarial review found the recommended Rust QUIC stack cannot do WebTransport at all.
 - **Durable store**: PostgreSQL for the proxy installation, recorded as D30 in `design.md`. Carried forward from the reference rather than chosen, and so never written down until now — the terminal-mount invariant D10 calls load-bearing is enforced by the store itself, which is what makes the choice structural rather than operational.
 - **Known runtime gap**: Bandit implements neither HTTP/3 nor RFC 8441 extended CONNECT. The second bites without WebTransport — behind an h2-terminating CDN, WebSocket upgrades arrive as extended CONNECT and fail. Tracked in `design.md` as the strongest surviving argument against the runtime choice.

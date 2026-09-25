@@ -57,7 +57,7 @@ The protocol surface collapses. Nine of the twelve named protocols are one primi
 The unit on the wire is a frame carrying a stream id, not a message carrying a whole request or response.
 
 ```
-  v1 frame vocabulary -- ALL reserved at v1, even where unimplemented
+  v1 stream-scoped frame vocabulary -- ALL reserved at v1, even where unimplemented
 
     REQ_HEAD       method, target, header pairs, capability assertions
     BODY_DATA      stream id, sequence, opaque octets
@@ -69,7 +69,7 @@ The unit on the wire is a frame carrying a stream id, not a message carrying a w
     DATAGRAM       unreliable class, drop-on-overflow  (v1: reserved, unused)
 ```
 
-Every frame header carries a stream id and participates in a credit window, even where v1 grants an effectively infinite window. Reserving a frame type costs nothing; adding one later splits the fleet.
+Every frame header carries a stream id (tunnel-scoped kinds carry the reserved tunnel-scoped identifier of task 8.1), and every body octet participates in both credit windows, even where v1 grants an effectively infinite window. The liveness exchange and the datagram class are exempt from credit (`tunnel/wire-contract`). Reserving a frame type costs nothing; adding one later splits the fleet.
 
 *Alternative considered — and strongly recommended for evaluation during implementation:* adopt `draft-ietf-webtrans-http2` capsule framing verbatim instead of a bespoke vocabulary. Its `WT_STREAM` capsules already provide stream ids, FIN, reset with application error codes, session and per-stream flow control, and a datagram class whose discard-on-overflow semantics are specified (§6.11: *"The data in DATAGRAM capsules is not subject to flow control. The receiver MAY discard this data if it does not have sufficient space to buffer it."*). It is designed for exactly this shape — WebTransport streams and datagrams multiplexed inside one reliable ordered bidirectional stream — and it comes with a standards conformance target, which pairs well with an already-decided conformance suite. Its WG Last Call opened on 2026-03-09 against revision 14 and **closed on 2026-03-29**; 2026-07-06 is revision 15's posting date, which this entry previously mistook for the Last Call. Verified against the datatracker's single `changed_state` event and the chair's Last Call announcement on the webtransport list. The document has sat in that state since, unadvanced, with `rfc_number` null — so the standing to weigh is a draft whose Last Call concluded five months ago and which has not moved, not one under active review. The reason it is not yet the decision: no publicly available HTTP/2 WebTransport server library exists in any language, so adopting it means implementing draft-conformant capsule framing by hand. Resolve during `tunnel/wire-contract`.
 
@@ -131,13 +131,13 @@ A v1 blocker rather than a v2 feature. Layering ACME onto a first-come unverifie
 
 Roughly sixty items from the reference are ported deliberately, each with a citation, listed in `docs/`. The load-bearing one: the terminal-mount invariant is enforced by two complementary Postgres triggers taking `FOR UPDATE` on the parent, and that invariant is *what makes* longest-prefix ETS matching correct with no trie, no sort and no tie-break. The coupling is recorded nowhere in the reference and is the single thing a naive rebuild would most likely lose.
 
-Deliberately **not** carried forward: the correlation-id machinery. Keep the idea (one logical exchange, independently multiplexed); delete the implementation — D2's stream ids subsume it, along with its unbounded `waiting_callers` growth and its late-reply mailbox pollution.
+Deliberately **not** carried forward: the correlation-id machinery. Keep the idea (one logical exchange, independently multiplexed); delete the implementation — D2's stream ids subsume its multiplexing and reply-matching role, along with its unbounded `waiting_callers` growth and its late-reply mailbox pollution. The correlation identifier the request head carries (task 8.5; `tunnel/wire-contract` *Exchanges carry a correlation identifier distinct from the stream identifier*) is not that machinery: it is an opaque join key for signals, assigned once per exchange (`operability/observability`; task 34.2) and never used to match a reply.
 
 ## Risks / Trade-offs
 
-**[Bandit implements neither HTTP/3 nor RFC 8441 extended CONNECT]** → The strongest surviving argument against D4, and it bites without WebTransport ever being mentioned: behind an h2-terminating CDN, WebSocket upgrades arrive as extended CONNECT with `:protocol: websocket`, an HTTP/1.1-only upgrade predicate can never be true, and WebSocket fails. HTTP/2 to clients is also where real per-stream flow control lives. *Mitigation:* **settled by D16** — HTTP/2 to clients is in v1, so the edge listener is a separate contract-speaking terminator from the start, which is the same mitigation D4 already prescribes for H3. This entry is therefore a scheduled cost, not an open question: task 54.4 terminates HTTP/2 from clients and task 55.1 recognises extended `CONNECT` as an establishment request.
+**[Bandit implements neither HTTP/3 nor RFC 8441 extended CONNECT]** → The strongest surviving argument against D4, and it bites without WebTransport ever being mentioned: behind an h2-terminating CDN, WebSocket upgrades arrive as extended CONNECT with `:protocol: websocket`, an HTTP/1.1-only upgrade predicate can never be true, and WebSocket fails. HTTP/2 to clients is also where real per-stream flow control lives. *Mitigation:* **settled by D16** — HTTP/2 to clients is in v1, so the edge listener is a separate contract-speaking terminator from the start, which is the same mitigation D4 already prescribes for H3, while the proxy-alone edge the specifications also define stays a supported topology rather than v1's only one. This entry is therefore a scheduled cost, not an open question: task 54.4 terminates HTTP/2 from clients and task 55.1 recognises extended `CONNECT` as an establishment request.
 
-**[Three moving parts for one developer: Elixir proxy, Go sidecar, Go edge terminator]** → *Mitigation:* every edge protocol sits behind the versioned contract, so each component is independently replaceable and independently testable against the conformance suite. D16 settled that HTTP/2 to clients already forces the terminator, so all three are v1 deployables and the mitigation is the contract boundary rather than deferral.
+**[Three moving parts for one developer: Elixir proxy, Go sidecar, Go edge terminator]** → *Mitigation:* every edge protocol sits behind the versioned contract, so each component is independently replaceable and independently testable against the conformance suite. D16 settled that HTTP/2 to clients already forces the terminator, so all three are v1 deployables, the proxy alone remaining a defined edge topology (D16), and the mitigation is the contract boundary rather than deferral.
 
 **[A bespoke frame vocabulary duplicates a standard]** → *Mitigation:* D2's alternative. Evaluate `draft-ietf-webtrans-http2` capsules before freezing v1, and prefer the standard if hand-implementing its framing is tractable.
 
@@ -167,8 +167,8 @@ Sorting by reversibility puts the irreversible work first, and the price is that
 That is accepted, not overlooked, because the alternative is worse: a walking skeleton built before the schema is frozen would either freeze the schema by accident or be thrown away, and the schema is the one artifact no later work can correct. But it sits in direct tension with the Risks entry above — *when feedback is slow, an agent or a person writes assertions that are cheap to satisfy* — so the ordering carries three obligations rather than a hope:
 
 - **The two exact-bytes gates are the milestones that matter**, and they are scheduled, not aspirational: task 36.5 turns the request-direction POST assertion green and task 38.6 the response-direction one. Their red baselines are committed from task 4.3 onward, so the gap is visible in CI from the first week rather than being discovered at section 38.
-- **Nothing in sections 5 to 25 may be justified by "the spine will need it".** Each is gated by its own conformance fixtures against a stub, not by a downstream consumer that does not exist yet — with the exceptions stated in the tasks themselves rather than discovered, task 6.8's cross-instance verification being one: it runs on task 33.10's multi-instance harness, which is a downstream consumer.
-- **If either exact-bytes gate has not turned green by the end of section 38, the ordering has failed and the remaining sequence is re-planned** — the plan is wrong before the code is, and that is the cheaper thing to discover.
+- **Nothing in sections 5 to 25 may be justified by "the spine will need it".** Each is gated by its own conformance fixtures against a stub, not by a downstream consumer that does not exist yet — with the exceptions stated in the tasks themselves rather than discovered, task 6.8a, the cross-instance half of task 6.8, being one: it runs on task 33.10's multi-instance harness, which is a downstream consumer.
+- **If either exact-bytes gate has not turned green by the end of stage 4b (Staged delivery, below), the ordering has failed and the remaining sequence is re-planned** — the plan is wrong before the code is, and that is the cheaper thing to discover.
 
 **Section order is not the work order.** Some tasks depend on tasks numbered after them, and the
 dependency is recorded in the depending task's own text — named there as a prerequisite rather than
@@ -185,7 +185,7 @@ is recorded, and this paragraph deliberately enumerates none.
 
 **Why yes.** Behind any HTTP/2-terminating CDN, WebSocket upgrades arrive as extended `CONNECT` with `:protocol: websocket` (RFC 8441). Without support, an HTTP/1.1-only upgrade predicate can never match and WebSocket silently fails — which is precisely the reference's defect. Separately, HTTP/2 is where genuine per-stream flow control lives at the edge; WebSocket has none of its own, so without it the client-facing half of the credit chain the fidelity contract requires has nothing to attach to.
 
-**The consequence, accepted.** Bandit implements neither HTTP/3 nor RFC 8441 extended `CONNECT` (issues #27, #91, #690 open). So the edge listener becomes a **separate contract-speaking component in v1**, not later — the same mitigation D4 already prescribes for HTTP/3, arriving earlier. This is the risk named in Risks / Trade-offs materialising as a scheduled cost rather than a surprise.
+**The consequence, accepted.** Bandit implements neither HTTP/3 nor RFC 8441 extended `CONNECT` (issues #27, #91, #690 open). So the edge listener becomes a **separate contract-speaking component in v1**, not later — the same mitigation D4 already prescribes for HTTP/3, arriving earlier. This is the risk named in Risks / Trade-offs materialising as a scheduled cost rather than a surprise. The separate terminator is the component that serves HTTP/2 clients and extended `CONNECT` from the start. The specifications also define a deployment whose edge is the proxy alone (`proxy/edge-hygiene`, *The same outcome from either topology*), held to identical statuses and reasons; that is the topology the exact-bytes gates of tasks 36.5 and 38.6 exercise, as do tasks 48.8, 69.7 and 74.1, task 54.9 holding the terminator topology to the outcomes recorded there. What D16 rules out is that topology being v1's only edge, not its existence.
 
 **Alternative considered:** HTTP/1.1 only at the edge for v1, with the protocol slot reserved but unused. Rejected: it ships the reference's exact silent-failure mode to anyone who puts a CDN in front, and it leaves the client-side flow-control story unanswered.
 
@@ -540,11 +540,75 @@ otherwise. Whether anything should replace the immutability half — and if so w
 of these specifications must be able to revise them — is left open here rather than answered by
 implication.
 
+### Staged delivery, and the task that closes each stage
+
+The work is delivered in stages, each ending in one reviewed pull request at a point where something new
+is demonstrably true — shown by a gate or a recorded outcome, not by code existing — with `make check`
+green on `main`. A task belongs to the latest of its own section's stage, the stages of the
+prerequisites its text names and the stage of any task whose change its text names as the one it lands in, with two anchors the table states: task 33.10, which builds the
+installation's only multi-instance harness, belongs to stage 4d although section 33 is 4b's, and task
+39.7a, the interim non-declaring flow-control mode, belongs to stage 4b although section 39 is 4c's. Membership
+is therefore read off `tasks.md`, which stays the single place a prerequisite is recorded, as the
+paragraph on section order above requires. A stage closes when every task in it is done; the table
+names only the check that headlines each.
+
+| stage | sections | headline check |
+|---|---|---|
+| 0 Runway | 1–4 | task 3.17 holds `make check` to its budget, and tasks 1.5, 1.8, 1.9 and 1.10 are demonstrated on the forge |
+| 1 Honest processes | 5, 6 | every component validates its configuration in one pass, reports provenance, answers on its operational endpoint and withdraws through task 5.8's lifecycle, with task 6.1's attach test blocking |
+| 2a Contract decisions | 7 | tasks 7.1 and 7.7 are recorded decisions carrying their adversarial pass, and task 7.2's pinned toolchain resolves the identical digest on a clean machine |
+| 2b Schema and codecs | 8–11 | task 11.8: both generated codecs agree on every published and adversarial vector |
+| 2c Corpus and runner | 12–13 | none beyond the stage's own tasks |
+| 2d Coverage closed | 14–16 | tasks 14.5 and 14.5a at zero uncovered and zero unproven, task 13.22's packaged suite against a do-nothing stub reporting every requirement unmet and none unresolved, and task 15.9's catalogue meta-test |
+| 2e Freeze | 17 | tasks 17.1 and 17.2: contract v1 tagged |
+| 3a Routing state | 18–23 | task 20.10's cumulative-schema job over the full migration set |
+| 3b Custody and credentials | 24–25 | none beyond the stage's own tasks |
+| 4a Tunnel up | 26–32 | task 26.4a: the real proxy and sidecar start in CI with every process ready over an established tunnel, and task 32.6: a frozen contract layer fails liveness while its socket stays open |
+| 4b First bytes | 33–38 less task 33.10, and task 39.7a | tasks 36.5 and 38.6: both exact-bytes gates advanced in `ci/expected-outcomes.json` |
+| 4c Flow control and lifecycle | 39–42 less task 39.7a | none beyond the stage's own tasks, all on one instance |
+| 4d Installation and spine closure | 43, and task 33.10 | task 43.4's soak |
+| 5a Fidelity breadth | 44–53 | none beyond the stage's own tasks |
+| 5b Edge terminator | 54–55 | task 54.12's conformant client-facing verdict |
+| 6 Primitive 2 | 56–60 | task 60.9's primitive-2 gate |
+| 7a Program and tenancy | 61–64 | none beyond the stage's own tasks |
+| 7b Custody lifecycle and custom domains | 65–68 | none beyond the stage's own tasks |
+| 8 Ship | 69–75 | task 74.16's multi-instance release soak |
+
+The trigger stated above for re-planning is measured at a stage rather than a section: if either exact-bytes gate
+has not turned green by the end of stage 4b, the remaining sequence is re-planned.
+
+*Alternatives considered.* **Moving tasks into stage order**, which was proposed first and is refused
+by the paragraph on section order: a prerequisite sentence carries the same information without moving
+an identifier that the vault cites. **Stages as bare section ranges**, rejected because a stage defined
+by its sections alone cannot close while one of its tasks names a prerequisite in a later stage, and an
+audit of every open task on 2026-09-24, with an adversarial pass over each finding, found such
+prerequisites in most sections. That audit's findings were recorded as prerequisite sentences and, where
+one clause alone depended on later work, as a letter-suffixed task beside its source, so no obligation
+moved stage without its text saying so.
+
+*One criterion the revision applied, stated here so it is applied again rather than re-derived.* A
+stand-in may carry a verification when the mechanism under test is generic over its input and every
+real instance is asserted where it lands; it may not when the claim is about one real subject's
+behaviour, or when the stand-in exists only to give a check something to refuse. It is recorded here,
+where the revision that relied on it lives, and `docs/code/testing.md` links it rather than restating
+it.
+
 ## Open Questions
 
-The four questions previously recorded here are resolved as decisions: HTTP/2 to clients (D16), the scope of further capabilities (D17), frame payload encoding (D18), and the v1 tunnel transport (D19). D16 opened one in their place.
+The four questions previously recorded here are resolved as decisions: HTTP/2 to clients (D16), the scope of further capabilities (D17), frame payload encoding (D18), and the v1 tunnel transport (D19). D16 opened one in their place, and D20 left a second.
 
-**Whether full gRPC at the ingress is still refused, and on what ground.** The refusal in `proposal.md` — Non-goals rested entirely on the edge: `grpc-status` travels as a trailer even on success, and a Plug-based edge cannot express one. D16 removes that edge. The terminator speaks HTTP/2 to clients, task 44.1 binds the client-edge trailer fixtures, and task 46.3 delivers a backend's trailer section to a client whose protocol can carry one instead of folding it into the header section — so the stated reason no longer holds. What is unanswered is whether any other ground survives (deadline propagation, bidirectional streaming, and the plain fact that no section of `tasks.md` builds an ingress gRPC path), or whether the refusal should be withdrawn and the work scheduled. It is recorded as open rather than quietly re-justified, because inventing a fresh reason for a standing refusal is how a documented refusal turns into a habit. Until it is settled the refusal stands on scope: nothing in this change builds it.
+**Whether full gRPC at the ingress is still refused, and on what ground.** The refusal in `proposal.md` — Non-goals rested entirely on the edge: `grpc-status` travels as a trailer even on success, and a Plug-based edge cannot express one. D16 ends that edge being the only one. The terminator speaks HTTP/2 to clients, task 44.1 binds the client-edge trailer fixtures, and task 46.3 delivers a backend's trailer section to a client whose protocol can carry one instead of folding it into the header section — so the stated reason no longer holds for a deployment the terminator fronts. What is unanswered is whether any other ground survives (deadline propagation, bidirectional streaming, and the plain fact that no section of `tasks.md` builds an ingress gRPC path), or whether the refusal should be withdrawn and the work scheduled. It is recorded as open rather than quietly re-justified, because inventing a fresh reason for a standing refusal is how a documented refusal turns into a habit. Until it is settled the refusal stands on scope: nothing in this change builds it.
+
+**How the instances of one installation reach one another.** `tunnel/sidecar-registry`, as D20 records, fixes what the installation must
+achieve — a tunnel held at one instance serving requests that arrive at any instance, and a registry
+converging after a partition with no operator action and no sidecar reconnection — and D30 fixes the
+durable store, but nothing records the mechanism that publishes registry state between instances or
+carries the dispatch hop, although `tunnel/sidecar-registry` *The dispatch hop is mutually authenticated and protected before an exchange crosses* requires that hop to be mutually authenticated,
+confidential and integrity-protected before any exchange octet crosses (task 33.13a) and D25 sells per-tenant blast radius. Distributed Erlang
+is the obvious candidate on this runtime and is deliberately not assumed: how far its trust between
+connected nodes answers that requirement is a claim about a runtime, which `docs/method/harness.md` requires
+be verified adversarially rather than asserted. Task 33.0 settles it before task 33.1 builds the
+registry, because the shape of a single-instance entry depends on how it is replicated.
 
 Two items are deliberately left to be settled *inside* implementation rather than before it, because the specs are written to hold either way and neither moves the task breakdown:
 
