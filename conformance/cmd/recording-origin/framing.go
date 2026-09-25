@@ -25,6 +25,9 @@ var (
 	errUnimplemented  = errors.New("framing this instrument does not implement")
 )
 
+// http11 is the one version on which this instrument reads a transfer coding.
+const http11 = "HTTP/1.1"
+
 // readBody reads exactly the body the fields declare, or refuses.
 //
 // It resolves nothing. Two Content-Length fields are refused rather than reduced
@@ -35,11 +38,15 @@ var (
 // surrounding space, so `-5`, `+5` and `5, 5` are each refused rather than
 // silently becoming 5, -5 or a body that was never read.
 //
-// A transfer coding is read only when it is exactly one chunked coding. A
-// Transfer-Encoding beside a Content-Length is the other request-smuggling shape
-// and is refused as invalid, whatever either says; a coding other than a single
-// chunked one -- gzip, a list, a second field -- is refused as unimplemented.
-func readBody(br *bufio.Reader, fields []recorder.Field) (body []byte, chunked bool, err error) {
+// A transfer coding is read only when it is exactly one chunked coding, on an
+// HTTP/1.1 request. On any other version it is refused as invalid: RFC 9112 6.1
+// has a recipient treat an HTTP/1.0 message carrying Transfer-Encoding as faulty
+// framing, because a 1.0 hop knows no transfer coding and reads the chunk
+// framing as the body. A Transfer-Encoding beside a Content-Length is the other
+// request-smuggling shape and is refused as invalid, whatever either says; a
+// coding other than a single chunked one -- gzip, a list, a second field -- is
+// refused as unimplemented.
+func readBody(br *bufio.Reader, version []byte, fields []recorder.Field) (body []byte, chunked bool, err error) {
 	declared := make([]string, 0, 1)
 	codings := make([]string, 0, 1)
 	for _, f := range fields {
@@ -49,6 +56,12 @@ func readBody(br *bufio.Reader, fields []recorder.Field) (body []byte, chunked b
 		case "content-length":
 			declared = append(declared, f.Value)
 		}
+	}
+	if len(codings) > 0 && string(version) != http11 {
+		return nil, false, fmt.Errorf("%w: transfer-encoding %q on a %q request -- RFC 9112 6.1 "+
+			"makes that framing faulty, since a hop speaking that version knows no transfer "+
+			"coding and reads the chunk framing as the body", errInvalidFraming,
+			strings.Join(codings, ", "), version)
 	}
 	if len(codings) > 0 && len(declared) > 0 {
 		return nil, false, fmt.Errorf("%w: transfer-encoding %q beside content-length %q "+
@@ -153,14 +166,31 @@ func readChunked(br *bufio.Reader) ([]byte, error) {
 	return body.Bytes(), nil
 }
 
-// readFramingLine is readLine for a line inside a chunked body, where the
-// connection ending is a truncated body rather than a quiet close.
+// readFramingLine reads one line of chunk framing, which RFC 9112 7.1 ends in
+// CRLF and in nothing else, and where the connection ending is a truncated body
+// rather than a quiet close.
+//
+// It does not reuse readLine. 2.2 lets a recipient take a bare LF as the end of
+// the start line or a field line, and that permission stops at the end of the
+// head. Inside a chunked body a line ending two parsers disagree on is a
+// smuggling primitive: a size line that ends at a bare LF for one hop runs on to
+// the next CRLF for another, and the two then frame different bodies from the
+// same octets. So a bare LF, or a CR anywhere but directly before the LF, is
+// refused as invalid rather than read the way one of those hops would read it.
 func readFramingLine(br *bufio.Reader) ([]byte, error) {
-	line, err := readLine(br)
+	line, err := br.ReadBytes('\n')
 	if errors.Is(err, io.EOF) {
 		return nil, fmt.Errorf("reading chunk framing: %w", io.ErrUnexpectedEOF)
 	}
-	return line, err
+	if err != nil {
+		return nil, err
+	}
+	content, crlf := bytes.CutSuffix(line, []byte("\r\n"))
+	if !crlf || bytes.IndexByte(content, '\r') >= 0 {
+		return nil, fmt.Errorf("%w: chunk framing line %q does not end in CRLF alone",
+			errInvalidFraming, line)
+	}
+	return content, nil
 }
 
 // chunkSize reads 1*HEXDIG and ignores a chunk extension after it. Nothing wider:

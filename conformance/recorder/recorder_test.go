@@ -1,6 +1,7 @@
 package recorder_test
 
 import (
+	"encoding/json"
 	"testing"
 
 	"plugboard/conformance/recorder"
@@ -33,18 +34,46 @@ func TestAllOctetsCarriesEveryValueAndALoneContinuationByte(t *testing.T) {
 	}
 }
 
+// Each file is read back, not only found. The recordings on disk are what e2e's
+// assertions read, and checking that the files existed passed a Persist that
+// wrote `"chunked": false` for every exchange -- so the flag that says a body
+// arrived chunked is asserted in both directions, beside the digest and the
+// octet count those assertions compare.
 func TestPersistWritesOneFilePerExchange(t *testing.T) {
 	t.Parallel()
+	body := recorder.AllOctets()
 	r := recorder.NewOrdered()
-	r.Record([]byte("POST"), []byte("/a"), nil, recorder.AllOctets())
+	r.RecordChunked([]byte("POST"), []byte("/a"), nil, body)
 	r.Record([]byte("GET"), []byte("/b"), nil, nil)
 	dir := t.TempDir()
 	if err := recorder.Persist(dir, r.Exchanges()); err != nil {
 		t.Fatalf("Persist: %v", err)
 	}
-	for _, name := range []string{"exchange-0000.json", "exchange-0001.json"} {
-		if _, err := readFile(dir, name); err != nil {
-			t.Errorf("Persist wrote no %s: %v", name, err)
+	for _, want := range []struct {
+		name, digest string
+		octets       int
+		chunked      bool
+	}{
+		{name: "exchange-0000.json", digest: recorder.Digest(body), octets: len(body), chunked: true},
+		{name: "exchange-0001.json", digest: recorder.Digest(nil), octets: 0, chunked: false},
+	} {
+		blob, err := readFile(dir, want.name)
+		if err != nil {
+			t.Errorf("Persist wrote no %s: %v", want.name, err)
+			continue
+		}
+		var got struct {
+			Digest  string `json:"digest_sha256"`
+			Octets  int    `json:"octet_count"`
+			Chunked bool   `json:"chunked"`
+		}
+		if err := json.Unmarshal(blob, &got); err != nil {
+			t.Errorf("%s is not the persisted shape: %v", want.name, err)
+			continue
+		}
+		if got.Digest != want.digest || got.Octets != want.octets || got.Chunked != want.chunked {
+			t.Errorf("%s holds digest %s, %d octet(s), chunked %t; recorded %s, %d, %t",
+				want.name, got.Digest, got.Octets, got.Chunked, want.digest, want.octets, want.chunked)
 		}
 	}
 }

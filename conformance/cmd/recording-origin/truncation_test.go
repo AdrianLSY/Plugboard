@@ -28,7 +28,7 @@ import (
 func TestATruncatedBodyIsReportedRatherThanReadAsACleanClose(t *testing.T) {
 	t.Parallel()
 	_, _, err := readBody(bufio.NewReader(strings.NewReader("AB")),
-		[]recorder.Field{{Name: contentLength, Value: "5"}})
+		[]byte(http11), []recorder.Field{{Name: contentLength, Value: "5"}})
 	if err == nil {
 		t.Fatal("a body declaring five octets and carrying two was accepted")
 	}
@@ -49,7 +49,7 @@ func TestATruncatedBodyIsReportedRatherThanReadAsACleanClose(t *testing.T) {
 // the case it was built for.
 func TestAnEmptyRequestIsStillAQuietEndRatherThanAFinding(t *testing.T) {
 	t.Parallel()
-	_, _, err := readRequestLine(bufio.NewReader(strings.NewReader("")))
+	_, _, _, err := readRequestLine(bufio.NewReader(strings.NewReader("")))
 	if err == nil {
 		t.Fatal("a connection carrying no request line was read as a request")
 	}
