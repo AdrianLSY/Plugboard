@@ -14,14 +14,20 @@
       ]
     },
     "tree-person-reviewed": {
-      "_why": "rebuild-plugboard task 1.9: one planted omission of each kind the task names -- the unattended exclusion omitting a path CODEOWNERS names, and CODEOWNERS naming a path absent from the tree -- beside the three refusals the two new resolvers make rather than guess.",
-      "violations": 5,
+      "_why": "rebuild-plugboard task 1.9: one planted omission of each kind the task names -- the unattended exclusion omitting a path CODEOWNERS names, and CODEOWNERS naming a path absent from the tree -- beside the refusals the two new resolvers make rather than guess: a twice-assigned list, a glob owner, a list spelled with CODEOWNERS' leading slash, a block scalar, and five workflows that publish a list and do not act on it (no read, a read only in a shell comment, only in an echo, only from another step, and a shell reassignment).",
+      "violations": 11,
       "cases": [
+        "anchored-exclusion/published: its resolver could not run (ValueError: UNATTENDED_EXCLUDED names ['/contract/', '/conformance/']; the workflow tests each word as a prefix of a repo-relative changed path",
+        "commented-read/published: its resolver could not run (ValueError: UNATTENDED_EXCLUDED is assigned and no executed line reads it in the step at line 11 that assigns it",
+        "echoed-read/published: its resolver could not run (ValueError: UNATTENDED_EXCLUDED is assigned and no executed line reads it in the step at line 9 that assigns it",
+        "folded-exclusion/published: its resolver could not run (ValueError: UNATTENDED_EXCLUDED at line 11 is a block scalar ('>-')",
+        "other-step-read/published: its resolver could not run (ValueError: UNATTENDED_EXCLUDED is assigned and no executed line reads it in the step at line 9 that assigns it",
         "person-reviewed-paths/computed: names 'codecs/', which is absent from the tree",
         "person-reviewed-paths: 'conformance/' is held by the computed side and absent from the published one [computed: .github/CODEOWNERS; published: .github/workflows/dependabot-auto-merge.yml (UNATTENDED_EXCLUDED)]",
+        "reassigned-exclusion/published: its resolver could not run (ValueError: UNATTENDED_EXCLUDED is reassigned by the shell at line 13 ('UNATTENDED_EXCLUDED=\"docs/\"')",
         "twice-assigned/published: its resolver could not run (ValueError: UNATTENDED_EXCLUDED is assigned 2 times",
         "unanchored-owner/computed: its resolver could not run (ValueError: '*.proto' is a glob or unanchored pattern",
-        "unread-exclusion/published: its resolver could not run (ValueError: UNATTENDED_EXCLUDED is assigned and no executed line reads it"
+        "unread-exclusion/published: its resolver could not run (ValueError: UNATTENDED_EXCLUDED is assigned and no executed line reads it in the step at line 8 that assigns it as a 'for NAME in ...' word list"
       ]
     }
   }

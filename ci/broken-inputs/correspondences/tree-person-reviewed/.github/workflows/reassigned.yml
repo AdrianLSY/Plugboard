@@ -1,0 +1,14 @@
+# Planted: the step's shell replaces the list before its loop reads it, so the
+# loop refuses docs/ and the env value this file publishes governs nothing.
+name: reassigned
+on: pull_request_target
+jobs:
+  auto-merge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: refuse
+        env:
+          UNATTENDED_EXCLUDED: contract/
+        run: |
+          UNATTENDED_EXCLUDED="docs/"
+          for prefix in $UNATTENDED_EXCLUDED; do echo "$prefix"; done
