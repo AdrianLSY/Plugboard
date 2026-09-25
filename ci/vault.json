@@ -803,10 +803,10 @@
         ".go": "go"
       },
       "excluded_languages": {
-        "_comment": "A language deliberately out of scope, with the reason and the work that ends it. Printed on every run: an exclusion nobody can see is an exemption.",
+        "_comment": "A language deliberately out of scope, with the reason and the work that ends it. Printed on every run, and measured: ci/gates/size_ceilings.py counts every tracked file of the extension against module_lines and names the ones over it, because an exclusion nobody can see is an exemption. No count is written here -- a written one is stale the next time a module grows.",
         ".py": {
-          "reason": "The harness itself. Task 3.5 asks for the ceilings in 'both languages', meaning the two the components are written in, and four gate modules are over 300 non-comment lines today (ci/gates/out_of_scope.py at 442, links.py 340, wikilinks.py 305, citations.py 301). Holding the harness to its own ceiling is right and is a separate piece of work from building the gate.",
-          "ends_with": "a change that splits those four modules, recorded in docs/method/follow-ups.md"
+          "reason": "The harness itself. Task 3.5 asks for the ceilings in 'both languages', meaning the two the components are written in, and harness modules are over module_lines -- which ones, and by how much, the gate measures and prints on every run. Holding the harness to its own ceiling is right and is a separate piece of work from building the gate.",
+          "ends_with": "every tracked harness .py file at or under module_lines, after which .py moves from excluded_languages into languages; recorded in docs/method/follow-ups.md"
         }
       },
       "shape_collisions": [
