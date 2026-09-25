@@ -1,0 +1,13 @@
+# Planted: the list is expanded, and only by an echo. It is printed and acted on
+# nowhere.
+name: echoed
+on: pull_request_target
+jobs:
+  auto-merge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: refuse
+        env:
+          UNATTENDED_EXCLUDED: contract/
+        run: |
+          echo "refusing: $UNATTENDED_EXCLUDED"

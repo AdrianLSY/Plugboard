@@ -1,4 +1,6 @@
-# Planted: conformance/ is reviewed by the owner and omitted here.
+# Planted: conformance/ is reviewed by the owner and omitted here. The trailing
+# comment names it, so a resolver reading the comment as members would heal the
+# omission and publish '#', 'left' and 'out' besides.
 name: dependabot auto-merge
 on: pull_request_target
 jobs:
@@ -7,6 +9,6 @@ jobs:
     steps:
       - name: refuse
         env:
-          UNATTENDED_EXCLUDED: contract/ codecs/
+          UNATTENDED_EXCLUDED: contract/ codecs/  # conformance/ left out
         run: |
           for prefix in $UNATTENDED_EXCLUDED; do echo "$prefix"; done

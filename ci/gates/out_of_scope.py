@@ -10,9 +10,13 @@ byte-unchanged":
   * the failure names the offending path AND the change that declared it out of
     scope, because "who said this was off limits" is the fact the contributor
     needs and the one prose loses;
-  * the declared set is asserted to actually cover `rebuild-plugboard`'s
-    sixteen specification files -- a set that silently covers nothing is a
-    green gate over an unguarded tree, which is worse than no gate;
+  * a declared set that overlaps `rebuild-plugboard`'s specification tree -- a
+    declared path under it, or containing it -- is asserted to cover all
+    sixteen of its specification files, because a set that silently covers part
+    of them is a green gate over an unguarded tree, which is worse than no gate.
+    A set elsewhere is not held to that change's count: D31 permits any change
+    to declare a path outside its own tree, and the per-path presence check
+    already fails a declared path that covers nothing;
   * every violation is reported in one run, and a passing run states the
     baseline it compared against and how many files it covered.
 
@@ -25,6 +29,11 @@ own artifacts out of scope is refused every revision to them -- which is what
 the declaration. The containing direction is the same defect one level up: a
 declared `openspec/changes` freezes every change beneath it, its declarant
 included.
+
+Every declared path is normalised once, where the declaration is read, and every
+check compares that one spelling. `./openspec/changes/rebuild-plugboard/specs`
+and `.` are pathspecs git resolves to the declarant's own files, and compared as
+raw strings both passed the containment check.
 
 An EMPTY declaration is legitimate only when gate_policy.declared_vacuity says
 why and what ends it, the mechanism ci/gates/component_boundaries.py used before
@@ -63,6 +72,7 @@ from __future__ import annotations
 
 import json
 import os
+import posixpath
 import subprocess
 import sys
 import tempfile
@@ -89,6 +99,7 @@ RULE_NOTE = "docs/method/rules/out-of-scope-byte-unchanged.md"
 # requirement text it comes from: the sixteen specification files of
 # rebuild-plugboard. If the change ever legitimately gains or loses a
 # specification, this constant is the one place that moves, in the same commit.
+# It binds a declared set only where that set overlaps SPEC_SET_ROOT.
 SPEC_SET_ROOT = "openspec/changes/rebuild-plugboard/specs"
 SPEC_FILENAME = "spec.md"
 EXPECTED_SPEC_FILES = 16
@@ -116,11 +127,24 @@ def _zsplit(payload: bytes) -> list[str]:
 
 
 def _under_any(rel: str, prefixes: list[str]) -> str | None:
-    """The declared prefix covering `rel`, or None. Files are prefixes too."""
+    """The declared prefix covering `rel`, or None. Files are prefixes too, and
+    `.` -- the whole repository, as git's pathspec reads it -- covers every path."""
     for prefix in prefixes:
-        if rel == prefix or rel.startswith(prefix.rstrip("/") + "/"):
+        if prefix == "." or rel == prefix or rel.startswith(prefix.rstrip("/") + "/"):
             return prefix
     return None
+
+
+def _canonical(path: str) -> str:
+    """The one spelling of a declared path that every check below compares.
+
+    `./x`, `x/`, `a//b` and `a/./b` name exactly the files git's pathspec names
+    for the plain spelling. Compared raw,
+    `./openspec/changes/rebuild-plugboard/specs` declared by rebuild-plugboard
+    passed containment while git resolved it to that change's sixteen
+    specifications.
+    """
+    return posixpath.normpath(path).rstrip("/") or "."
 
 
 def _files_at_ref(root: Path, ref: str, prefixes: list[str]) -> list[str] | None:
@@ -253,7 +277,16 @@ def run(scan_root: Path, report_only: bool) -> int:
     manifest = load_manifest(scan_root)
 
     declared = manifest.get("out_of_scope", {})
-    prefixes = [p for p in declared.get("paths", []) if isinstance(p, str)]
+    # Normalised once, here, so that no later comparison can be sidestepped by
+    # respelling a path. `spelled` keeps what the manifest wrote, for messages.
+    spelled: dict[str, str] = {}
+    for raw in declared.get("paths", []):
+        if isinstance(raw, str):
+            spelled.setdefault(_canonical(raw), raw)
+    prefixes = list(spelled)
+    named = {
+        p: p if raw == p else f"{p} (declared as '{raw}')" for p, raw in spelled.items()
+    }
     declared_by = declared.get("declared_by")
     baseline_ref = declared.get("baseline_ref")
 
@@ -298,10 +331,11 @@ def run(scan_root: Path, report_only: bool) -> int:
     # alone and a fixture tree can therefore carry it.
     for path, declarant in _self_contained(prefixes, owners):
         report.fail(
-            f"{path}: declared out of scope by {declarant}, and it lies inside or "
-            f"contains {declarant}'s own tree ({CHANGES_DIR}/{declarant}) -- the "
-            f"byte-unchanged assertion cannot see who is editing, so {declarant} is "
-            f"refused every revision to its own artifacts. See {CONTAINMENT_OWNER}"
+            f"{named[path]}: declared out of scope by {declarant}, and it lies "
+            f"inside or contains {declarant}'s own tree ({CHANGES_DIR}/{declarant}) "
+            f"-- the byte-unchanged assertion cannot see who is editing, so "
+            f"{declarant} is refused every revision to its own artifacts. See "
+            f"{CONTAINMENT_OWNER}"
         )
 
     # A declaration cannot outlive its reason. This set protects the specs from
@@ -380,12 +414,23 @@ def run(scan_root: Path, report_only: bool) -> int:
             where = f"{scan_root}"
         if not present:
             report.fail(
-                f"{prefix}: declared out of scope by {owner} but matches no file at "
-                f"{where} -- a declared set that covers nothing is a gate that "
-                f"asserts nothing"
+                f"{named[prefix]}: declared out of scope by {owner} but matches no "
+                f"file at {where} -- a declared set that covers nothing is a gate "
+                f"that asserts nothing"
             )
 
-    # ---- the set actually covers the sixteen specifications -----------------
+    # ---- where the set touches the sixteen specifications, it covers them ----
+    # The sixteen are rebuild-plugboard's shape, not every declaration's. D31
+    # permits a change to declare any path outside its own tree, and holding
+    # `openspec/specs/docs` to rebuild-plugboard's count failed every such
+    # declaration with a message about a change it never named. A set reaching
+    # into that tree must cover all of it, because covering part is the silent
+    # gap this assertion exists for; a set elsewhere is held to naming something
+    # by the presence check above.
+    touches = any(
+        _under_any(p, [SPEC_SET_ROOT]) or _under_any(SPEC_SET_ROOT, [p])
+        for p in prefixes
+    )
     if baseline_sha is not None:
         listing = subject_files
         source = f"{baseline_ref} ({baseline_sha[:12]})"
@@ -397,7 +442,7 @@ def run(scan_root: Path, report_only: bool) -> int:
         for rel in listing
         if Path(rel).name == SPEC_FILENAME and _under_any(rel, prefixes) is not None
     )
-    if len(specs) != EXPECTED_SPEC_FILES:
+    if touches and len(specs) != EXPECTED_SPEC_FILES:
         report.fail(
             f"the declared out-of-scope set covers {len(specs)} '{SPEC_FILENAME}' "
             f"file(s) at {source}, expected {EXPECTED_SPEC_FILES} under "
@@ -423,10 +468,16 @@ def run(scan_root: Path, report_only: bool) -> int:
         source="index" if from_index else "scan",
         scan_root=scan_root,
     )
+    covered = (
+        f"{len(specs)}/{EXPECTED_SPEC_FILES}"
+        if touches
+        else f"{len(specs)} (the set does not overlap '{SPEC_SET_ROOT}', so its "
+        f"{EXPECTED_SPEC_FILES} are not asserted)"
+    )
     print(
         f"  set: {len(prefixes)} declared path(s) | declared_by: {owner}"
         f" | baseline: {baseline_ref} ({baseline_sha[:12] if baseline_sha else 'unresolved'})"
-        f" | {SPEC_FILENAME} covered: {len(specs)}/{EXPECTED_SPEC_FILES}"
+        f" | {SPEC_FILENAME} covered: {covered}"
     )
     return report.finish(report_only=report_only)
 
@@ -600,9 +651,7 @@ def _vacuity_cases() -> list[str]:
     import contextlib
     import io
 
-    vacuity = {
-        GATE_ID: {"reason": "nothing is declared", "ends_with": "a declaration"}
-    }
+    vacuity = {GATE_ID: {"reason": "nothing is declared", "ends_with": "a declaration"}}
     cases = (
         ("declared empty", [], vacuity, 0, "subject set empty by declaration"),
         ("undeclared empty", [], {}, 1, "records no reason"),
@@ -627,6 +676,86 @@ def _vacuity_cases() -> list[str]:
                 problems.append(
                     f"{label}: expected exit {want} saying {needle!r}, got exit {code}"
                 )
+    return problems
+
+
+def _commit_all(root: Path) -> bool:
+    """Initialise `root` as a repository and commit everything in it."""
+    for args in (
+        ["init", "-q"],
+        ["add", "-A"],
+        [
+            "-c",
+            "user.name=gate",
+            "-c",
+            "user.email=gate@invalid",
+            "-c",
+            "commit.gpgsign=false",
+            "commit",
+            "-q",
+            "-m",
+            "baseline",
+        ],
+    ):
+        code, _ = _git_quiet(root, *args)
+        if code != 0:
+            return False
+    return True
+
+
+def _declaration_cases() -> list[str]:
+    """Which declarations the sixteen-spec assertion and D31 bind, each in a
+    committed repository of its own, so the run takes the history route the real
+    one takes.
+
+    A change other than rebuild-plugboard declaring an existing path outside its
+    own tree and outside the specification set is the declaration D31 permits and
+    ci/vault.json's vacuity names as its ending: it must pass with containment
+    silent, where the sixteen-spec assertion once failed it with a message about
+    rebuild-plugboard. And a respelling of a self-containing path -- `./`-prefixed,
+    or `.` for the whole repository -- must still reach the containment check,
+    which compared raw strings and let both through.
+    """
+    import contextlib
+    import io
+
+    files = {
+        f"{SPEC_SET_ROOT}/cap{n:02d}/spec.md": "# spec\n"
+        for n in range(EXPECTED_SPEC_FILES)
+    }
+    files[f"{CHANGES_DIR}/other-change/proposal.md"] = "# proposal\n"
+    files["openspec/specs/docs/knowledge-base/spec.md"] = "# spec\n"
+    cases = (
+        ("a declaration D31 permits", "openspec/specs/docs", "other-change", 0, False),
+        ("a './' respelling", f"./{SPEC_SET_ROOT}", "rebuild-plugboard", 1, True),
+        ("the whole repository", ".", "other-change", 1, True),
+    )
+    problems = []
+    for label, path, declarant, want, contained in cases:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for rel, body in files.items():
+                (root / rel).parent.mkdir(parents=True, exist_ok=True)
+                (root / rel).write_text(body, encoding="utf-8")
+            (root / "ci").mkdir()
+            (root / "ci" / "vault.json").write_text(
+                _SELF_TEST_MANIFEST
+                % {"prefix": path, "owner": declarant, "baseline": "HEAD"},
+                encoding="utf-8",
+            )
+            if not _commit_all(root):
+                problems.append(f"{label}: could not build the scenario")
+                continue
+            buffer = io.StringIO()
+            with contextlib.redirect_stdout(buffer):
+                code = run(root, False)
+            fired = "lies inside or contains" in buffer.getvalue()
+        if code != want or fired != contained:
+            problems.append(
+                f"{label} ({path!r} declared by {declarant}): expected exit {want} "
+                f"with containment {'firing' if contained else 'silent'}, got exit "
+                f"{code} with it {'firing' if fired else 'silent'}"
+            )
     return problems
 
 
@@ -735,6 +864,7 @@ def _self_test() -> int:
         # second commit: an edit that is committed rather than left in the tree.
         problems.extend(_committed_edit_case())
         problems.extend(_vacuity_cases())
+        problems.extend(_declaration_cases())
 
         print(output, end="")
         if problems:
@@ -749,7 +879,10 @@ def _self_test() -> int:
             f"path, its line, and {_SELF_TEST_OWNER}; a COMMITTED edit fails "
             f"against a pinned baseline while passing against a moving one; "
             f"containment stays silent for a declaration outside its declarant's "
-            f"tree; and an empty set passes only while a vacuity explains it"
+            f"tree, and a declaration D31 permits away from '{SPEC_SET_ROOT}' "
+            f"passes, while a './' or '.' respelling of a self-containing path "
+            f"still fires it; and an empty set passes only while a vacuity "
+            f"explains it"
         )
         return 0
 

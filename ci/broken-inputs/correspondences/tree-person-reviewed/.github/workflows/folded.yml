@@ -1,0 +1,14 @@
+# Planted: the list as a folded block scalar, the likely reformat once it grows.
+# Split as raw text it read as the one member '>-'; it is refused by name.
+name: folded
+on: pull_request_target
+jobs:
+  auto-merge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: refuse
+        env:
+          UNATTENDED_EXCLUDED: >-
+            contract/
+        run: |
+          for prefix in $UNATTENDED_EXCLUDED; do echo "$prefix"; done
