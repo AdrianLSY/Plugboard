@@ -10,3 +10,9 @@ These are tool instructions. The repository's planning artifacts remain under
 [`openspec/`](../openspec/), and [`docs/start-here.md`](../docs/start-here.md) remains the reading
 route for this project. Installing the Matt Pocock skills does not configure their issue-tracker
 workflows; run `setup-matt-pocock-skills` once for this repo before using those workflows.
+
+One installed skill is modified locally. `handoff` saves its document in the repository's gitignored
+`handoff/` directory instead of the OS temp directory, so the next session finds it in the working
+copy. The change is made in both `.agents/skills/handoff/SKILL.md` and
+`.claude/skills/handoff/SKILL.md`. `skills-lock.json` still records the upstream content hash, so
+reinstalling the skill from upstream reverts it.

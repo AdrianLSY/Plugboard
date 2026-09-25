@@ -46,6 +46,9 @@ jobs:
       # two HIGH advisories ON PURPOSE. Scanning it fails every push over a defect
       # that is the point of the fixture. The previous attempt at this workflow
       # did exactly that and would have been red from its first run.
+      #
+      # handoff/ is skipped too: agent handoff notes, gitignored, so no checkout
+      # holds them -- named here so this scan never reads them wherever it runs.
       - uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: fs
@@ -54,7 +57,7 @@ jobs:
           severity: HIGH,CRITICAL
           exit-code: '1'
           ignore-unfixed: true
-          skip-dirs: ci/broken-inputs
+          skip-dirs: ci/broken-inputs,handoff
 
   elixir:
     runs-on: ubuntu-latest
