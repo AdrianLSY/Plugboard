@@ -2,48 +2,14 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"errors"
 	"fmt"
 	"io"
-	"net"
 	"strings"
 	"testing"
 
 	"plugboard/conformance/recorder"
 )
-
-// exchange drives serve over an in-memory connection: it writes request, reads
-// everything the origin writes before it closes, and returns that with the
-// recorder serve recorded into.
-//
-// The write runs beside the read because net.Pipe is unbuffered, and a refusal
-// stops reading before the request is through. A write the close interrupts is
-// therefore expected, and only a different write error is a finding.
-func exchange(t *testing.T, request string, answer reply) (string, *recorder.Ordered) {
-	t.Helper()
-	client, server := net.Pipe()
-	rec := recorder.NewOrdered()
-	served := make(chan error, 1)
-	wrote := make(chan error, 1)
-	go func() { served <- serve(server, rec, "", answer) }()
-	go func() {
-		_, err := io.WriteString(client, request)
-		wrote <- err
-	}()
-	response, err := io.ReadAll(client)
-	if err != nil {
-		t.Fatalf("reading the origin's response: %v", err)
-	}
-	if err := <-wrote; err != nil && !errors.Is(err, io.ErrClosedPipe) {
-		t.Fatalf("writing the request: %v", err)
-	}
-	<-served
-	if err := client.Close(); err != nil {
-		t.Fatalf("closing the client end: %v", err)
-	}
-	return string(response), rec
-}
 
 // chunk frames body in chunked transfer coding, cut at the given sizes with the
 // remainder as a last data chunk. The first chunk carries an extension and every
@@ -106,15 +72,15 @@ func TestAChunkedBodyIsRecordedDeframed(t *testing.T) {
 	}
 }
 
-// The two framings still refused, each answered with its own refusal and neither
+// The framings still refused, each answered with its own refusal and none
 // recorded. Replaces the test that refused every transfer coding: a coding beside
-// a length is INVALID, the second request-smuggling shape; a coding other than a
-// single chunked one is framing this instrument does not IMPLEMENT.
+// a length is INVALID, the second request-smuggling shape, and so is a coding on
+// a request that is not HTTP/1.1; a coding other than a single chunked one is
+// framing this instrument does not IMPLEMENT.
 func TestTheRefusedFramingsAreAnsweredAndNotRecorded(t *testing.T) {
 	t.Parallel()
-	body := chunk([]byte(fiveOctets))
 	for _, c := range []struct {
-		name, head, status string
+		name, version, head, status string
 	}{
 		{
 			name:   "a transfer coding beside a length",
@@ -126,6 +92,12 @@ func TestTheRefusedFramingsAreAnsweredAndNotRecorded(t *testing.T) {
 			head:   "Content-Length: 5\r\nTransfer-Encoding: chunked\r\n",
 			status: "400",
 		},
+		{
+			name:    "chunked on an HTTP/1.0 request",
+			version: "HTTP/1.0",
+			head:    "Transfer-Encoding: chunked\r\n",
+			status:  "400",
+		},
 		{name: "a coding other than chunked", head: "Transfer-Encoding: gzip\r\n", status: "501"},
 		{name: "a list ending in chunked", head: "Transfer-Encoding: gzip, chunked\r\n", status: "501"},
 		{
@@ -136,20 +108,69 @@ func TestTheRefusedFramingsAreAnsweredAndNotRecorded(t *testing.T) {
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()
-			request := "POST /refused HTTP/1.1\r\nHost: origin\r\n" + c.head + "\r\n" + body
-			response, rec := exchange(t, request, reply{stated: -1})
-			if got := firstLine(response); !strings.HasPrefix(got, "HTTP/1.1 "+c.status+" ") {
-				t.Errorf("answered %q, want a %s", got, c.status)
+			version := c.version
+			if version == "" {
+				version = http11
 			}
-			if n := len(rec.Exchanges()); n != 0 {
-				t.Errorf("recorded %d exchange(s) for a request it refused", n)
-			}
+			assertRefused(t, version, c.head, c.status)
 		})
+	}
+}
+
+// The smuggling pair again, spelled so that a parser matching names exactly sees
+// one framing field and a lenient parser sees both. Whitespace before the colon
+// and a folded line each kept the misspelt name byte for byte, readBody's exact
+// match missed it, and the request was recorded with a 204 -- its body read by
+// whichever framing the misspelling left visible, or not read at all.
+func TestAFramingFieldWhoseNameIsNotATokenIsRefused(t *testing.T) {
+	t.Parallel()
+	for _, c := range []struct{ name, head string }{
+		{
+			name: "a transfer coding with a space before its colon, beside a length",
+			head: "Transfer-Encoding : chunked\r\nContent-Length: 5\r\n",
+		},
+		{
+			name: "a length with a space before its colon, beside a transfer coding",
+			head: "Content-Length : 5\r\nTransfer-Encoding: chunked\r\n",
+		},
+		{
+			name: "a transfer coding folded onto the line before, beside a length",
+			head: "X-Folded: a\r\n Transfer-Encoding: chunked\r\nContent-Length: 5\r\n",
+		},
+		{
+			name: "a transfer coding with a space before its colon, alone",
+			head: "Transfer-Encoding : chunked\r\n",
+		},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
+			assertRefused(t, http11, c.head, "400")
+		})
+	}
+}
+
+// assertRefused sends a request on version carrying head and a chunked body,
+// and asserts that it is answered with status and recorded nowhere.
+func assertRefused(t *testing.T, version, head, status string) {
+	t.Helper()
+	request := "POST /refused " + version + "\r\nHost: origin\r\n" + head + "\r\n" +
+		chunk([]byte(fiveOctets))
+	response, rec := exchange(t, request, reply{stated: -1})
+	if got := firstLine(response); !strings.HasPrefix(got, "HTTP/1.1 "+status+" ") {
+		t.Errorf("answered %q, want a %s", got, status)
+	}
+	if n := len(rec.Exchanges()); n != 0 {
+		t.Errorf("recorded %d exchange(s) for a request it refused", n)
 	}
 }
 
 // Chunk framing an instrument must refuse rather than read around. Each would
 // otherwise record a body whose octet count is a guess.
+//
+// The bare line feeds and the lone CR were all read as clean framing: the chunk
+// lines went through the head's reader, which takes a bare LF as a terminator
+// and drops one CR before it. RFC 9112 7.1 ends every chunk line in CRLF, and
+// 2.2's leniency stops at the end of the head.
 func TestMalformedChunkingIsRefused(t *testing.T) {
 	t.Parallel()
 	chunked := []recorder.Field{{Name: "Transfer-Encoding", Value: "chunked"}}
@@ -161,13 +182,18 @@ func TestMalformedChunkingIsRefused(t *testing.T) {
 		{name: "a signed size", body: "-5\r\nABCDE\r\n0\r\n\r\n", want: errInvalidFraming},
 		{name: "an empty size", body: "\r\nABCDE\r\n0\r\n\r\n", want: errInvalidFraming},
 		{name: "data longer than its size", body: "3\r\nABCDE\r\n0\r\n\r\n", want: errInvalidFraming},
+		{name: "a bare LF after the size", body: "5\nABCDE\r\n0\r\n\r\n", want: errInvalidFraming},
+		{name: "a bare LF after the data", body: "5\r\nABCDE\n0\r\n\r\n", want: errInvalidFraming},
+		{name: "a bare LF after the last chunk", body: "5\r\nABCDE\r\n0\n\r\n", want: errInvalidFraming},
+		{name: "a bare LF ending the body", body: "5\r\nABCDE\r\n0\r\n\n", want: errInvalidFraming},
+		{name: "a CR inside a chunk extension", body: "5;a\rb\r\nABCDE\r\n0\r\n\r\n", want: errInvalidFraming},
 		{name: "a trailer field", body: "5\r\nABCDE\r\n0\r\nDigest: x\r\n\r\n", want: errUnimplemented},
 		{name: "a body cut inside a chunk", body: "5\r\nAB", want: io.ErrUnexpectedEOF},
 		{name: "a body cut before the last chunk", body: "5\r\nABCDE\r\n", want: io.ErrUnexpectedEOF},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()
-			got, _, err := readBody(bufio.NewReader(strings.NewReader(c.body)), chunked)
+			got, _, err := readBody(bufio.NewReader(strings.NewReader(c.body)), []byte(http11), chunked)
 			if !errors.Is(err, c.want) {
 				t.Fatalf("read %q with error %v, want %v", got, err, c.want)
 			}
@@ -176,88 +202,4 @@ func TestMalformedChunkingIsRefused(t *testing.T) {
 			}
 		})
 	}
-}
-
-// The two response modes task 13.3's origin backend does not provide, and the
-// default beside them. Each is asserted on the octets the origin writes and on
-// the close, because a truncation is only a truncation if the connection ends.
-func TestEachReplyModeWritesWhatItStates(t *testing.T) {
-	t.Parallel()
-	const get = "GET /reply HTTP/1.1\r\nHost: origin\r\n\r\n"
-	for _, c := range []struct {
-		name, status, length string
-		body                 []byte
-		answer               reply
-	}{
-		{
-			name:   "a declared length closed after fewer octets",
-			answer: reply{stated: 10, sent: 4},
-			status: "200", length: "10", body: recorder.Pattern(10)[:4],
-		},
-		{
-			name:   "a zero-length body on a status permitting one",
-			answer: reply{stated: 0, sent: 0},
-			status: "200", length: "0", body: nil,
-		},
-		{
-			name:   "the default, which states no length on its 204",
-			answer: reply{stated: -1},
-			status: "204", length: "", body: nil,
-		},
-	} {
-		t.Run(c.name, func(t *testing.T) {
-			t.Parallel()
-			response, _ := exchange(t, get, c.answer)
-			head, body, found := strings.Cut(response, "\r\n\r\n")
-			if !found {
-				t.Fatalf("no end of head in %q", response)
-			}
-			if got := firstLine(head); !strings.HasPrefix(got, "HTTP/1.1 "+c.status+" ") {
-				t.Errorf("answered %q, want a %s", got, c.status)
-			}
-			if got := fieldValue(head, contentLength); got != c.length {
-				t.Errorf("Content-Length is %q, want %q", got, c.length)
-			}
-			if !bytes.Equal([]byte(body), c.body) {
-				t.Errorf("wrote %d body octet(s) before the close, want %d", len(body), len(c.body))
-			}
-		})
-	}
-}
-
-// A flag combination that would answer something other than what was asked for
-// is refused at startup rather than served.
-func TestAContradictoryReplyIsRefusedAtStartup(t *testing.T) {
-	t.Parallel()
-	for _, c := range []struct {
-		name             string
-		emit, closeAfter int
-		empty            bool
-	}{
-		{name: "closing after every stated octet", emit: 4, closeAfter: 4},
-		{name: "closing with nothing stated", emit: 0, closeAfter: 0},
-		{name: "an empty body that states octets", emit: 4, closeAfter: -1, empty: true},
-		{name: "a negative count", emit: -1, closeAfter: -1},
-	} {
-		if _, err := newReply(c.emit, c.closeAfter, c.empty); err == nil {
-			t.Errorf("%s: accepted", c.name)
-		}
-	}
-}
-
-func firstLine(s string) string {
-	line, _, _ := strings.Cut(s, "\r\n")
-	return line
-}
-
-// fieldValue is the value of the one field named name in head, or "" when there
-// is none. Two would be a finding, and a test reading them would pick one.
-func fieldValue(head, name string) string {
-	value := ""
-	for _, line := range strings.Split(head, "\r\n")[1:] {
-		if n, v, ok := strings.Cut(line, ":"); ok && strings.EqualFold(n, name) {
-			value = strings.TrimSpace(v)
-		}
-	}
-	return value
 }

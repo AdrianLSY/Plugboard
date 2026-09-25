@@ -85,7 +85,7 @@ func TestMalformedFramingIsRefusedRatherThanGuessedAt(t *testing.T) {
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()
-			got, _, err := readBody(bufio.NewReader(strings.NewReader(c.body)), c.fields)
+			got, _, err := readBody(bufio.NewReader(strings.NewReader(c.body)), []byte(http11), c.fields)
 			if err == nil {
 				t.Fatalf("read %d octet(s) and reported no error -- the instrument "+
 					"resolved a framing ambiguity instead of refusing it, so an "+
@@ -106,7 +106,7 @@ func TestWellFramedBodiesAreStillRead(t *testing.T) {
 	t.Run("a declared length reads exactly that many octets", func(t *testing.T) {
 		t.Parallel()
 		body, chunked, err := readBody(bufio.NewReader(strings.NewReader(fiveOctets+"trailing")),
-			[]recorder.Field{{Name: contentLength, Value: "5"}})
+			[]byte(http11), []recorder.Field{{Name: contentLength, Value: "5"}})
 		if err != nil {
 			t.Fatalf("a single valid Content-Length was refused: %v", err)
 		}
@@ -120,7 +120,7 @@ func TestWellFramedBodiesAreStillRead(t *testing.T) {
 	t.Run("no length field means no body", func(t *testing.T) {
 		t.Parallel()
 		body, _, err := readBody(bufio.NewReader(strings.NewReader("")),
-			[]recorder.Field{{Name: "Host", Value: "x"}})
+			[]byte(http11), []recorder.Field{{Name: "Host", Value: "x"}})
 		if err != nil {
 			t.Fatalf("a request with no body was refused: %v", err)
 		}
