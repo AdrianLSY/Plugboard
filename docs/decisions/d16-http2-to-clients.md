@@ -7,9 +7,12 @@ authority: decision
 # D16 — HTTP/2 to clients is in v1, and the edge listener is a separate component from the start
 
 **In force.** The proxy speaks HTTP/2 to clients in the first release, and because the Elixir web
-server it would otherwise use cannot do that, the component terminating client connections is a
-separate contract-speaking process from day one. It rules out an HTTP/1.1-only edge with the
+server it would otherwise use cannot do that, the component terminating HTTP/2 client connections is
+a separate contract-speaking process from day one. It rules out an HTTP/1.1-only edge with the
 protocol slot reserved but unused, and it rules out treating a second edge component as later work.
+It does not rule out a deployment whose edge is the proxy alone: the specifications define that
+topology and hold it to the same statuses and reasons as the terminator topology, and the register
+records it as a supported topology rather than v1's only edge.
 
 This overturns the project's earlier instinct. The risk register had said not to add a separate
 terminator until HTTP/3 or WebTransport forced one; D16 concludes that HTTP/2 already does, so the

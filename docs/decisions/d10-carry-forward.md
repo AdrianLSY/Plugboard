@@ -13,12 +13,14 @@ implementation along with the idea.
 
 For a reader, this turns prior art into a finite, checkable list rather than a place to browse:
 roughly sixty items, each carrying a citation, and one of them load-bearing in a way no comment in
-the old code records — a database-level invariant is the reason a cheap routing lookup is correct
-at all, and a rebuild that reproduced the lookup without the invariant would be subtly wrong. The
-list also records refusals, so bringing back the correlation-id machinery the decision deletes is a
-regression rather than a new idea. One warning before citing this number: in the register that was
-removed, `D10` denoted the WebTransport decision, which now sits at `D26` — see the
-[collision table](superseded-register.md) before trusting a `D10` citation written earlier.
+the old code records — a database-level invariant is the reason a cheap routing lookup is correct at
+all, and a rebuild that reproduced the lookup without the invariant would be subtly wrong. The list
+also records refusals, so bringing back the correlation-id machinery the decision deletes — the
+multiplexing and reply-matching bookkeeping, not the opaque correlation identifier the contract
+carries as a join key for signals — is a regression rather than a new idea. One warning before
+citing this number: in the register that was removed, `D10` denoted the WebTransport decision, which
+now sits at `D26` — see the [collision table](superseded-register.md) before trusting a `D10`
+citation written earlier.
 
 - **Full entry, with rationale and alternatives:** [register D10](../../openspec/changes/rebuild-plugboard/design.md#d10-carry-forward-is-explicit-and-cited)
 - **Shapes:** [routing/mount-points](../../openspec/changes/rebuild-plugboard/specs/routing/mount-points/spec.md), [tunnel/wire-contract](../../openspec/changes/rebuild-plugboard/specs/tunnel/wire-contract/spec.md)
