@@ -15,14 +15,22 @@ with the function it sits in. The prior art's 813-line `render/1` is the case
 being made unwritable, and its 1,380-line LiveView handling four unrelated
 resources is the other one.
 
-## Python is excluded, by declaration and with a measurement
+## Python is excluded by declaration, and measured on every run
 
-The harness is Python, and four of its modules are over the ceiling today -- the
-largest at 442 non-comment lines. Task 3.5 asks for "both languages", meaning the
-two the components are written in, so Python is declared out of scope in
-ci/vault.json with the reason and the work that ends it, and the count is printed
-on every run rather than left for somebody to discover. An exclusion nobody can
-see is an exemption.
+The harness is Python, and some of its modules are over the module ceiling.
+Task 3.5 asks for "both languages", meaning the two the components are written
+in, so Python is declared out of scope in ci/vault.json with the reason and the
+work that ends it. An exclusion nobody can see is an exemption, so each excluded
+language is measured anyway: the files the gate would read if that language were
+declared -- the same tracked set, the same scan exclusions, the same counter --
+and the run prints how many are over the module ceiling and names each with its
+count. The list printed is the list that would fail the day the language moves
+into `languages`.
+
+The count is measured rather than written down because a written one goes stale
+the next time a module grows. The figure this replaced, in the declaration and
+here, named four modules when a review found eight over, and every count it gave
+had grown since it was written.
 
 ## What it does not decide
 
@@ -30,6 +38,13 @@ Whether a long function should have been long. Some genuinely are: a decision
 table is one expression per row. The ceiling is a forcing function on structure,
 not a claim about any particular function, and the remedy is always to split
 along a responsibility rather than to raise the number.
+
+Whether an exclusion has outlived its reason. The measurement is printed and
+never fails: a count of zero fails nothing, and the declaration stays until the
+change recorded in docs/method/follow-ups.md removes it. Nor does the
+measurement count clauses: `clauses()` splits Go and Elixir only, so moving
+Python in would bring the module ceiling and not the function one, and the
+module ceiling is all an excluded language is measured against.
 """
 
 from __future__ import annotations
@@ -92,10 +107,43 @@ def run(scan_root: Path, report_only: bool) -> int:
         f"{function_max} per clause | widest module seen: {widest}"
     )
     for ext, entry in sorted(excluded_langs.items()):
+        measured, over = over_ceiling(scan_root, cfg, manifest, ext, module_max)
+        # Printed, never failed, and never prefixed "- ": ci/gates/coverage.py and
+        # ci/gates/fixture_declarations.py read a "- " line as a failure naming a
+        # subject, and an excluded file is not one of this run's subjects.
         print(
-            f"  {ext} excluded: {entry['reason']}\n     ends with: {entry['ends_with']}"
+            f"  {ext} excluded: {entry['reason']}\n"
+            f"     measured anyway: {len(over)} of {measured} {ext} file(s) over "
+            f"{module_max} non-comment lines"
         )
+        for rel, count in over:
+            print(f"       {rel} {count}")
+        print(f"     ends with: {entry['ends_with']}")
     return report.finish(report_only=report_only)
+
+
+def over_ceiling(
+    scan_root: Path, cfg: dict, manifest: dict, ext: str, module_max: int
+) -> tuple[int, list[tuple[str, int]]]:
+    """(files measured, [(path, count)] over the ceiling, largest first) for `ext`.
+
+    The file set is `sources()` over the declared config with its language map
+    narrowed to `ext`, not a second walk written here: what this prints has to be
+    what moving `ext` into `languages` would fail, so it selects the way that
+    move would -- tracked index, scan exclusions and all.
+    """
+    files = sources(scan_root, {**cfg, "languages": {ext: "excluded"}}, manifest)
+    comment = COMMENT.get(ext, "#")
+    over: list[tuple[str, int]] = []
+    for rel in files:
+        path = scan_root / rel
+        if not path.is_file():
+            continue
+        text = path.read_text(encoding="utf-8", errors="replace")
+        count = len(code_lines(text, comment))
+        if count > module_max:
+            over.append((rel, count))
+    return len(files), sorted(over, key=lambda o: (-o[1], o[0]))
 
 
 main_guard(run)

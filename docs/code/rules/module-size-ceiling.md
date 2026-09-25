@@ -7,8 +7,9 @@ authority: rationale
 # A module is at most 300 non-comment lines
 
 **Gate:** `ci/gates/size_ceilings.py` — non-comment lines per file, for every declared source
-language. Python is out of scope by declaration in `ci/vault.json`, with the reason and the four
-modules that end it printed on every run.
+language. Python is out of scope by declaration in `ci/vault.json`, with the reason printed on every
+run beside a live measurement: each tracked Python file counted, and the ones over the ceiling named
+with their counts.
 
 Three hundred non-comment lines per file, counted per module rather than per repository, and refused
 rather than warned. A file crossing it is split along the responsibilities that made it long, not
