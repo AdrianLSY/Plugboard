@@ -169,40 +169,111 @@ def _single_line_value(lines: list[str], at: int, variable: str) -> str:
     return value
 
 
+def _bare_key(line: str, key: str, *, item: bool = False) -> bool:
+    """`key:` holding no inline value -- opening a list item too, if `item`.
+
+    A trailing YAML comment is allowed, since ' #' opens one: refusing
+    `env:  # the list` blamed the block for not being an env: block, which it
+    was, and a compact `steps:  # fetch, refuse, merge` went unrecognised.
+    """
+    dash = r"(?:-\s+)?" if item else ""
+    return re.match(rf"\s*{dash}{key}\s*:(?:\s+#.*)?\s*$", line) is not None
+
+
+def _is_item(line: str) -> bool:
+    """A YAML sequence item: `- ` opening one, or a bare `-`."""
+    return re.match(r"\s*-(?:\s|$)", line) is not None
+
+
+def _sequence_parent(lines: list[str], item: int) -> int | None:
+    """The key the list item at `item` belongs to, in either sequence style.
+
+    Indented style sets the items past their key; compact style sets them at the
+    key's own indent. Both are valid YAML, and finding the parent by strictly
+    smaller indent alone missed every compact `steps:`. So the parent is the
+    nearest structural line above that is less indented, or equally indented
+    and not itself an item.
+    """
+    depth = _indent(lines[item])
+    for j in range(item - 1, -1, -1):
+        if _structural(lines[j]) and (
+            _indent(lines[j]) < depth
+            or (_indent(lines[j]) == depth and not _is_item(lines[j]))
+        ):
+            return j
+    return None
+
+
+def _block_end(lines: list[str], start: int) -> int:
+    """The first structural line after `start` indented no deeper than it."""
+    return next(
+        (
+            k
+            for k in range(start + 1, len(lines))
+            if _structural(lines[k]) and _indent(lines[k]) <= _indent(lines[start])
+        ),
+        len(lines),
+    )
+
+
 def _assignment_scope(lines: list[str], at: int, variable: str) -> tuple[int, int, str]:
     """(first, end, where): the source lines whose executed text sees line `at`.
 
-    A step's `env:` is visible to that step alone. Read across the whole file, an
-    exclusion left on the fetch-metadata step passed while the refusing step
-    looped over an empty variable and the merge step ran. So a step-level
-    assignment is scoped to its step -- from the enclosing `- ` item to the next
-    item at the same indent -- and a job- or workflow-level one keeps the file.
+    A step's `env:` is visible to that step alone, a job's to that job, and the
+    workflow's to every job. Read across the whole file, an exclusion left on
+    the fetch-metadata step passed while the refusing step looped over an empty
+    variable and the merge step ran. So each is identified positively -- a step
+    as a list item under `steps:`, in either sequence style; a job as a key
+    under the top-level `jobs:`; the workflow as column zero -- and an `env:`
+    anywhere else is refused. Any shape the reading did not recognise used to
+    fall back to the whole file, the most permissive search there is, and a
+    compact `steps:` sent the fetch-metadata case straight back through it.
+
+    What this does not decide: whether the enclosing `jobs:` or `steps:` is
+    GitHub's -- it reads the file's shape, not its schema.
     """
     env = _yaml_parent(lines, at)
-    if env is None or not re.match(r"\s*(?:-\s+)?env\s*:\s*$", lines[env]):
+    if env is None or not _bare_key(lines[env], "env", item=True):
         held = lines[env].strip() if env is not None else "the top level"
         raise ValueError(
             f"{variable} is assigned at line {at + 1} under {held!r}, not an env: "
             f"block, so no step's shell sees it as a variable"
         )
-    item = env if lines[env].lstrip().startswith("- ") else _yaml_parent(lines, env)
-    steps = _yaml_parent(lines, item) if item is not None else None
-    if (
-        item is None
-        or not lines[item].lstrip().startswith("- ")
-        or steps is None
-        or not re.match(r"\s*steps\s*:\s*$", lines[steps])
-    ):
+    above = _yaml_parent(lines, env)
+    if _is_item(lines[env]):
+        owner = env
+    elif above is None:
         return 0, len(lines), "anywhere in the file"
-    end = next(
-        (
-            k
-            for k in range(item + 1, len(lines))
-            if _structural(lines[k]) and _indent(lines[k]) <= _indent(lines[item])
-        ),
-        len(lines),
+    else:
+        owner = above
+    if not _is_item(lines[owner]):
+        jobs = _yaml_parent(lines, owner)
+        if (
+            jobs is not None
+            and _yaml_parent(lines, jobs) is None
+            and _bare_key(lines[jobs], "jobs")
+        ):
+            where = f"in the job at line {owner + 1} that assigns it"
+            return owner, _block_end(lines, owner), where
+        raise ValueError(
+            f"{variable} is assigned at line {at + 1} in the env: block under "
+            f"{lines[owner].strip()!r}, which is not a step's, a job's or the "
+            f"workflow's env:, so which shell sees it cannot be decided"
+        )
+    steps = _sequence_parent(lines, owner)
+    if steps is None or not _bare_key(lines[steps], "steps"):
+        held = lines[steps].strip() if steps is not None else "the top level"
+        raise ValueError(
+            f"{variable} is assigned at line {at + 1} in the env: block of the list "
+            f"item at line {owner + 1}, whose parent ({held!r}) is not steps:, so "
+            f"which step's shell sees it cannot be decided -- refused rather than "
+            f"read across the whole file"
+        )
+    return (
+        owner,
+        _block_end(lines, owner),
+        f"in the step at line {owner + 1} that assigns it",
     )
-    return item, end, f"in the step at line {item + 1} that assigns it"
 
 
 _SEPARATORS = re.compile(r"&&|\|\||;|\|")
@@ -211,6 +282,68 @@ _SEPARATORS = re.compile(r"&&|\|\||;|\|")
 def _segments(line: str) -> list[str]:
     """Each command position on a shell line, as _workflow._runs splits them."""
     return [segment.strip() for segment in _SEPARATORS.split(line)]
+
+
+# `<<WORD`, `<<-WORD`, `<<'WORD'`: a heredoc. `<<<` is a here-string, whose
+# word is on the same line, and a delimiter starting with a digit is taken for
+# arithmetic (`1 << 2`), not a heredoc.
+_HEREDOC = re.compile(r"(?<!<)<<(?!<)-?\s*(['\"]?)([A-Za-z_]\w*)\1")
+
+# What may stand before a command at its position: a reserved word opening a
+# clause, a brace group or subshell, a function's header (`f()`, `function f`),
+# a case arm's pattern, and an assignment prefixing the command (`IFS= read`).
+_LEAD = (
+    r"(?:(?:then|do|else|elif|if|while|until|!|\{)\s+|\(\s*"
+    r"|(?:function\s+)?[\w.-]+\s*\(\s*\)\s*|function\s+[\w.-]+\s+"
+    r"|[^\s()]+\)\s*|\w+=\S*\s+)*"
+)
+
+
+def _reassignment(var: str) -> re.Pattern[str]:
+    """A command position that gives `var` a new value, matched at a segment start.
+
+    `VAR=` or `VAR+=`; `export` or `readonly` with an assignment; `declare`,
+    `typeset` or `local` with or without one, because inside a function each
+    binds an empty variable over the list; `unset`; and `read`.
+    """
+    words = r"(?:\S+\s+)*?"
+    return re.compile(
+        rf"{_LEAD}(?:{var}\+?="
+        rf"|(?:export|readonly)\s+{words}{var}\+?="
+        rf"|(?:declare|typeset|local)\s+{words}{var}(?:\+?=|\s|$)"
+        rf"|(?:unset|read)\s+{words}{var}(?:\s|$))"
+    )
+
+
+def _shell_lines(text: str, first: int, end: int) -> list[tuple[int, str, bool]]:
+    """(index, text, inside a heredoc body) for each `run:` line in [first, end).
+
+    Only a `run:` body is shell. executable_lines() yields `uses:` and `with:`
+    text besides, and a loop written into `with: script:` -- JavaScript, for
+    actions/github-script -- read as the shell acting on the list. It yields a
+    key's inline value, never the key's own line, and a block's lines verbatim,
+    so a yielded text that differs from its source line is where a key begins.
+
+    A heredoc body is data handed to a command, and is marked so that the read
+    can skip it. A shell comment is dropped.
+    """
+    lines = text.splitlines()
+    shell: list[tuple[int, str, bool]] = []
+    key, pending = "", []
+    for i, line in executable_lines(text):
+        if line != lines[i]:
+            key = lines[i].lstrip().lstrip("-").split(":", 1)[0].strip()
+            pending = []
+        if key != "run" or not first <= i < end or line.strip().startswith("#"):
+            continue
+        if pending:
+            shell.append((i, line, True))
+            if line.strip() == pending[0]:
+                pending.pop(0)
+            continue
+        shell.append((i, line, False))
+        pending = [m.group(2) for m in _HEREDOC.finditer(line)]
+    return shell
 
 
 def _workflow_env_words(text: str, variable: str) -> set[str]:
@@ -228,22 +361,42 @@ def _workflow_env_words(text: str, variable: str) -> set[str]:
       * A word beginning with `/` is refused, not normalised. The workflow tests
         each word as a prefix of a repo-relative changed path, so the CODEOWNERS
         spelling copied across matches nothing and refuses nothing.
-      * A step-level `env:` counts only that step's executed lines; job- and
-        workflow-level `env:` keep the whole file. An assignment under any other
-        key is refused, because no shell sees it as a variable at all.
-      * The one read recognised is `for NAME in ...` at a command position with
-        `$VAR`, `${VAR}` or `${{ env.VAR }}` an unquoted word of its list, because
-        that is where the shell acts on each word. A shell comment is not a read,
-        nor an echo, nor a quoted expansion -- one word, so the loop runs once
-        with the whole list as a single prefix. Anything else is refused rather
-        than guessed at.
-      * A step that reassigns the variable (`VAR=`, `export VAR=`) is refused: its
-        loop acts on that value, not on the list reconciled here.
+      * A step-level `env:` counts only that step's `run:` lines, a job-level one
+        only that job's, and a workflow-level one the whole file. An `env:` that
+        is none of the three -- under a list item that is not a step, or under a
+        key that is not a job -- is refused, and so is an assignment under any
+        key but `env:`, which no shell sees as a variable at all.
+      * The one read recognised is `for NAME in ...` at a command position in a
+        `run:` body, with `$VAR`, `${VAR}` or `${{ env.VAR }}` an unquoted word
+        of its list, because that is where the shell acts on each word. An
+        `echo` is not a read (but see quoting, below), nor a shell comment, nor
+        a quoted expansion -- one word, so the loop runs once with the whole
+        list as a single prefix -- nor a loop in a heredoc body, which is data,
+        nor one in a `with:` value, which no shell runs. Anything else is
+        refused rather than guessed at.
+      * A command position that gives the variable a new value is refused,
+        because the loop acts on that value and not on the list reconciled
+        here: `VAR=` or `VAR+=` at the start of a line or a segment, or after a
+        reserved word (`then`, `do`, `else`, `elif`, `if`, `while`, `until`,
+        `!`), a brace group or subshell, a function's header, a case arm's
+        pattern or a prefix assignment; `export` or `readonly` with an
+        assignment; `declare`, `typeset` or `local` with or without one, since
+        inside a function each binds an empty variable over the list; `unset`;
+        and `read`. One inside a heredoc body is refused too, which errs toward
+        refusing.
 
-    What this still cannot decide: a read reached through a script file, a
-    function or another variable, and a reassignment by `read`, `unset` or a
-    sourced file. Stated because the check is a floor, not a proof -- the same
-    limit _workflow.executes() states for a command.
+    What this still cannot decide. Quoting is not parsed: a line is split at
+    every `;`, `&&`, `||` and `|`, quoted or not, so an echo whose quoted
+    argument holds `; for p in $VAR` counts as a read, and a quoted `<<` opens
+    a heredoc body that is not there -- which can only hide a read, so it errs
+    toward refusing. Control flow is not followed: a loop on its own line in a
+    function body counts whether or not the function is called, and a `run:`
+    step whose `shell:` is not a shell is read as one. A read reached through
+    a script file or another variable is not recognised, so its list is
+    refused; a reassignment by `eval`, `printf -v`, `mapfile` or a sourced
+    file is not seen, so its list is accepted. Stated because the check is a
+    floor, not a proof -- the same limit _workflow.executes() states for a
+    command.
     """
     lines = text.splitlines()
     var = re.escape(variable)
@@ -264,13 +417,12 @@ def _workflow_env_words(text: str, variable: str) -> set[str]:
         )
 
     first, end, where = _assignment_scope(lines, at, variable)
-    executed = [
-        (i, line)
-        for i, line in executable_lines(text)
-        if first <= i < end and not line.strip().startswith("#")
-    ]
-    reassigns = re.compile(rf"(?:export\s+)?{var}=")
-    for i, line in executed:
+    shell = _shell_lines(text, first, end)
+    # Heredoc bodies included. An assignment in one is data, so refusing it can
+    # be wrong, but only toward refusing; skipping it would let a mistaken `<<`
+    # (see the docstring on quoting) hide a real reassignment.
+    reassigns = _reassignment(var)
+    for i, line, _in_body in shell:
         if any(reassigns.match(segment) for segment in _segments(line)):
             raise ValueError(
                 f"{variable} is reassigned by the shell at line {i + 1} "
@@ -283,7 +435,8 @@ def _workflow_env_words(text: str, variable: str) -> set[str]:
     loop = re.compile(r"(?:(?:do|then|else)\s+)*for\s+\w+\s+in\s+(.*)$")
     word_lists = [
         m.group(1)
-        for _i, line in executed
+        for _i, line, in_body in shell
+        if not in_body
         for segment in _segments(line)
         if (m := loop.match(segment))
     ]

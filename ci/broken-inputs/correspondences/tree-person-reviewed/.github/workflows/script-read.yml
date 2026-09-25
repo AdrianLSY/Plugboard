@@ -1,0 +1,16 @@
+# Planted: the only loop is in a 'with:' value -- the script input of an action
+# that runs JavaScript -- which no shell runs. Read with the 'run:' bodies, it
+# counted as the shell acting on the list.
+name: script read
+on: pull_request_target
+jobs:
+  auto-merge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: refuse
+        uses: actions/github-script@v7
+        env:
+          UNATTENDED_EXCLUDED: contract/
+        with:
+          script: |
+            for prefix in $UNATTENDED_EXCLUDED; do echo "$prefix"; done

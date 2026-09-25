@@ -19,7 +19,7 @@ The tree carries its own `ci/vault.json`, because this gate's subject *is* the d
 
 ## The person-reviewed paths, in `tree-person-reviewed`
 
-**Eleven** violations, exit 1. `rebuild-plugboard` task 1.9 holds `.github/CODEOWNERS` against the
+**Eighteen** violations, exit 1. `rebuild-plugboard` task 1.9 holds `.github/CODEOWNERS` against the
 paths `.github/workflows/dependabot-auto-merge.yml` refuses to advance unattended, and asks for one
 planted omission of each kind:
 
@@ -30,6 +30,12 @@ planted omission of each kind:
    unattended patch bump could advance the suite that is the contract's authority. The exclusion
    carries a trailing comment naming `conformance/`: a resolver that read the comment as members
    would heal this omission and publish `#`, `left` and `out` besides.
+
+   This pair is also the acceptance case. The fixture's `dependabot-auto-merge.yml` sets its steps in
+   compact sequence style (the `- ` items at the same indent as `steps:`) and puts a trailing comment
+   on `env:`, both valid YAML. The omission is reported by member only because the refusing step is
+   recognised and its list read. If either spelling were refused, this line would become "its
+   resolver could not run", which is what the gate reported for the commented `env:` before.
 
 Then the ways the new resolvers refuse to guess. Each workflow below is its own declared pair against
 a manifest list, so the two sides never share a resolver kind and each refusal is the only failure
@@ -43,25 +49,46 @@ its pair can produce:
    names exactly the two words, which also shows the quotes were stripped first.
 6. `folded-exclusion` — the exclusion is a folded block scalar (`>-`). Only a single-line plain or
    quoted scalar is read; split as raw text, this one read as the single member `>-`.
+7. `matrix-item` — the exclusion is on an `env:` under a matrix `include:` entry, and a step's loop
+   reads it. A matrix value is not an environment variable. An `env:` under a list item whose parent
+   is not `steps:` cannot say which step's shell sees it, so it is refused. Before, any shape the
+   reading did not recognise fell back to searching the whole file, and this loop satisfied it.
 
-And five workflows that publish a list without acting on it. The only read recognised is a
-`for NAME in ...` word list, in the step that holds the list, with the expansion an unquoted word:
+And eleven workflows that publish a list without acting on it. The only read recognised is a
+`for NAME in ...` word list, in a `run:` body of the step that holds the list, with the expansion an
+unquoted word:
 
-7. `unread-exclusion` — the exclusion is assigned and never expanded.
-8. `commented-read` — the only loop over it is in a shell comment; the loop that runs has an empty
+8. `unread-exclusion` — the exclusion is assigned and never expanded.
+9. `commented-read` — the only loop over it is in a shell comment; the loop that runs has an empty
    list. The commented-out line puts its loop after `&&`, so only dropping comment lines refuses it.
-9. `echoed-read` — it is expanded only by an `echo`, which prints the list and refuses nothing.
-10. `other-step-read` — it is on one step's `env:` and the loop is in the next step, where the
+10. `echoed-read` — it is expanded only by an `echo`, which prints the list and refuses nothing.
+11. `heredoc-read` — the only loop is in a heredoc body, which the shell hands to `cat` as text.
+    Split on separators, that line read as a loop at a command position.
+12. `script-read` — the only loop is in a `with: script:` value for an action that runs JavaScript.
+    No shell runs a `with:` value, so only `run:` bodies are read.
+13. `other-step-read` — it is on one step's `env:` and the loop is in the next step, where the
     variable is empty: a step's `env:` is visible to that step alone.
-11. `reassigned-exclusion` — the step's shell reassigns it before the loop, so the loop acts on that
+14. `compact-other-step` — case 13 with the steps in compact sequence style. A step was recognised
+    only under a `steps:` indented less than its items, so this shape searched the whole file and
+    the next step's loop satisfied it.
+15. `commented-steps` — case 13 with a trailing comment on `steps:`, which went unrecognised the
+    same way.
+16. `reassigned-exclusion` — the step's shell reassigns it before the loop, so the loop acts on that
     value and not on the list reconciled here.
+17. `reassigned-then` — the same, with the reassignment after `then` rather than at the start of its
+    segment.
+18. `redeclared` — the same, spelled `declare UNATTENDED_EXCLUDED=...`.
+
+The resolver's docstring states what the read still does not decide. Quoting is not parsed, so an
+`echo` whose quoted argument holds `; for p in $VAR` counts as a read. None of these cases plants
+that, because the gate would accept it.
 
 ## Runs
 
 | command | expected |
 |---|---|
 | `python3 ci/gates/correspondences.py --root ci/broken-inputs/correspondences/tree` | exit 1, eight violations |
-| `python3 ci/gates/correspondences.py --root ci/broken-inputs/correspondences/tree-person-reviewed` | exit 1, eleven violations |
+| `python3 ci/gates/correspondences.py --root ci/broken-inputs/correspondences/tree-person-reviewed` | exit 1, eighteen violations |
 | `python3 ci/gates/correspondences.py` | exit 0: three live correspondences, one retired |
 
 ## Not violations here
