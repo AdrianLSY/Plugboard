@@ -471,7 +471,7 @@
     ],
     "phase": "complete",
     "budget_seconds": 40,
-    "_budget_comment": "D32. make check's wall-clock ceiling, enforced by ci/run-gates.py: printed on every run, and a run over it fails naming the remedy D32 records. Raising it is a change to D32, not a tuning step.",
+    "_budget_comment": "D32. make check's wall-clock ceiling, enforced by ci/run-gates.py: printed on every run, and a run over it fails. The failure prints the remedy D32 records unless the load average at the start was at or above the core count; then it says the breach coincided with load and only names that remedy, sending the reader to re-run alone first. Raising it is a change to D32, not a tuning step.",
     "blocking": [
       "authoring-channels",
       "banned-patterns",

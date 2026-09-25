@@ -34,8 +34,9 @@ always exits zero.
 `make check` is the command run on every commit, and slow feedback changes what
 gets written, so it carries a ceiling of the fast tier's shape: declared in
 ci/vault.json as gate_policy.budget_seconds rather than written here, the
-elapsed time printed on EVERY run, and a run over it failing with the remedy.
-Raising the number is a change to D32, not a tuning step.
+elapsed time printed on EVERY run, and a run over it failing, with the remedy
+printed unless the machine was loaded (the next section says which breach
+prints what). Raising the number is a change to D32, not a tuning step.
 
 It fits for two reasons, both about not doing work twice or in series:
 
@@ -46,7 +47,7 @@ It fits for two reasons, both about not doing work twice or in series:
     fresh directory named in GATE_OUTPUTS. Run on its own it still runs each
     gate itself, so the gate does not depend on the runner to decide.
 
-## A breach on a busy machine says so before it names the remedy
+## A breach on a busy machine says so, and withholds the remedy
 
 The budget is wall-clock, and wall-clock cannot tell a slower tree from a busy
 machine. On 2026-09-25 four concurrent runs of one unchanged tree took about 51s
@@ -56,22 +57,36 @@ rules that out while the cost has another cause, so a breach that names only it
 sends the reader to act on the wrong one.
 
 So every run also prints the 1-minute load average when it started against the
-core count, and the CPU time its gates spent. A breach whose starting load was
-at or above the core count says FIRST that it coincided with load from other
-processes and to re-run make check alone before D32's remedy applies; the
-remedy text is printed unchanged only when the machine was not loaded, and
-behind a caveat when the load or the core count cannot be read. The verdict is still wall-clock
-and a breach still fails either way: the latency a contributor waits for is
-wall-clock, and task 3.17's sleeping-gate verification observes that failure.
+core count, and the CPU time its gates spent. What a breach prints turns on
+that load:
+
+  * At or above the core count: that the breach coincided with load from other
+    processes, and to re-run make check alone before D32's remedy applies. The
+    remedy is named there, not printed; a re-run on a quiet machine prints it if
+    the breach recurs.
+  * Below the core count: D32's remedy, printed unchanged.
+  * Unknown, because the load or the core count cannot be read: to re-run make
+    check alone before acting, and then the remedy for the case where it recurs.
+    It is printed rather than withheld because the re-run cannot read the load
+    either, so a remedy withheld while the load is unknown is never printed on
+    that machine at all.
+
+The verdict is still wall-clock, and outside --report-only a breach fails in
+all three cases: the latency a contributor waits for is wall-clock, and task
+3.17's sleeping-gate verification observes that failure. Under --report-only a
+breach is printed and says it is not enforced, the standing every finding has
+there.
 
 What this does NOT decide. The load is sampled once, before the first gate
 starts, so it sees other processes and none of this run's own; load that
-arrives mid-run is not seen, and that breach names the structural remedy. The
+arrives mid-run is not seen, and that breach prints the structural remedy. The
 load average is whatever the kernel counts (Linux counts tasks waiting on I/O
 too), not a measure of CPU contention. CPU time is RUSAGE_CHILDREN, which counts
 a descendant only once it and every process between it and here were waited
-for -- every subprocess.run is. It is printed for a reader to set against D32's
-recorded run, and compared with nothing: no ceiling for it is declared.
+for -- every subprocess.run is. It is printed to be set against the same figure
+from another run of the tree, since the gates' work stays roughly level while a
+busy machine stretches the clock, and it is compared with nothing: D32 records
+wall-clock timings only, and no ceiling for CPU time is declared.
 """
 
 from __future__ import annotations
@@ -91,8 +106,9 @@ from pathlib import Path
 READS_OUTPUTS = "coverage"
 
 #: D32's structural remedy, printed unchanged on a breach the machine's load
-#: does not explain. One string, so the idle and unknown-load branches that
-#: print it cannot drift into two wordings of it.
+#: does not explain or cannot be read for; a loaded breach names it and does
+#: not print it. One string, so the idle and unknown-load branches that print
+#: it cannot drift into two wordings of it.
 REMEDY = (
     "make check is the command run on every commit, and its latency is a defect "
     "class, not a target. D32 names the remedy: move ci/gates/meta.py's isolation "
@@ -270,24 +286,38 @@ def main(argv: list[str]) -> int:
         f"   gates' CPU     : {cpu:.1f}s user+sys, {cpu / elapsed:.1f} cores busy "
         f"on average"
     )
-    if over and loaded:
-        print(
-            f"   OVER BUDGET by {elapsed - budget:.1f}s, and the breach coincided with "
-            f"load from other processes: the 1-minute load average was {load:.2f} on "
-            f"{cores} cores when the run started. Re-run make check alone before "
-            f"D32's remedy applies -- D32 rules out moving a property to the schedule "
-            f"while the cost has another cause. The run still fails: the budget is "
-            f"wall-clock, which is what a contributor waits for."
-        )
-    elif over and loaded is None:
-        print(
-            f"   OVER BUDGET by {elapsed - budget:.1f}s. Whether the machine was "
-            f"loaded at the start is unknown, so this breach cannot be told apart "
-            f"from load from other processes: re-run make check alone before acting "
-            f"on it. If it recurs there: {REMEDY}"
-        )
-    elif over:
-        print(f"   OVER BUDGET by {elapsed - budget:.1f}s. {REMEDY}")
+    if over:
+        breach = f"OVER BUDGET by {elapsed - budget:.1f}s"
+        if loaded:
+            said = (
+                f"{breach}, and the breach coincided with load from other "
+                f"processes: the 1-minute load average was {load:.2f} on {cores} "
+                f"cores when the run started. Re-run make check alone before D32's "
+                f"remedy applies -- D32 rules out moving a property to the schedule "
+                f"while the cost has another cause."
+            )
+        elif loaded is None:
+            said = (
+                f"{breach}. Whether the machine was loaded at the start is unknown, "
+                f"so this breach cannot be told apart from load from other "
+                f"processes: re-run make check alone before acting on it. If it "
+                f"recurs there: {REMEDY}"
+            )
+        else:
+            said = f"{breach}. {REMEDY}"
+        # What the breach does to the exit status, said where a reader could
+        # otherwise guess wrong. A loaded breach has just sent the reader to
+        # re-run, so it says the run fails anyway. Under --report-only nothing
+        # fails, and "the run still fails" would sit above the line announcing
+        # exit 0, so every breach there says it is reported, not enforced.
+        if force_report_only:
+            said += " Under --report-only the breach is reported, not enforced."
+        elif loaded:
+            said += (
+                " The run still fails: the budget is wall-clock, which is what a "
+                "contributor waits for."
+            )
+        print(f"   {said}")
 
     if force_report_only:
         print("\n   report-only: exiting 0 regardless of findings")
