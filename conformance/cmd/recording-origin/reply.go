@@ -22,10 +22,17 @@ type reply struct {
 
 // newReply turns the flags into a reply, refusing a combination that would
 // answer something other than what was asked for.
+//
+// -1 is --close-after's default and means "do not truncate"; every other
+// negative is refused rather than read as that default. `--close-after -2` is a
+// mistyped truncation point, and reading it as none served a complete response
+// to a test that had asked for a truncated one.
 func newReply(emitBytes, closeAfter int, emptyBody bool) (reply, error) {
 	switch {
 	case emitBytes < 0:
 		return reply{}, fmt.Errorf("--emit-bytes %d is not a count of octets", emitBytes)
+	case closeAfter < -1:
+		return reply{}, fmt.Errorf("--close-after %d is not a count of octets", closeAfter)
 	case emptyBody && emitBytes > 0:
 		return reply{}, errors.New("--empty-body states a length of zero and --emit-bytes states another")
 	case closeAfter >= 0 && closeAfter >= emitBytes:
