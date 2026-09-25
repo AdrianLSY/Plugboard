@@ -149,6 +149,28 @@ func TestAFramingFieldWhoseNameIsNotATokenIsRefused(t *testing.T) {
 	}
 }
 
+// The rest of the token rule, and the two field lines that carry no name at all.
+// Every case above is whitespace, so a readFields refusing SP and HTAB and
+// nothing else passed the whole suite. RFC 9110 5.6.2 makes a name one or more
+// tchar: a control octet or DEL inside one is a name that means what the parser
+// reading it does with the octet. An empty name and a line with no colon are not
+// field lines at all, and recording either would record a field nobody sent.
+// Each is answered 400 -- an invalid message, not one this instrument declines.
+func TestAFieldLineWithoutATokenForItsNameIsRefused(t *testing.T) {
+	t.Parallel()
+	for _, c := range []struct{ name, head string }{
+		{name: "a control octet inside a name", head: "X\x01Y: a\r\n"},
+		{name: "DEL inside a name", head: "X\x7fY: a\r\n"},
+		{name: "an empty name, the line opening with its colon", head: ": a\r\n"},
+		{name: "a field line with no colon", head: "nocolon\r\n"},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
+			assertRefused(t, http11, c.head, "400")
+		})
+	}
+}
+
 // assertRefused sends a request on version carrying head and a chunked body,
 // and asserts that it is answered with status and recorded nowhere.
 func assertRefused(t *testing.T, version, head, status string) {
@@ -162,6 +184,11 @@ func assertRefused(t *testing.T, version, head, status string) {
 	if n := len(rec.Exchanges()); n != 0 {
 		t.Errorf("recorded %d exchange(s) for a request it refused", n)
 	}
+}
+
+func firstLine(s string) string {
+	line, _, _ := strings.Cut(s, "\r\n")
+	return line
 }
 
 // Chunk framing an instrument must refuse rather than read around. Each would
