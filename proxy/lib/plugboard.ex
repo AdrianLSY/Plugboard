@@ -19,11 +19,14 @@ defmodule Plugboard do
   @doc """
   What this component reports at startup: its identity and the four provenance
   fields, from the one place that computes them (`ci/stamp.py`).
+  `Plugboard.Application.start/2` prints it, before the supervision tree starts.
 
-  A function rather than a module attribute so `ci/provenance-check.py` can assert
-  the REPORTED value against a commit and a tree status it reads from git itself.
-  An earlier attempt built its expectation out of the same stamp it compared
-  against, which passes over a blank stamp and over the wrong component name.
+  `ci/provenance-check.py` does not call this. It starts the application and
+  reads the line from startup output, then holds each field to the generated
+  stamp and the commit and tree status to what it reads from git itself. An
+  earlier attempt built its expectation out of the same stamp it compared
+  against, which passes over a blank stamp and over the wrong component name;
+  calling this with startup suppressed proved the function and not the report.
   """
   @spec provenance_line() :: String.t()
   def provenance_line do
