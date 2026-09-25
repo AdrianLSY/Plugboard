@@ -1,0 +1,16 @@
+# Planted: the only loop is in a heredoc body, which the shell hands to 'cat'
+# as text. Split on separators, the body's line read as a loop at a command
+# position.
+name: heredoc read
+on: pull_request_target
+jobs:
+  auto-merge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: refuse
+        env:
+          UNATTENDED_EXCLUDED: contract/
+        run: |
+          cat <<'EOS'
+          for prefix in $UNATTENDED_EXCLUDED; do echo "$prefix"; done
+          EOS

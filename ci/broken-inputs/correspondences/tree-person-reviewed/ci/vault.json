@@ -859,6 +859,104 @@
           "variable": "UNATTENDED_EXCLUDED",
           "members": "paths refused unattended"
         }
+      },
+      "compact-other-step": {
+        "subject": "an exclusion on one step's env and read in the next, with the steps in compact sequence style",
+        "computed": {
+          "kind": "manifest_list",
+          "path": "fixture_reviewed",
+          "members": "paths the owner reviews"
+        },
+        "published": {
+          "kind": "workflow_env_words",
+          "path": ".github/workflows/compact-other-step.yml",
+          "variable": "UNATTENDED_EXCLUDED",
+          "members": "paths refused unattended"
+        }
+      },
+      "commented-steps": {
+        "subject": "an exclusion on one step's env and read in the next, under a steps: key carrying a trailing comment",
+        "computed": {
+          "kind": "manifest_list",
+          "path": "fixture_reviewed",
+          "members": "paths the owner reviews"
+        },
+        "published": {
+          "kind": "workflow_env_words",
+          "path": ".github/workflows/commented-steps.yml",
+          "variable": "UNATTENDED_EXCLUDED",
+          "members": "paths refused unattended"
+        }
+      },
+      "matrix-item": {
+        "subject": "an exclusion on a list item whose parent is not steps:, read by a step's loop",
+        "computed": {
+          "kind": "manifest_list",
+          "path": "fixture_reviewed",
+          "members": "paths the owner reviews"
+        },
+        "published": {
+          "kind": "workflow_env_words",
+          "path": ".github/workflows/matrix-item.yml",
+          "variable": "UNATTENDED_EXCLUDED",
+          "members": "paths refused unattended"
+        }
+      },
+      "reassigned-then": {
+        "subject": "an exclusion the step's shell replaces after a reserved word, before its loop reads it",
+        "computed": {
+          "kind": "manifest_list",
+          "path": "fixture_reviewed",
+          "members": "paths the owner reviews"
+        },
+        "published": {
+          "kind": "workflow_env_words",
+          "path": ".github/workflows/reassigned-then.yml",
+          "variable": "UNATTENDED_EXCLUDED",
+          "members": "paths refused unattended"
+        }
+      },
+      "redeclared": {
+        "subject": "an exclusion the step's shell replaces through declare, before its loop reads it",
+        "computed": {
+          "kind": "manifest_list",
+          "path": "fixture_reviewed",
+          "members": "paths the owner reviews"
+        },
+        "published": {
+          "kind": "workflow_env_words",
+          "path": ".github/workflows/redeclared.yml",
+          "variable": "UNATTENDED_EXCLUDED",
+          "members": "paths refused unattended"
+        }
+      },
+      "heredoc-read": {
+        "subject": "an exclusion whose only loop is in a heredoc body",
+        "computed": {
+          "kind": "manifest_list",
+          "path": "fixture_reviewed",
+          "members": "paths the owner reviews"
+        },
+        "published": {
+          "kind": "workflow_env_words",
+          "path": ".github/workflows/heredoc-read.yml",
+          "variable": "UNATTENDED_EXCLUDED",
+          "members": "paths refused unattended"
+        }
+      },
+      "script-read": {
+        "subject": "an exclusion whose only loop is in a with: value no shell runs",
+        "computed": {
+          "kind": "manifest_list",
+          "path": "fixture_reviewed",
+          "members": "paths the owner reviews"
+        },
+        "published": {
+          "kind": "workflow_env_words",
+          "path": ".github/workflows/script-read.yml",
+          "variable": "UNATTENDED_EXCLUDED",
+          "members": "paths refused unattended"
+        }
       }
     },
     "retired": {}

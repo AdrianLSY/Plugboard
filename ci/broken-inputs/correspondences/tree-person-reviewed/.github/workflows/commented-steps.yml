@@ -1,0 +1,16 @@
+# Planted: a trailing comment on 'steps:', with the list on one step's env and
+# the loop in the next. 'steps:' was recognised only with nothing after the
+# colon, so this shape fell back to the whole file, where the loop satisfied it.
+name: commented steps
+on: pull_request_target
+jobs:
+  auto-merge:
+    runs-on: ubuntu-latest
+    steps:  # fetch, refuse, merge
+      - id: meta
+        env:
+          UNATTENDED_EXCLUDED: contract/
+        run: echo "metadata"
+      - name: refuse
+        run: |
+          for prefix in $UNATTENDED_EXCLUDED; do echo "$prefix"; done
