@@ -85,7 +85,7 @@ func TestMalformedFramingIsRefusedRatherThanGuessedAt(t *testing.T) {
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := readBody(bufio.NewReader(strings.NewReader(c.body)), c.fields)
+			got, _, err := readBody(bufio.NewReader(strings.NewReader(c.body)), c.fields)
 			if err == nil {
 				t.Fatalf("read %d octet(s) and reported no error -- the instrument "+
 					"resolved a framing ambiguity instead of refusing it, so an "+
@@ -105,7 +105,7 @@ func TestWellFramedBodiesAreStillRead(t *testing.T) {
 	t.Parallel()
 	t.Run("a declared length reads exactly that many octets", func(t *testing.T) {
 		t.Parallel()
-		body, err := readBody(bufio.NewReader(strings.NewReader(fiveOctets+"trailing")),
+		body, chunked, err := readBody(bufio.NewReader(strings.NewReader(fiveOctets+"trailing")),
 			[]recorder.Field{{Name: contentLength, Value: "5"}})
 		if err != nil {
 			t.Fatalf("a single valid Content-Length was refused: %v", err)
@@ -113,10 +113,13 @@ func TestWellFramedBodiesAreStillRead(t *testing.T) {
 		if string(body) != fiveOctets {
 			t.Errorf("read %q, want %q", body, fiveOctets)
 		}
+		if chunked {
+			t.Error("a Content-Length body was reported as chunked")
+		}
 	})
 	t.Run("no length field means no body", func(t *testing.T) {
 		t.Parallel()
-		body, err := readBody(bufio.NewReader(strings.NewReader("")),
+		body, _, err := readBody(bufio.NewReader(strings.NewReader("")),
 			[]recorder.Field{{Name: "Host", Value: "x"}})
 		if err != nil {
 			t.Fatalf("a request with no body was refused: %v", err)
@@ -125,20 +128,4 @@ func TestWellFramedBodiesAreStillRead(t *testing.T) {
 			t.Errorf("read %d octet(s) from a request declaring no body", len(body))
 		}
 	})
-}
-
-// The refusal this instrument already had, asserted so the fix above cannot
-// quietly reclassify it. A transfer coding is framing this instrument does not
-// IMPLEMENT; a malformed length is framing that is INVALID. They are different
-// answers to the sender and the distinction is worth keeping.
-func TestATransferCodingIsStillRefusedAsUnimplemented(t *testing.T) {
-	t.Parallel()
-	_, err := readBody(bufio.NewReader(strings.NewReader("")),
-		[]recorder.Field{{Name: "Transfer-Encoding", Value: "chunked"}})
-	if err == nil {
-		t.Fatal("a chunked body was accepted; this instrument reads Content-Length framing only")
-	}
-	if !strings.Contains(err.Error(), "transfer-encoding") {
-		t.Errorf("the refusal does not name the coding it will not read: %v", err)
-	}
 }

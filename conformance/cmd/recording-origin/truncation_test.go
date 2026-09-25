@@ -27,7 +27,7 @@ import (
 // and stay silent in production.
 func TestATruncatedBodyIsReportedRatherThanReadAsACleanClose(t *testing.T) {
 	t.Parallel()
-	_, err := readBody(bufio.NewReader(strings.NewReader("AB")),
+	_, _, err := readBody(bufio.NewReader(strings.NewReader("AB")),
 		[]recorder.Field{{Name: contentLength, Value: "5"}})
 	if err == nil {
 		t.Fatal("a body declaring five octets and carrying two was accepted")
