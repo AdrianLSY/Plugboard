@@ -11,11 +11,12 @@
 #    authority. CODEOWNERS requests the review and nothing blocks on it -- a sole
 #    maintainer cannot approve their own pull request -- so this refusal is what
 #    stops an unattended advance. The step after it disarms an auto-merge an
-#    earlier run armed, so the refusal holds against a later push and not only
-#    within its own run. The two lists are two encodings on purpose, each read
-#    by a different party, and ci/gates/correspondences.py fails when either
-#    names a path the other omits or CODEOWNERS names one the tree does not
-#    hold (rebuild-plugboard task 1.9).
+#    earlier run armed, and no two runs for one pull request overlap
+#    (`concurrency:` below), so the refusal holds against a later push and not
+#    only within its own run. The two lists are two encodings on purpose, each
+#    read by a different party, and ci/gates/correspondences.py fails when
+#    either names a path the other omits or CODEOWNERS names one the tree does
+#    not hold (rebuild-plugboard task 1.9).
 #
 # `pull_request_target` is required for the token to be able to merge, so this
 # workflow NEVER checks out the pull request's code and never runs it. The
@@ -27,6 +28,34 @@ on: pull_request_target
 permissions:
   contents: write
   pull-requests: write
+
+# One run at a time per pull request, each finishing before the next starts.
+# The disarm step reads whether auto-merge is armed, and that read is only as
+# good as the moment it is made. Unserialised, two runs interleave: a clean run
+# reads the file list, a push touching contract/ lands and starts a second run,
+# the second run refuses and its disarm step reads "not armed" -- and then the
+# first run's merge step arms auto-merge over a head holding the reviewed path.
+# The reverse loses a legitimate merge: a stale run whose event counts more
+# files than the list now holds refuses, and disarms what a newer run armed.
+# Serialised, a run starts only after the one before it has finished arming or
+# refusing, so what its disarm step reads is what that run left, and the run
+# for the newest event acts last.
+#
+# cancel-in-progress is false, not true: a cancelled run can be stopped after
+# its `gh pr merge --auto` request has reached the forge, and whether that
+# arming lands before the next run reads the state is the same race in a
+# smaller window. Finishing costs seconds.
+#
+# What this does NOT decide. Runs are taken in the order GitHub queued them, and
+# a queued run that has not started is cancelled when a newer one queues behind
+# it, which loses nothing: every run reads the file list and the armed state
+# when it runs, not when its event fired. A re-run of an older run queues last
+# and acts on its own event's file count, so where the list has shrunk since, it
+# refuses -- the direction to err in. The merge step does not pin the head
+# commit; a push after arming is covered by the run it queues, not by the merge.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
 
 jobs:
   auto-merge:
