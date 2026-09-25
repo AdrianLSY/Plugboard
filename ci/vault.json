@@ -43,6 +43,7 @@
     ".claude": "Agent-harness files whose frontmatter keys and file layout are owned by the Claude Code loader and by vendored upstream skills. This repository does not author their format and cannot impose a classification on it.",
     ".agents": "Codex agent-harness files whose SKILL.md frontmatter, agents/openai.yaml metadata and discovery layout are owned by the Codex skill loader, by vendored upstream skills and by OpenSpec's generator. This repository does not author their format and cannot impose a classification on it.",
     "reference": "Read-only prior art, untracked by design (.gitignore). Cited by file:line only; obtaining instructions and pinned revisions live in the spine.",
+    "handoff": "Agent handoff documents one session leaves for the next, written by the handoff skill (.agents/skills/handoff, .claude/skills/handoff). Untracked by design (.gitignore) and excluded from the graph (.graphifyignore), so no checkout holds it; declared so that a gate walking a working copy skips it rather than failing on an undeclared directory.",
     "graphify-out": "Generated code map. Layer 5 of the precedence order; regenerated from the AST, never hand-edited, and not part of the hand-written vault.",
     "node_modules": "Third-party dependency trees.",
     ".git": "Version-control internals.",

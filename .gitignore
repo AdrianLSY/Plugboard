@@ -14,3 +14,6 @@ __pycache__/
 /terminator/terminator
 /conformance/conformance
 conformance/dist/
+# Agent handoff documents: working notes one session leaves for the next, written by
+# the handoff skill. They stay in the working copy and never reach a commit.
+/handoff/

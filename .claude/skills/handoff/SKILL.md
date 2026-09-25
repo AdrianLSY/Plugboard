@@ -5,7 +5,9 @@ argument-hint: "What will the next session be used for?"
 disable-model-invocation: true
 ---
 
-Write a handoff document summarising the current conversation so a fresh agent can continue the work. Save to the temporary directory of the user's OS - not the current workspace.
+Write a handoff document summarising the current conversation so a fresh agent can continue the work. Save it in the repository's `handoff/` directory, creating the directory if it does not exist, as `handoff/<YYYY-MM-DD>-<short-slug>.md`. The directory is gitignored, so the document stays in the working copy for the next session and never reaches a commit. Put any supporting files it refers to (scripts, data) in `handoff/<YYYY-MM-DD>-<short-slug>/` beside it.
+
+When you finish, tell the user the document's path and give them a one-line prompt that starts the next session from it.
 
 Include a "suggested skills" section in the document, naming which skills the next agent should call the Skill tool for.
 
