@@ -8,9 +8,16 @@
 // case a field arrived in is gone before any assertion can see it, and the two
 // properties this instrument exists to measure are the two it would have lost.
 //
-// What it deliberately does not do: chunked transfer coding. A body whose
-// framing it cannot read is refused loudly with a stated reason rather than read
+// It reads two framings: a declared Content-Length, and a single chunked
+// transfer coding, whose chunk framing it removes and records that it removed.
+// Any other framing is refused loudly with a stated reason rather than read
 // wrongly, because an instrument that guesses is worse than one that stops.
+//
+// It answers in one of four ways, chosen at startup: 204 with no content, which
+// is the default; 200 with a stated number of recorder.Pattern octets; the same
+// head with the connection closed after fewer octets than it stated, which is the
+// truncation a proxy must not report as a complete response; and 200 stating a
+// length of zero, which is the empty body on a status that permits one.
 package main
 
 import (
@@ -23,7 +30,6 @@ import (
 	"io"
 	"net"
 	"os"
-	"strconv"
 	"strings"
 
 	"plugboard/conformance/internal/buildstamp"
@@ -35,19 +41,25 @@ func main() {
 	listen := flag.String("listen", "127.0.0.1:0", "address to listen on")
 	recordDir := flag.String("record-dir", "", "directory to write one file per exchange into")
 	readyFile := flag.String("ready-file", "", "file to write the bound address into once listening")
-	emitBytes := flag.Int("emit-bytes", 0, "respond with this many octets of recorder.Pattern")
+	emitBytes := flag.Int("emit-bytes", 0, "respond 200 stating and sending this many octets of recorder.Pattern")
+	closeAfter := flag.Int("close-after", -1, "with --emit-bytes, close after sending this many of the octets it stated")
+	emptyBody := flag.Bool("empty-body", false, "respond 200 stating a length of zero")
 	flag.Parse()
 
 	if _, err := fmt.Fprintln(os.Stdout, buildstamp.Line()); err != nil {
 		os.Exit(1)
 	}
-	if err := run(*listen, *recordDir, *readyFile, *emitBytes); err != nil {
+	answer, err := newReply(*emitBytes, *closeAfter, *emptyBody)
+	if err == nil {
+		err = run(*listen, *recordDir, *readyFile, answer)
+	}
+	if err != nil {
 		fmt.Fprintf(os.Stderr, "recording-origin: %v\n", err)
 		os.Exit(1)
 	}
 }
 
-func run(listen, recordDir, readyFile string, emitBytes int) error {
+func run(listen, recordDir, readyFile string, answer reply) error {
 	var lc net.ListenConfig
 	ln, err := lc.Listen(context.Background(), "tcp", listen)
 	if err != nil {
@@ -73,14 +85,14 @@ func run(listen, recordDir, readyFile string, emitBytes int) error {
 		if err != nil {
 			return nil
 		}
-		if err := serve(conn, rec, recordDir, emitBytes); err != nil &&
+		if err := serve(conn, rec, recordDir, answer); err != nil &&
 			!errors.Is(err, io.EOF) {
 			warn(err)
 		}
 	}
 }
 
-func serve(conn net.Conn, rec *recorder.Ordered, recordDir string, emitBytes int) error {
+func serve(conn net.Conn, rec *recorder.Ordered, recordDir string, answer reply) error {
 	defer closing(conn, "connection")
 	br := bufio.NewReader(conn)
 
@@ -92,32 +104,40 @@ func serve(conn net.Conn, rec *recorder.Ordered, recordDir string, emitBytes int
 	if err != nil {
 		return err
 	}
-	body, err := readBody(br, fields)
+	body, chunked, err := readBody(br, fields)
 	if err != nil {
 		// 400 for framing that is INVALID, 501 for framing this instrument does
 		// not implement. RFC 9112 6.3 makes an invalid Content-Length an
-		// unrecoverable error answered with 400; a transfer coding is a thing
-		// this origin declines to read, which is a different statement.
-		status := "501 Not Implemented"
-		if errors.Is(err, errInvalidFraming) {
+		// unrecoverable error answered with 400; a transfer coding other than
+		// chunked is a thing this origin declines to read, which is a different
+		// statement. Anything else -- a body that stopped early -- is not a
+		// refusal the peer can act on, and gets no answer.
+		status := ""
+		switch {
+		case errors.Is(err, errInvalidFraming):
 			status = "400 Bad Request"
+		case errors.Is(err, errUnimplemented):
+			status = "501 Not Implemented"
 		}
-		if writeErr := writeStatus(conn, status, nil); writeErr != nil {
-			warn(writeErr)
+		if status != "" {
+			if writeErr := writeStatus(conn, status, nil); writeErr != nil {
+				warn(writeErr)
+			}
 		}
 		return err
 	}
 
-	rec.Record(method, target, fields, body)
+	if chunked {
+		rec.RecordChunked(method, target, fields, body)
+	} else {
+		rec.Record(method, target, fields, body)
+	}
 	if recordDir != "" {
 		if err := recorder.Persist(recordDir, rec.Exchanges()); err != nil {
 			return err
 		}
 	}
-	if emitBytes > 0 {
-		return writeStatus(conn, "200 OK", recorder.Pattern(emitBytes))
-	}
-	return writeStatus(conn, "204 No Content", nil)
+	return writeReply(conn, answer)
 }
 
 // closing reports what it could not close instead of discarding it. `_ =` is not
@@ -172,104 +192,10 @@ func readFields(br *bufio.Reader) ([]recorder.Field, error) {
 	}
 }
 
-// errInvalidFraming marks a message whose framing is not merely unsupported but
-// malformed. serve answers 400 for it and 501 for framing this instrument simply
-// does not implement, because "your message is invalid" and "I do not do that"
-// are different answers and a sender can act on only one of them.
-var errInvalidFraming = errors.New("invalid message framing")
-
-// readBody reads exactly the body the fields declare, or refuses.
-//
-// It resolves nothing. Two Content-Length fields are refused rather than reduced
-// to one, EVEN WHERE THEY AGREE -- RFC 9112 6.3 permits collapsing an identical
-// pair, and this instrument declines the permission, because collapsing is
-// normalising and the package this serves is documented as normalising nothing.
-// The value is read as a count of octets and nothing else: no sign, no list, no
-// surrounding space, so `-5`, `+5` and `5, 5` are each refused rather than
-// silently becoming 5, -5 or a body that was never read.
-func readBody(br *bufio.Reader, fields []recorder.Field) ([]byte, error) {
-	declared := make([]string, 0, 1)
-	for _, f := range fields {
-		switch strings.ToLower(f.Name) {
-		case "transfer-encoding":
-			return nil, fmt.Errorf("transfer-encoding %q: this instrument reads "+
-				"Content-Length framing only, and refuses rather than guessing at a "+
-				"body it cannot frame", f.Value)
-		case "content-length":
-			declared = append(declared, f.Value)
-		}
-	}
-	if len(declared) > 1 {
-		return nil, fmt.Errorf("%w: more than one content-length field (%s) -- this is "+
-			"one of the two request-smuggling shapes, and which one a hop believes is "+
-			"the whole defect, so this instrument records neither",
-			errInvalidFraming, strings.Join(declared, ", "))
-	}
-	if len(declared) == 0 {
-		return nil, nil
-	}
-	length, err := octetCount(declared[0])
-	if err != nil {
-		return nil, fmt.Errorf("%w: content-length %q is not a count of octets (%v) -- "+
-			"read as one it would frame a body nobody sent", errInvalidFraming, declared[0], err)
-	}
-	if length == 0 {
-		return nil, nil
-	}
-	// Grown as octets arrive rather than allocated from the declared number: a
-	// peer states that number, and this instrument is pointed at adversarial
-	// inputs by design.
-	var body bytes.Buffer
-	if read, err := io.CopyN(&body, br, length); err != nil {
-		// io.CopyN reports a short read as io.EOF, and run() suppresses io.EOF so
-		// an ordinary connection close between requests stays quiet. A body that
-		// stopped early is the opposite of a quiet end, so it is restated as what
-		// it is -- which is also what io.ReadFull said here before this read
-		// stopped pre-allocating.
-		if errors.Is(err, io.EOF) {
-			err = fmt.Errorf("%w after %d of them", io.ErrUnexpectedEOF, read)
-		}
-		return nil, fmt.Errorf("reading %d body octet(s): %w", length, err)
-	}
-	return body.Bytes(), nil
-}
-
-// octetCount reads RFC 9110's Content-Length production and nothing wider: one
-// or more decimal digits. strconv alone is too permissive here -- it accepts a
-// sign, and a signed length parsed as a number is how `-5` became "no body".
-func octetCount(v string) (int64, error) {
-	if v == "" {
-		return 0, errors.New("empty")
-	}
-	for i := 0; i < len(v); i++ {
-		if v[i] < '0' || v[i] > '9' {
-			return 0, fmt.Errorf("contains %q, which is not a decimal digit", v[i])
-		}
-	}
-	// ParseInt, not ParseUint: the digit check above already refuses a sign, so
-	// the value is non-negative by construction and this returns the width
-	// io.CopyN takes -- which leaves no conversion for anyone to audit.
-	return strconv.ParseInt(v, 10, 64)
-}
-
 func readLine(br *bufio.Reader) ([]byte, error) {
 	line, err := br.ReadBytes('\n')
 	if err != nil {
 		return nil, err
 	}
 	return bytes.TrimSuffix(bytes.TrimSuffix(line, []byte("\n")), []byte("\r")), nil
-}
-
-func writeStatus(w io.Writer, status string, body []byte) error {
-	head := fmt.Sprintf("HTTP/1.1 %s\r\nContent-Length: %d\r\nConnection: close\r\n\r\n",
-		status, len(body))
-	if _, err := w.Write([]byte(head)); err != nil {
-		return fmt.Errorf("writing the status line: %w", err)
-	}
-	if len(body) > 0 {
-		if _, err := w.Write(body); err != nil {
-			return fmt.Errorf("writing %d body octet(s): %w", len(body), err)
-		}
-	}
-	return nil
 }

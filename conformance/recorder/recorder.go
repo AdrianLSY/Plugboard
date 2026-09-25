@@ -41,6 +41,11 @@ type Field struct {
 // Field order is chosen for govet's fieldalignment, which is on because task 2.3
 // asked for `enable-all` and the trade was accepted rather than tuned away. It
 // reads fine anyway: the digest is the identity of what arrived.
+//
+// Chunked says the body arrived in chunked transfer coding and Body holds the
+// octets with the chunk framing removed -- sizes, extensions and delimiters are
+// framing, not content, and a digest over them would measure the hop's framing
+// rather than what was sent through it.
 type Exchange struct {
 	Digest    string
 	Method    []byte
@@ -48,6 +53,7 @@ type Exchange struct {
 	Fields    []Field
 	Body      []byte
 	Length    int
+	Chunked   bool
 }
 
 // Recorder is the interface the assertion suite is written against, so the same
@@ -70,6 +76,19 @@ func NewOrdered() *Ordered { return &Ordered{} }
 // owns its buffers and a recorder that aliased them would report whatever the
 // caller did next.
 func (o *Ordered) Record(method, rawTarget []byte, fields []Field, body []byte) {
+	o.record(method, rawTarget, fields, body, false)
+}
+
+// RecordChunked stores one exchange whose body arrived in chunked transfer
+// coding, body being the de-framed octets. It is not on the Recorder interface:
+// the assertion suite measures fidelity, which framing does not change, and the
+// deliberately defective recorder it is proven against should differ from this
+// one in exactly the two properties it was built to get wrong.
+func (o *Ordered) RecordChunked(method, rawTarget []byte, fields []Field, body []byte) {
+	o.record(method, rawTarget, fields, body, true)
+}
+
+func (o *Ordered) record(method, rawTarget []byte, fields []Field, body []byte, chunked bool) {
 	sum := sha256.Sum256(body)
 	o.exchanges = append(o.exchanges, Exchange{
 		Method:    append([]byte(nil), method...),
@@ -78,6 +97,7 @@ func (o *Ordered) Record(method, rawTarget []byte, fields []Field, body []byte) 
 		Body:      append([]byte(nil), body...),
 		Digest:    hex.EncodeToString(sum[:]),
 		Length:    len(body),
+		Chunked:   chunked,
 	})
 }
 
@@ -94,6 +114,7 @@ type persisted struct {
 	Digest    string      `json:"digest_sha256"`
 	Fields    [][2]string `json:"fields"`
 	Length    int         `json:"octet_count"`
+	Chunked   bool        `json:"chunked"`
 }
 
 // Persist writes one file per exchange into dir, named by its index.
@@ -113,6 +134,7 @@ func Persist(dir string, exchanges []Exchange) error {
 			Body:      base64.StdEncoding.EncodeToString(e.Body),
 			Digest:    e.Digest,
 			Length:    e.Length,
+			Chunked:   e.Chunked,
 		}, "", "  ")
 		if err != nil {
 			return fmt.Errorf("exchange %d: %w", i, err)
