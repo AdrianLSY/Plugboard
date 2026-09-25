@@ -203,7 +203,7 @@ def main(argv: list[str]) -> int:
     try:
         first = [m for m in modules if m != READS_OUTPUTS]
         with ThreadPoolExecutor(max_workers=cores or 4) as pool:
-            by_module = dict(zip(first, pool.map(run_one, first)))
+            by_module = dict(zip(first, pool.map(run_one, first), strict=True))
         if READS_OUTPUTS in modules:
             by_module[READS_OUTPUTS] = run_one(
                 READS_OUTPUTS, env={**os.environ, "GATE_OUTPUTS": str(captured)}

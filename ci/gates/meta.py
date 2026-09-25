@@ -187,7 +187,9 @@ def run(scan_root: Path, report_only: bool) -> int:
 
     with ThreadPoolExecutor(max_workers=WORKERS) as pool:
         outcomes = list(pool.map(demonstrate, scenarios))
-    for (_module, _path, gid, tree), (code, neutered, err) in zip(scenarios, outcomes):
+    for (_module, _path, gid, tree), (code, neutered, err) in zip(
+        scenarios, outcomes, strict=True
+    ):
         label = f"{gid}/{tree.name}"
 
         # (3) the gate fails on its own violating input
@@ -256,7 +258,7 @@ def run(scan_root: Path, report_only: bool) -> int:
     with ThreadPoolExecutor(max_workers=WORKERS) as pool:
         codes = list(pool.map(lambda p: run_gate(p[3], p[1]), pairs))
     cross = 0
-    for (gid, tree, other, _path), code in zip(pairs, codes):
+    for (gid, tree, other, _path), code in zip(pairs, codes, strict=True):
         if code != 0:
             cross += 1
             report.fail(
