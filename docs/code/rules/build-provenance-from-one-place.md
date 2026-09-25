@@ -12,7 +12,9 @@ Four values — version, commit, dirty-tree marker, build time — are derived b
 nothing else. Each component reads a generated stamp. No component asks git anything.
 
 Every component reports the line at startup, so an operator holding a running process can say which
-commit it is and whether the tree it was built from was clean.
+commit it is and whether the tree it was built from was clean. The Go mains print it first; the proxy
+prints it from its application callback, `Plugboard.Application.start/2`, before its supervision tree
+starts.
 
 ## Why
 
@@ -57,9 +59,18 @@ interpreter**.
 
 ## What it cannot decide
 
-Whether the values are right. That needs the components run and their output compared against git read
-independently, which is `ci/provenance-check.py`'s job and runs in CI. Note that its dirty-marker probe
-reports **inconclusive** rather than a pass when the tree it runs on is already dirty; a check that
-cannot tell those apart is one that claims a pass it did not earn.
+Whether the values are right. That needs each component started and the line it prints compared, field
+by field, with two things: its generated stamp, read from the source `ci/stamp.py` wrote, and git, read
+independently. Each comparison passes over what the other catches. A component reporting something
+other than its stamp — a build time from its own clock — agrees with git about everything git knows; a
+blank or stale stamp reported faithfully agrees with itself. That is `ci/provenance-check.py`'s job, and
+it runs in CI.
+
+It observes startup rather than calling the function that formats the line. An earlier version ran the
+proxy with its application suppressed and called `Plugboard.provenance_line/0` itself, and passed while
+the proxy had no startup path that printed anything.
+
+Note that its dirty-marker probe reports **inconclusive** rather than a pass when the tree it runs on is
+already dirty; a check that cannot tell those apart is one that claims a pass it did not earn.
 
 Whether a released artifact carries a stamp at all — that is task 70.7's, and is not this gate's.

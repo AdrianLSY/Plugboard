@@ -40,11 +40,13 @@ jobs:
       # run and fails above the budget declared in ci/vault.json.
       - run: make test-fast
 
-      # Every component started, and the provenance line it prints compared
-      # against a commit and a tree status read from git INDEPENDENTLY -- not
-      # rebuilt out of the stamp under test, which is a comparison that cannot
-      # fail. Task 3.13. It runs here because this job already has both
-      # toolchains and has just run `make warm`, which generates the stamps.
+      # Every component started -- the proxy with its application running --
+      # and the provenance line it prints compared, field by field, with its
+      # generated stamp and with a commit, a tree status and a version read from
+      # git INDEPENDENTLY. The stamp is never the only expectation: a blank one
+      # reported faithfully equals itself. Task 3.13. It runs here because this
+      # job already has both toolchains and has just run `make warm`, which
+      # generates the stamps.
       #
       # It is outside the timed region above: this starts four processes and its
       # subject is correctness, not latency.
