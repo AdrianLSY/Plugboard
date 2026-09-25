@@ -570,7 +570,9 @@ step, of which `ci/gates/coverage.py` spent 62 and `ci/gates/meta.py` 49 on the 
 | The runner, and the meta-gate's scenario and cross-product runs, were sequential over independent processes | Both run their processes concurrently, bounded by the core count, and report in roster order |
 
 After: 13.0 seconds on the same workstation, every gate's verdict unchanged — 58 scenarios proven to
-fail by their own logic, no cross-gate failure.
+fail by their own logic, no cross-gate failure. On CI's four-core runner, where the same run took 105
+seconds before, it took 14.4 seconds on push and 16.0 on the pull request, each printing a load at
+start under 0.4 -- about two and a half times inside the budget.
 
 **What the budget is for, given that.** Concurrency divides the cross-product's cost by the core count
 and does nothing to its growth: every gate added runs against every violating tree, and every tree
