@@ -16,6 +16,22 @@ byte-unchanged":
   * every violation is reported in one run, and a passing run states the
     baseline it compared against and how many files it covered.
 
+And one property the knowledge-base requirement does not hold, owned instead by
+D31 (docs/decisions/d31-out-of-scope-containment.md): a declared path may not
+lie inside a declaring change's own tree, nor contain it. The byte-unchanged
+assertion cannot observe which change is editing, so a change that declares its
+own artifacts out of scope is refused every revision to them -- which is what
+`rebuild-plugboard` did to its sixteen specifications until task 3.16 emptied
+the declaration. The containing direction is the same defect one level up: a
+declared `openspec/changes` freezes every change beneath it, its declarant
+included.
+
+An EMPTY declaration is legitimate only when gate_policy.declared_vacuity says
+why and what ends it, the mechanism ci/gates/component_boundaries.py used before
+task 1.1. Declared, it passes and states both on every run; undeclared, it fails
+as it always has; and a declaration that gains a path while the vacuity is still
+declared fails, so the exemption cannot outlive its reason.
+
 The concrete defect that motivated it: this change invokes `/opsx:update` seven
 times, and that tool reconciles the artifacts *around* the one it was asked to
 revise, over glob-expanded spec paths, forbidding only their creation and never
@@ -45,6 +61,7 @@ ci/broken-inputs/out-of-scope/GATE.md for the reproduction command.
 
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import sys
@@ -75,6 +92,10 @@ RULE_NOTE = "docs/method/rules/out-of-scope-byte-unchanged.md"
 SPEC_SET_ROOT = "openspec/changes/rebuild-plugboard/specs"
 SPEC_FILENAME = "spec.md"
 EXPECTED_SPEC_FILES = 16
+
+#: Where a change's own tree lives. The expiry check below reads the same place.
+CHANGES_DIR = "openspec/changes"
+CONTAINMENT_OWNER = "docs/decisions/d31-out-of-scope-containment.md"
 
 
 def _git(root: Path, *args: str) -> tuple[int, bytes]:
@@ -169,6 +190,49 @@ def _declares_own_set(scan_root: Path) -> bool:
     return (scan_root / "ci" / MANIFEST_NAME).is_file()
 
 
+def _self_contained(prefixes: list[str], owners: list[str]) -> list[tuple[str, str]]:
+    """(path, declarant) for every declared path inside, or containing, its
+    declarant's own tree. D31: the byte-unchanged assertion cannot see who is
+    editing, so either shape refuses the declarant every revision to its own
+    artifacts."""
+    found = []
+    for prefix in prefixes:
+        for owner in owners:
+            tree = f"{CHANGES_DIR}/{owner}"
+            if _under_any(prefix, [tree]) or _under_any(tree, [prefix]):
+                found.append((prefix, owner))
+    return found
+
+
+def _empty_by_declaration(
+    manifest: dict, prefixes: list[str], report: Report
+) -> dict | None:
+    """The vacuity declaration when it legitimately applies, else None.
+
+    Fails a vacuity declared over a non-empty set and one missing its reason or
+    ending, so returning a declaration always means the emptiness is explained.
+    """
+    vacuity = manifest.get("gate_policy", {}).get("declared_vacuity", {}).get(GATE_ID)
+    if not vacuity:
+        return None
+    if prefixes:
+        report.fail(
+            f"{GATE_ID}: ci/vault.json out_of_scope declares {len(prefixes)} path(s) "
+            f"and gate_policy.declared_vacuity still declares the set empty "
+            f"({vacuity.get('ends_with')}) -- the declaration has outlived its reason "
+            f"and must be removed"
+        )
+        return None
+    if not (vacuity.get("reason") and vacuity.get("ends_with")):
+        report.fail(
+            f"{GATE_ID}: declared vacuity is incomplete (needs both 'reason' and "
+            f"'ends_with') -- a declaration with no ending condition is a permanent "
+            f"exemption"
+        )
+        return None
+    return vacuity
+
+
 def run(scan_root: Path, report_only: bool) -> int:
     report = Report(GATE_ID, RULE_NOTE)
     if not _declares_own_set(scan_root):
@@ -193,13 +257,28 @@ def run(scan_root: Path, report_only: bool) -> int:
     declared_by = declared.get("declared_by")
     baseline_ref = declared.get("baseline_ref")
 
+    vacuity = _empty_by_declaration(manifest, prefixes, report)
+    if vacuity is not None:
+        report.coverage(
+            covered=[],
+            excluded=[*exempt_roots(manifest), *scan_excludes(manifest)],
+            kind="specification",
+            source="manifest",
+            scan_root=scan_root,
+        )
+        print(
+            f"  set: 0 declared paths | subject set empty by declaration: "
+            f"{vacuity['reason'][:78]}\n  ends with: {vacuity['ends_with']}"
+        )
+        return report.finish(report_only=report_only)
+
     # A declaration that cannot name its owner or its baseline cannot produce
     # the failure the requirement asks for, so its absence is itself a failure.
     if not prefixes:
         report.fail(
-            "ci/vault.json out_of_scope.paths is empty -- the out-of-scope set is "
-            "declared in the manifest, not in prose; a change with nothing declared "
-            "cannot assert anything unchanged"
+            "ci/vault.json out_of_scope.paths is empty and gate_policy.declared_vacuity "
+            "records no reason -- the out-of-scope set is declared in the manifest, not "
+            "in prose; an unexplained empty set cannot assert anything unchanged"
         )
     if not declared_by:
         report.fail(
@@ -215,11 +294,21 @@ def run(scan_root: Path, report_only: bool) -> int:
     owners = [o for o in owners if o]
     owner = ", ".join(owners) or "<undeclared change>"
 
+    # D31. Checked before history, because it is a property of the declaration
+    # alone and a fixture tree can therefore carry it.
+    for path, declarant in _self_contained(prefixes, owners):
+        report.fail(
+            f"{path}: declared out of scope by {declarant}, and it lies inside or "
+            f"contains {declarant}'s own tree ({CHANGES_DIR}/{declarant}) -- the "
+            f"byte-unchanged assertion cannot see who is editing, so {declarant} is "
+            f"refused every revision to its own artifacts. See {CONTAINMENT_OWNER}"
+        )
+
     # A declaration cannot outlive its reason. This set protects the specs from
     # the changes that declared it; once every one of those has been archived,
     # the declaration is asserting a freeze nobody decided on -- which a pinned
     # baseline makes permanent. Failing here forces the removal to be deliberate.
-    live = [o for o in owners if (scan_root / "openspec" / "changes" / o).is_dir()]
+    live = [o for o in owners if (scan_root / CHANGES_DIR / o).is_dir()]
     if owners and not live and on_tracked_tree(scan_root):
         report.fail(
             f"ci/vault.json out_of_scope: every declaring change ({owner}) has been "
@@ -500,6 +589,47 @@ def _committed_edit_case() -> list[str]:
     return problems
 
 
+def _vacuity_cases() -> list[str]:
+    """The three states of an empty declaration, each in a tree of its own.
+
+    Declared empty with a reason passes and says so; empty with nothing declared
+    fails; and a vacuity still declared over a set that has gained a path fails,
+    so the exemption cannot outlive the emptiness it explains. The real tree
+    exercises only the first on every run, which is why the other two are here.
+    """
+    import contextlib
+    import io
+
+    vacuity = {
+        GATE_ID: {"reason": "nothing is declared", "ends_with": "a declaration"}
+    }
+    cases = (
+        ("declared empty", [], vacuity, 0, "subject set empty by declaration"),
+        ("undeclared empty", [], {}, 1, "records no reason"),
+        ("stale vacuity", [SPEC_SET_ROOT], vacuity, 1, "has outlived its reason"),
+    )
+    problems = []
+    for label, paths, declared, want, needle in cases:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "ci").mkdir()
+            manifest = json.loads(
+                _SELF_TEST_MANIFEST
+                % {"prefix": "", "owner": _SELF_TEST_OWNER, "baseline": "HEAD"}
+            )
+            manifest["out_of_scope"]["paths"] = paths
+            manifest["gate_policy"] = {"declared_vacuity": declared}
+            (root / "ci" / "vault.json").write_text(json.dumps(manifest))
+            buffer = io.StringIO()
+            with contextlib.redirect_stdout(buffer):
+                code = run(root, False)
+            if code != want or needle not in buffer.getvalue():
+                problems.append(
+                    f"{label}: expected exit {want} saying {needle!r}, got exit {code}"
+                )
+    return problems
+
+
 def _self_test() -> int:
     import contextlib
     import io
@@ -592,10 +722,19 @@ def _self_test() -> int:
             )
         if f"{EXPECTED_SPEC_FILES}/{EXPECTED_SPEC_FILES}" not in output:
             problems.append("coverage line does not state the sixteen specifications")
+        # D31, the negative half: the declarant here is not rebuild-plugboard, so
+        # the specifications sit outside its tree and containment must stay silent.
+        # The positive half is ci/broken-inputs/out-of-scope/tree-self-declared.
+        if "lies inside or contains" in output:
+            problems.append(
+                f"the containment assertion fired on a declaration by "
+                f"{_SELF_TEST_OWNER}, whose paths sit outside every declarant's tree"
+            )
 
         # The fourth shape, which needs its own repository because it needs a
         # second commit: an edit that is committed rather than left in the tree.
         problems.extend(_committed_edit_case())
+        problems.extend(_vacuity_cases())
 
         print(output, end="")
         if problems:
@@ -607,8 +746,10 @@ def _self_test() -> int:
         print(
             f"[ok] {GATE_ID} --self-test: a one-byte change, a deletion and an "
             f"untracked addition under '{SPEC_SET_ROOT}' each fail, naming the "
-            f"path, its line, and {_SELF_TEST_OWNER}; and a COMMITTED edit fails "
-            f"against a pinned baseline while passing against a moving one"
+            f"path, its line, and {_SELF_TEST_OWNER}; a COMMITTED edit fails "
+            f"against a pinned baseline while passing against a moving one; "
+            f"containment stays silent for a declaration outside its declarant's "
+            f"tree; and an empty set passes only while a vacuity explains it"
         )
         return 0
 

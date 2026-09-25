@@ -12,6 +12,17 @@
   `1/16` coverage shortfall — each naming `restructure-docs-as-vault` as the change
   that declared the set.
 
+## The declaration that named its own declarant, in `tree-self-declared`
+
+`tree-self-declared/ci/vault.json` carries, field for field, the declaration the repository held until
+`rebuild-plugboard` task 3.16: `openspec/changes/rebuild-plugboard/specs` declared out of scope by
+`rebuild-plugboard`, the change that owns those specifications. [D31](../../../docs/decisions/d31-out-of-scope-containment.md)
+refuses it — the byte-unchanged assertion cannot see which change is editing, so the owner is refused
+every revision to its own files. Two failures: the containment case, naming the path and
+`rebuild-plugboard`, and the `1/16` coverage shortfall that any fixture carrying one placeholder
+specification rather than sixteen also trips. The second is `tree`'s case and is declared here only
+because the gate emits it.
+
 ## Why this fixture does not carry the byte-modification case
 
 A violation of "an artifact declared out of scope stays byte-unchanged" is a property of
@@ -29,13 +40,16 @@ other ways, both of which exit non-zero on a real modification:
 #    and the declaring change. Exit 0 = the gate detected them; exit 1 = it did not.
 python3 ci/gates/out_of_scope.py --self-test
 
-# 2. Against the real tree, which a human or CI can run directly.
-F=openspec/changes/rebuild-plugboard/specs/tunnel/wire-contract/spec.md
-printf 'x' >> "$F"
-python3 ci/gates/out_of_scope.py        # exit 1, names $F and restructure-docs-as-vault
-git checkout -- "$F"
-python3 ci/gates/out_of_scope.py        # exit 0, 16/16 covered
+# 2. Against the real tree -- which, since rebuild-plugboard task 3.16, declares
+#    nothing out of scope, so this run reports the emptiness and the vacuity
+#    declaration in ci/vault.json gate_policy that explains it.
+python3 ci/gates/out_of_scope.py        # exit 0, 0 declared paths, reason and ending printed
 ```
+
+The self-test also carries D31's negative half — its declarant is not `rebuild-plugboard`, so
+containment must stay silent — and the three states of an empty declaration: declared with a reason
+(passes, saying so), undeclared (fails), and a vacuity still declared over a set that has gained a
+path (fails, so the exemption cannot outlive the emptiness it explains).
 
 The meta-check of task 1.3 should treat `--self-test` as this gate's second violating
 input: `--root tree` proves the declaration half, `--self-test` proves the history half,
@@ -47,5 +61,6 @@ and neutering either code path makes one of the two stop failing.
 | --- | --- |
 | `python3 ci/gates/out_of_scope.py --root ci/broken-inputs/out-of-scope/tree` | exit 1, 2 violations |
 | `python3 ci/gates/out_of_scope.py --root ci/broken-inputs/out-of-scope/tree --report-only` | exit 0, same 2 reported as `[warn]` |
-| `python3 ci/gates/out_of_scope.py` | exit 0 on the current tree — `16/16` covered, unchanged since `HEAD` |
-| `python3 ci/gates/out_of_scope.py --self-test` | exit 0, having asserted a planted modification fails |
+| `python3 ci/gates/out_of_scope.py --root ci/broken-inputs/out-of-scope/tree-self-declared` | exit 1, 2 violations |
+| `python3 ci/gates/out_of_scope.py` | exit 0 on the current tree — nothing declared, the declared vacuity's reason and ending printed |
+| `python3 ci/gates/out_of_scope.py --self-test` | exit 0, having asserted a planted modification fails, containment stays silent, and the three empty-declaration states behave |

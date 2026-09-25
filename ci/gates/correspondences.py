@@ -12,7 +12,7 @@ index `CLAUDE.md` routes every reader to. `ci/gates/index_drift.py` passed over
 it because it compared the generator to its own output, never to the gate's
 count.
 
-Four cases, all four failing:
+Five cases, all five failing:
 
   1. A member one side holds and the other omits, in EITHER direction, named as
      a member rather than as a count.
@@ -22,6 +22,22 @@ Four cases, all four failing:
   4. A correspondence both of whose sides now resolve through one resolver. That
      is no longer a pair, and leaving it declared invites a second encoding back
      under a name that looks checked.
+  5. A side declared `in_tree` naming a path the tree does not hold. Two sets can
+     agree perfectly about a directory that does not exist, and a rule over
+     nothing reads exactly like a rule over something.
+
+## The pair that needs case 5
+
+`.github/CODEOWNERS` against the paths `dependabot-auto-merge.yml` refuses to
+advance unattended (rebuild-plugboard task 1.9). The owner reviews and nothing
+blocks on that review -- a sole maintainer cannot approve their own pull request
+-- so what stops an unattended input advancing a person-reviewed path is the
+workflow's exclusion. Two encodings, deliberately: each is read by a different
+party (the forge requests review from one, the workflow refuses from the other),
+and deriving either from the other would let one deleted line remove both.
+Reconciling them member by member is what makes that safe. The forge ignores a
+CODEOWNERS line it cannot resolve without any warning, and ignores a path that
+matches nothing just as quietly, which is why the owner side is held to the tree.
 
 ## Why declared rather than discovered
 
@@ -42,9 +58,11 @@ authority-precedence.md.
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 from _common import Report, load_manifest, main_guard, repo_root, rule_notes
+from _workflow import executable_text
 
 GATE_ID = "correspondences"
 RULE_NOTE = "docs/method/rules/one-set-one-encoding.md"
@@ -55,6 +73,76 @@ def _dig(manifest: dict, dotted: str):
     for part in dotted.split("."):
         node = node[part]
     return node
+
+
+def _path_member(pattern: str) -> str:
+    """One spelling for a root-anchored path, whichever file it came from.
+
+    CODEOWNERS anchors with a leading slash and a shell prefix test does not, so
+    `/contract/` and `contract/` are the same member and must compare equal.
+    """
+    return pattern.lstrip("/")
+
+
+def _codeowners_paths(text: str) -> set[str]:
+    """Every path pattern a CODEOWNERS file assigns, anchored at the root.
+
+    A glob or an unanchored pattern is refused rather than approximated: it
+    matches a set of paths, not one prefix, and a reconciliation that guessed at
+    that set would report agreement it had not checked.
+    """
+    members = set()
+    for raw in text.splitlines():
+        line = raw.split("#", 1)[0].strip()
+        if not line:
+            continue
+        pattern = line.split()[0]
+        if not pattern.startswith("/") or any(c in pattern for c in "*?["):
+            raise ValueError(
+                f"{pattern!r} is a glob or unanchored pattern, which names a set of "
+                f"paths rather than one prefix and cannot be compared member by member"
+            )
+        members.add(_path_member(pattern))
+    return members
+
+
+def _workflow_env_words(text: str, variable: str) -> set[str]:
+    """The words a workflow assigns to `variable`, provided an executed line reads it.
+
+    The read is part of the member set's meaning. A variable declared and never
+    expanded by a `run:` body is a list the workflow publishes and does not act
+    on -- the shape of the reverted security gate that counted scanners named in
+    a step's `name:` while every step ran `echo skipping`.
+    """
+    assigned = re.findall(rf"^\s+{re.escape(variable)}\s*:\s*(.*?)\s*$", text, re.M)
+    if len(assigned) != 1:
+        raise ValueError(
+            f"{variable} is assigned {len(assigned)} times; exactly one assignment "
+            f"is a member set, and more than one is a question of which step wins"
+        )
+    if not re.search(rf"\$\{{?{re.escape(variable)}\b", executable_text(text)):
+        raise ValueError(
+            f"{variable} is assigned and no executed line reads it, so the workflow "
+            f"publishes the list and acts on none of it"
+        )
+    return {_path_member(w) for w in assigned[0].strip("'\"").split()}
+
+
+#: Resolver kinds whose `path` names a file in the tree rather than a manifest key.
+FILE_KINDS = {"codeowners_paths", "workflow_env_words"}
+
+
+def _where(pair: dict) -> str:
+    """Which file each side is, when both are files -- a member alone says what
+    diverged, and a reader then has to find out where."""
+    sides = [pair["computed"], pair["published"]]
+    if not all(s.get("kind") in FILE_KINDS for s in sides):
+        return ""
+    named = [
+        f"{s['path']} ({s['variable']})" if s.get("variable") else s["path"]
+        for s in sides
+    ]
+    return f" [computed: {named[0]}; published: {named[1]}]"
 
 
 def resolve(side: dict, scan_root: Path, manifest: dict) -> tuple[set[str], str | None]:
@@ -91,6 +179,12 @@ def resolve(side: dict, scan_root: Path, manifest: dict) -> tuple[set[str], str 
                 for k in _dig(manifest, side["path"])
                 if not str(k).startswith("_")
             }, None
+        if kind == "codeowners_paths":
+            text = (scan_root / side["path"]).read_text(encoding="utf-8")
+            return _codeowners_paths(text), None
+        if kind == "workflow_env_words":
+            text = (scan_root / side["path"]).read_text(encoding="utf-8")
+            return _workflow_env_words(text, side["variable"]), None
         return set(), f"unknown resolver kind {kind!r}"
     except Exception as exc:  # a resolver that cannot run is a finding, not a crash
         return set(), f"{type(exc).__name__}: {exc}"
@@ -135,6 +229,15 @@ def run(scan_root: Path, report_only: bool) -> int:
                     f"{name}/{which}: resolved to nothing -- an empty side "
                     f"reconciles with anything, which is not the same as agreeing"
                 )
+            # (5) a path two sets agree about is still a rule over nothing if the
+            # tree does not hold it.
+            if side.get("in_tree"):
+                for absent in sorted(m for m in members if not (scan_root / m).exists()):
+                    report.fail(
+                        f"{name}/{which}: names '{absent}', which is absent from the "
+                        f"tree -- {side.get('path', 'the side')} would then govern "
+                        f"nothing while reading as though it governed something"
+                    )
             sides[which] = (members, side.get("kind"))
 
         if len(sides) != 2:
@@ -150,15 +253,16 @@ def run(scan_root: Path, report_only: bool) -> int:
             continue
         # (1) both directions, named by member.
         computed, published = sides["computed"][0], sides["published"][0]
+        where = _where(pair)
         for missing in sorted(computed - published):
             report.fail(
                 f"{name}: '{missing}' is held by the computed side and absent from "
-                f"the published one"
+                f"the published one{where}"
             )
         for extra in sorted(published - computed):
             report.fail(
                 f"{name}: '{extra}' is published and the computed side does not hold "
-                f"it"
+                f"it{where}"
             )
 
     for name, entry in sorted(retired.items()):

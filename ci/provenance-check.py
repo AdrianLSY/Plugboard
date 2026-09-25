@@ -34,7 +34,7 @@ is checked structurally -- there is nothing to compare a build time against.
 
 Whether the stamp reaches a RELEASED artifact -- reading provenance out of a
 stopped artifact is task 70.7's -- and whether any configuration item collides
-with a provenance field, which needs the configuration schema task 5.2 builds.
+with a provenance field, which is task 5.3's against the schema task 5.1 validates.
 Both are named in 'unfinished' rather than quietly skipped.
 """
 
@@ -455,7 +455,7 @@ def main(argv: list[str]) -> int:
         f"\ncoverage: {len(COMPONENTS)} component(s) reporting provenance | derived "
         f"independently: commit, tree | excluded: contract (no toolchain, declared), "
         f"a released artifact's stamp (task 70.7), a configuration-name collision "
-        f"(needs task 5.2's schema)"
+        f"(task 5.3's, against task 5.1's schema)"
     )
     if problems:
         print(f"[FAIL] provenance: {len(problems)} problem(s)")

@@ -101,7 +101,8 @@ positives on the working tree. The fix is load-bearing in the only place that ca
 Whether the reported values are **right**: `ci/provenance-check.py` runs all four components and
 compares against a commit and a tree status it reads from git independently, so the assertion cannot be
 built out of the value under test. Whether a released artifact carries the stamp — task 70.7. Whether a
-configuration item collides with a provenance field — needs the schema task 5.2 builds.
+configuration item collides with a provenance field — task 5.3's, against the schema task 5.1
+validates.
 
 ## Expected
 

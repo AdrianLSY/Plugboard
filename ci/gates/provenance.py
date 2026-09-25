@@ -65,8 +65,8 @@ untracked experiment is not in any build.
 Whether the reported values are RIGHT -- ci/provenance-check.py runs each of the
 four components and compares against git read independently. Whether a released
 artifact carries the stamp: task 70.7's. Whether a configuration item collides
-with a provenance field: needs the schema task 5.2 builds, and is named there
-rather than faked here.
+with a provenance field: task 5.3's, against the schema task 5.1 validates, and
+named there rather than faked here.
 """
 
 from __future__ import annotations
@@ -348,7 +348,7 @@ def run(scan_root: Path, report_only: bool) -> int:
         excluded=[
             "whether the reported values are right (ci/provenance-check.py runs each component)",
             "whether a released artifact carries the stamp (task 70.7)",
-            "a configuration item colliding with a provenance field (needs task 5.2's schema)",
+            "a configuration item colliding with a provenance field (task 5.3's, against task 5.1's schema)",
         ],
         kind="provenance subject",
         source=subject_source(scan_root),

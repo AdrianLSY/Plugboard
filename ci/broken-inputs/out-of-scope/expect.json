@@ -7,11 +7,19 @@
         "openspec/changes/rebuild-plugboard/specs/never-existed: declared out of scope by restructure-docs-as-vault but matches n",
         "the declared out-of-scope set covers 1 'spec.md' file(s) at filesystem, expected 16 under 'openspec/changes/rebuild-plug"
       ]
+    },
+    "tree-self-declared": {
+      "_why": "D31 and rebuild-plugboard task 3.16: the declaration ci/vault.json carried until that task, a change declaring its own specifications out of its own scope. The containment case is this tree's subject; the coverage shortfall is tree's case, emitted here because the fixture carries one placeholder specification rather than sixteen.",
+      "violations": 2,
+      "cases": [
+        "openspec/changes/rebuild-plugboard/specs: declared out of scope by rebuild-plugboard, and it lies inside or contains rebuild-plugboard's own tree",
+        "the declared out-of-scope set covers 1 'spec.md' file(s) at filesystem, expected 16"
+      ]
     }
   },
   "invocations": [
     {
-      "_why": "GATE.md has instructed since it was written that meta treat --self-test as this gate's second violating input, and nothing ever performed it. The byte-modification and committed-edit cases need git history that no static tree can carry, so the flag IS the fixture for them.",
+      "_why": "GATE.md has instructed since it was written that meta treat --self-test as this gate's second violating input, and nothing ever performed it. The byte-modification and committed-edit cases need git history that no static tree can carry, so the flag IS the fixture for them. Since rebuild-plugboard task 3.16 it also carries D31's negative half and the three empty-declaration states, which the real tree exercises only one of.",
       "args": [
         "--self-test"
       ],

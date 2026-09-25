@@ -120,11 +120,11 @@ Dependency and vulnerability scanning is the neighbouring concern and is owned e
   halves.
 - **Whether a matched value is live, and whether it was rotated.** No check over a tree observes
   either; both are the operator's.
-- **A value for a configuration item a schema marks secret.** `rebuild-plugboard` task 3.15 asks for
-  that half too, and the single configuration schema it would read is task 5.2's and does not exist
-  yet ([tasks.md](../../../openspec/changes/rebuild-plugboard/tasks.md)). Keying on the schema is the
+- **A value for a configuration item a schema marks secret.** That half is `rebuild-plugboard` task
+  3.15a's, worked after task 18.14 gives the configuration schema its first secret item
+  ([tasks.md](../../../openspec/changes/rebuild-plugboard/tasks.md)). Keying on the schema is the
   principled form of the name-anchored rule this gate deliberately does not guess at, so it belongs
-  in the change that creates the schema rather than in a heuristic written ahead of it.
+  with the first real secret item rather than in a heuristic, or a stand-in item, written ahead of it.
 
 ## What this gate asks of the runner
 
