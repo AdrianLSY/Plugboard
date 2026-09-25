@@ -220,8 +220,9 @@ where a false claim is guaranteed to be read first*.
 
 Requirements: **Python 3** (repository scripts use the standard library only),
 [OpenSpec](openspec/config.yaml) for the vault gates and planning commands, and a full-history clone.
-The optional Python quality tools are pinned in [requirements-dev.txt](requirements-dev.txt); there is
-no lockfile.
+The Python quality tools — black, ruff and basedpyright — are pinned in
+[requirements-dev.txt](requirements-dev.txt); there is no lockfile. `make check` runs without them, but
+they are not optional: the required `lint` check runs `make lint-python` and fails on their verdict.
 
 ```bash
 make check          # every vault gate; one command, and CI runs it

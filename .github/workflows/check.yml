@@ -25,12 +25,16 @@ jobs:
         with:
           # Full history. ci/gates/secret_scan.py scans the commit range
           # merge-base(origin/main, HEAD)..HEAD as well as the working tree. A
-          # shallow checkout fetches only the pushed or pull-request ref, so
-          # neither origin/main nor main resolves, the range half is EXCLUDED
-          # rather than failed, and the gate passes on the working tree alone --
-          # green over a credential committed and deleted within the branch.
-          # Dropping this to speed CI up fails nothing; it silently halves a
-          # gate. (The reason this comment used to give is gone:
+          # shallow checkout of a pull request, or of a push to any branch but
+          # main, fetches only that ref, so neither origin/main nor main
+          # resolves, the range half is EXCLUDED rather than failed, and the
+          # gate passes on the working tree alone -- green over a credential
+          # committed and deleted within the branch. A push to main is the
+          # exception and loses nothing: checkout fetches that ref as
+          # origin/main and creates a local main, both resolve, and the range
+          # from main to itself is empty with or without history. Dropping this
+          # to speed CI up fails nothing; it silently halves a gate on every
+          # other event. (The reason this comment used to give is gone:
           # out_of_scope.baseline_ref has been null since rebuild-plugboard
           # task 3.16, and nothing is pinned.)
           fetch-depth: 0
