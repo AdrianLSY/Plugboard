@@ -38,6 +38,7 @@ is a fixture, not a gate, and is not invoked.
 
 from __future__ import annotations
 
+import os
 import re
 import subprocess
 import sys
@@ -77,6 +78,23 @@ def run_gate(module: Path, tree: Path) -> tuple[int, str]:
     return done.returncode, done.stdout + done.stderr
 
 
+def captured_output(name: str, tree: Path) -> str | None:
+    """The output ci/run-gates.py captured for this gate in this run, if any.
+
+    The subject is the line a run actually emits, so reading the runner's capture
+    decides exactly what running the gate again would -- it just does not pay for
+    the gate twice (D32). Only for the repository root: the runner never ran
+    anything against a fixture tree, and a capture from one tree says nothing
+    about another. A gate the capture lacks is run here, so a missing file costs
+    time rather than coverage.
+    """
+    directory = os.environ.get("GATE_OUTPUTS")
+    if not directory or tree.resolve() != repo_root().resolve():
+        return None
+    path = Path(directory) / f"{name}.out"
+    return path.read_text(encoding="utf-8") if path.is_file() else None
+
+
 def task_complete(root: Path, ends_with: str) -> bool:
     """Whether the work a vacuity declaration names is already done."""
     m = re.match(r"(\S+?tasks\.md)\s+task\s+(\d+\.\d+[a-z]?)", ends_with)
@@ -98,8 +116,13 @@ def run(scan_root: Path, report_only: bool) -> int:
     report = Report(GATE_ID, RULE_NOTE)
 
     modules = gate_modules(scan_root)
+    read_from_runner = 0
     for name, module in modules.items():
-        code, output = run_gate(module, scan_root)
+        output = captured_output(name, scan_root)
+        if output is None:
+            _code, output = run_gate(module, scan_root)
+        else:
+            read_from_runner += 1
         report.examine(name)
 
         line = next(
@@ -173,7 +196,9 @@ def run(scan_root: Path, report_only: bool) -> int:
     )
     print(
         f"  gates inspected: {len(modules)} | declared vacuities: "
-        f"{len([k for k in declared_vacuity if not k.startswith('_')])}"
+        f"{len([k for k in declared_vacuity if not k.startswith('_')])} | outputs "
+        f"read from ci/run-gates.py's capture: {read_from_runner}, run here: "
+        f"{len(modules) - read_from_runner}"
     )
     return report.finish(report_only=report_only)
 
