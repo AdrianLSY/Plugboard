@@ -14,8 +14,8 @@
       ]
     },
     "tree-person-reviewed": {
-      "_why": "rebuild-plugboard task 1.9: one planted omission of each kind the task names -- the unattended exclusion omitting a path CODEOWNERS names, and CODEOWNERS naming a path absent from the tree -- beside the refusals the two new resolvers make rather than guess: a twice-assigned list, a glob owner, a list spelled with CODEOWNERS' leading slash, a block scalar, a list on an env: under a list item that is not a step, and eleven workflows that publish a list and do not act on it (no read; a read only in a shell comment, only in an echo, only in a heredoc body, only in a with: value no shell runs; only from another step, in the indented style, in the compact style and under a commented steps:; and a shell reassignment, plain, after 'then', and through 'declare'). The omission of conformance/ is also the acceptance case: the workflow carrying it is in compact sequence style with a commented env:, and the omission is reported by member only because that step is recognised and its list read.",
-      "violations": 18,
+      "_why": "rebuild-plugboard task 1.9: one planted omission of each kind the task names -- the unattended exclusion omitting a path CODEOWNERS names, and CODEOWNERS naming a path absent from the tree -- beside the refusals the two new resolvers make rather than guess: a twice-assigned list, a glob owner, a list spelled with CODEOWNERS' leading slash, a block scalar, a list on an env: under a list item that is not a step, and eleven workflows that publish a list and do not act on it (no read; a read only in a shell comment, only in an echo, only in a heredoc body, only in a with: value no shell runs; only from another step, in the indented style, in the compact style and under a commented steps:; and a shell reassignment, plain, after 'then', and through 'declare'). The omission of conformance/ is also the acceptance case: the workflow carrying it is in compact sequence style with a commented env:, and the omission is reported by member only because that step is recognised and its list read. Round three replaced the reassignment regex with one rule -- outside the recognised read the variable's name may not appear in scope -- and pins it with three spellings the regex let through (a one-line case arm, readarray, a loop over the list's own name), plus the two heredoc spellings the body reader misread and the job and container scopes no fixture held.",
+      "violations": 25,
       "cases": [
         "anchored-exclusion/published: its resolver could not run (ValueError: UNATTENDED_EXCLUDED names ['/contract/', '/conformance/']; the workflow tests each word as a prefix of a repo-relative changed path",
         "commented-read/published: its resolver could not run (ValueError: UNATTENDED_EXCLUDED is assigned and no executed line reads it in the step at line 11 that assigns it",
@@ -28,13 +28,20 @@
         "other-step-read/published: its resolver could not run (ValueError: UNATTENDED_EXCLUDED is assigned and no executed line reads it in the step at line 9 that assigns it",
         "person-reviewed-paths/computed: names 'codecs/', which is absent from the tree",
         "person-reviewed-paths: 'conformance/' is held by the computed side and absent from the published one [computed: .github/CODEOWNERS; published: .github/workflows/dependabot-auto-merge.yml (UNATTENDED_EXCLUDED)]",
-        "reassigned-exclusion/published: its resolver could not run (ValueError: UNATTENDED_EXCLUDED is reassigned by the shell at line 13 ('UNATTENDED_EXCLUDED=\"docs/\"')",
-        "reassigned-then/published: its resolver could not run (ValueError: UNATTENDED_EXCLUDED is reassigned by the shell at line 13 ('if [ -n \"$GITHUB_REF\" ]; then UNATTENDED_EXCLUDED=\"\"; fi')",
-        "redeclared/published: its resolver could not run (ValueError: UNATTENDED_EXCLUDED is reassigned by the shell at line 13 ('declare UNATTENDED_EXCLUDED=\"docs/\"')",
+        "reassigned-exclusion/published: its resolver could not run (ValueError: UNATTENDED_EXCLUDED is mentioned by the shell at line 13 ('UNATTENDED_EXCLUDED=\"docs/\"')",
+        "reassigned-then/published: its resolver could not run (ValueError: UNATTENDED_EXCLUDED is mentioned by the shell at line 13 ('if [ -n \"$GITHUB_REF\" ]; then UNATTENDED_EXCLUDED=\"\"; fi')",
+        "redeclared/published: its resolver could not run (ValueError: UNATTENDED_EXCLUDED is mentioned by the shell at line 13 ('declare UNATTENDED_EXCLUDED=\"docs/\"')",
         "script-read/published: its resolver could not run (ValueError: UNATTENDED_EXCLUDED is assigned and no executed line reads it in the step at line 10 that assigns it",
         "twice-assigned/published: its resolver could not run (ValueError: UNATTENDED_EXCLUDED is assigned 2 times",
         "unanchored-owner/computed: its resolver could not run (ValueError: '*.proto' is a glob or unanchored pattern",
-        "unread-exclusion/published: its resolver could not run (ValueError: UNATTENDED_EXCLUDED is assigned and no executed line reads it in the step at line 8 that assigns it as a 'for NAME in ...' word list"
+        "unread-exclusion/published: its resolver could not run (ValueError: UNATTENDED_EXCLUDED is assigned and no executed line reads it in the step at line 8 that assigns it as a 'for NAME in ...' word list",
+        "case-arm/published: its resolver could not run (ValueError: UNATTENDED_EXCLUDED is mentioned by the shell at line 13 ('case x in x) UNATTENDED_EXCLUDED= ;; esac')",
+        "readarray/published: its resolver could not run (ValueError: UNATTENDED_EXCLUDED is mentioned by the shell at line 12 ('readarray -t UNATTENDED_EXCLUDED < /dev/null')",
+        "loop-variable/published: its resolver could not run (ValueError: UNATTENDED_EXCLUDED is mentioned by the shell at line 12 ('for UNATTENDED_EXCLUDED in docs/; do :; done')",
+        "heredoc-backslash/published: its resolver could not run (ValueError: UNATTENDED_EXCLUDED is assigned and no executed line reads it in the step at line 9",
+        "heredoc-indented/published: its resolver could not run (ValueError: UNATTENDED_EXCLUDED is assigned and no executed line reads it in the step at line 9",
+        "job-scope/published: its resolver could not run (ValueError: UNATTENDED_EXCLUDED is assigned and no executed line reads it in the job at line 6",
+        "container-env/published: its resolver could not run (ValueError: UNATTENDED_EXCLUDED is assigned at line 11 in the env: block under 'container:'"
       ]
     }
   }

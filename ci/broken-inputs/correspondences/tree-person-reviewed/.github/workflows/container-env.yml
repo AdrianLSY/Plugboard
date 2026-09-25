@@ -1,0 +1,14 @@
+# Planted: an env: under container: is the container's environment, not a
+# step's, a job's or the workflow's, so which shell sees it is not decidable.
+name: container env
+on: pull_request_target
+jobs:
+  auto-merge:
+    runs-on: ubuntu-latest
+    container:
+      image: alpine
+      env:
+        UNATTENDED_EXCLUDED: contract/
+    steps:
+      - run: |
+          for prefix in $UNATTENDED_EXCLUDED; do echo "$prefix"; done

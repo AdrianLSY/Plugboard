@@ -1,0 +1,14 @@
+# Planted: a one-line case arm empties the list before the loop reads it. The
+# regex this gate used named a case pattern and missed the arm spelt inline.
+name: case arm
+on: pull_request_target
+jobs:
+  auto-merge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: refuse
+        env:
+          UNATTENDED_EXCLUDED: contract/
+        run: |
+          case x in x) UNATTENDED_EXCLUDED= ;; esac
+          for prefix in $UNATTENDED_EXCLUDED; do echo "$prefix"; done
