@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Gate: no credential in the working tree, and none in the range under review.
 
-Enforces rebuild-plugboard task 3.15, in the half that is decidable today. Two
+Enforces rebuild-plugboard task 3.15. The schema-marked half is task 3.15a's. Two
 subjects, one detector:
 
   1. THE TRACKED WORKING TREE. Every tracked file that decodes as UTF-8 is read
@@ -104,10 +104,10 @@ ci/vault.json, on the precedent ci/gates/binary_assets.py sets, and this gate
 does not invent that key for itself.
 
 Nor does it decide anything about a configuration item a schema marks secret:
-rebuild-plugboard task 3.15 asks for that too, and the single configuration
-schema it would read is task 5.2's and does not exist yet. Keying on the schema
-is the principled version of the name-anchored rule this gate deliberately does
-not guess at, and it belongs in the change that creates the schema.
+that is rebuild-plugboard task 3.15a's, worked after task 18.14 gives task 5.1's
+schema its first secret item. Keying on the schema is the principled version of
+the name-anchored rule this gate deliberately does not guess at, and a stand-in
+secret item would exist only to give this gate something to refuse.
 
 ## The value is never printed
 
@@ -698,7 +698,7 @@ def run(scan_root: Path, report_only: bool) -> int:
             "a file that is not valid UTF-8 (a committed binary is binary-assets')",
             "a credential shape no declared issuer prefix or delimiter anchors",
             "whether a matched value is live or was rotated (the operator's)",
-            "a configuration item a schema marks secret (task 5.2 builds the schema)",
+            "a configuration item a schema marks secret (task 3.15a, after task 18.14)",
             "a url userinfo password holding no digit (the condition beside the "
             "entropy floor, and stricter than it)",
         ],

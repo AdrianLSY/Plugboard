@@ -15,6 +15,15 @@
 /contract/        @AdrianLSY
 /conformance/     @AdrianLSY
 
-# Generated codecs: the paths land with rebuild-plugboard section 11, and this
-# entry is extended to name them then. Listing a path that does not exist yet
-# would be a rule over nothing.
+# Requesting is the whole of what this file does. The owner is the reviewer and
+# no second reviewing account exists, so code-owner approval is not a merge
+# requirement -- nobody can approve their own pull request, and requiring it
+# would leave no change mergeable. What stops an UNATTENDED advance of these
+# paths is UNATTENDED_EXCLUDED in .github/workflows/dependabot-auto-merge.yml,
+# which names the same paths. ci/gates/correspondences.py fails when either list
+# names a path the other omits, and when a path here matches nothing in the tree:
+# the forge ignores that as silently as it ignores an unknown owner.
+
+# Generated codecs: the paths land with rebuild-plugboard task 11.5, which names
+# them here and in UNATTENDED_EXCLUDED in the same change. Listing a path that
+# does not exist yet would be a rule over nothing, and the gate refuses it.

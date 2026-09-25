@@ -7,9 +7,10 @@ authority: decision
 # D31 — A declared out-of-scope set may not name its own declarant's tree
 
 **In force.** A path a change declares out of its own scope may not lie inside that change's own
-directory. It rules out the arrangement `ci/vault.json` carries today, where `rebuild-plugboard`
-declares its own sixteen specifications byte-unchanged and is therefore refused every revision to the
-files it owns.
+directory. It rules out the arrangement `ci/vault.json` carried until `rebuild-plugboard` task 3.16,
+where `rebuild-plugboard` declared its own sixteen specifications byte-unchanged and was therefore
+refused every revision to the files it owns. That task emptied the declaration and recorded the
+emptiness, with its reason and ending, as a declared vacuity.
 
 The part worth reading twice is the mechanism, because it is a shape a manifest invites rather than a
 lapse anyone would repeat knowingly. Two fields sit side by side and read as one control.
@@ -34,7 +35,7 @@ reports. Whether anything should replace the immutability half — given that th
 specifications has to be able to revise them — is left open here rather than answered by implication.
 
 - **Full entry, with rationale and alternatives:** [register D31](../../openspec/changes/rebuild-plugboard/design.md#d31--a-declared-out-of-scope-set-may-not-name-its-own-declarants-tree)
-- **What enforces it:** nothing yet — [an artifact declared out of scope stays byte-unchanged](../method/rules/out-of-scope-byte-unchanged.md) names the gate this invariant joins, and [rebuild-plugboard task 3.16](../../openspec/changes/rebuild-plugboard/tasks.md) installs it
-- **Waiting on the declaration it retires:** [follow-ups](../method/follow-ups.md) — three open rows name the declared out-of-scope set as what blocks them
+- **What enforces it:** `ci/gates/out_of_scope.py`, since [rebuild-plugboard task 3.16](../../openspec/changes/rebuild-plugboard/tasks.md) — [a declared out-of-scope path lies outside its declarant's tree](../method/rules/out-of-scope-containment.md) is the rule, and this decision is its owner
+- **Unblocked by the retirement:** [follow-ups](../method/follow-ups.md) — two open rows had named the declared out-of-scope set as what blocked them, and now name the specification revision itself
 
 > The register wins where this note and it disagree.

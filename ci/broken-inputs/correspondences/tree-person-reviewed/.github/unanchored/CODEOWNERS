@@ -1,0 +1,2 @@
+# Planted: a glob names every .proto file anywhere, not one prefix.
+*.proto  @owner

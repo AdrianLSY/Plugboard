@@ -12,6 +12,17 @@
         "empty-side: 'present' is published and the computed side does not hold it",
         "retired correspondence 'undocumented': records no 'closed_by' resolver and reason"
       ]
+    },
+    "tree-person-reviewed": {
+      "_why": "rebuild-plugboard task 1.9: one planted omission of each kind the task names -- the unattended exclusion omitting a path CODEOWNERS names, and CODEOWNERS naming a path absent from the tree -- beside the three refusals the two new resolvers make rather than guess.",
+      "violations": 5,
+      "cases": [
+        "person-reviewed-paths/computed: names 'codecs/', which is absent from the tree",
+        "person-reviewed-paths: 'conformance/' is held by the computed side and absent from the published one [computed: .github/CODEOWNERS; published: .github/workflows/dependabot-auto-merge.yml (UNATTENDED_EXCLUDED)]",
+        "twice-assigned/published: its resolver could not run (ValueError: UNATTENDED_EXCLUDED is assigned 2 times",
+        "unanchored-owner/computed: its resolver could not run (ValueError: '*.proto' is a glob or unanchored pattern",
+        "unread-exclusion/published: its resolver could not run (ValueError: UNATTENDED_EXCLUDED is assigned and no executed line reads it"
+      ]
     }
   }
 }

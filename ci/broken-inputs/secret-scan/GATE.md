@@ -30,8 +30,8 @@ scanner built out of entropy reports and this one does not:
 - `ops/notes.txt` holds a forty-character commit SHA on a line that does not name the AWS field, and
   a base64 digest longer than forty characters.
 - `ops/notes.txt` also holds two values keyed on a secret-sounding **name**. Nothing here decides by
-  name: that rule needs the configuration schema to say which items are secret, and the schema is
-  task 5.2's.
+  name: that rule needs the configuration schema to say which items are secret, and it is task
+  3.15a's.
 
 A finding on any of those five is a defect in the gate, not a stricter gate.
 

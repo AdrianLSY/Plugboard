@@ -5,10 +5,15 @@
 #    workflow auto-committed unreviewed protocol pointer updates onto the
 #    parent's default branch -- the failure this whole policy exists to prevent.
 #
-# 2. NOTHING TOUCHING contract/. The wire schema is the one artifact no later
-#    release can correct, so it never advances without a person. CODEOWNERS asks
-#    for the review; this refuses the merge, because a rule enforced in one place
-#    is a rule with one way around it.
+# 2. NOTHING A PERSON REVIEWS. UNATTENDED_EXCLUDED below names every path
+#    .github/CODEOWNERS requests the owner's review for: the wire contract, which
+#    is the one artifact no later release can correct, and the suite that is its
+#    authority. CODEOWNERS requests the review and nothing blocks on it -- a sole
+#    maintainer cannot approve their own pull request -- so this refusal is what
+#    stops an unattended advance. The two lists are two encodings on purpose,
+#    each read by a different party, and ci/gates/correspondences.py fails when
+#    either names a path the other omits or CODEOWNERS names one the tree does
+#    not hold (rebuild-plugboard task 1.9).
 #
 # `pull_request_target` is required for the token to be able to merge, so this
 # workflow NEVER checks out the pull request's code and never runs it. The diff
@@ -31,15 +36,33 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: refuse any unattended advance touching the contract
+      - name: refuse any unattended advance touching a path a person reviews
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_URL: ${{ github.event.pull_request.html_url }}
+          UNATTENDED_EXCLUDED: contract/ conformance/
         run: |
-          if gh pr diff --name-only "$PR_URL" | grep -q '^contract/'; then
-            echo "::error::this pull request touches contract/; the wire schema does not advance unattended"
+          # An assignment, not a pipe into grep: a failed `gh pr diff` piped into
+          # `grep -q` leaves grep reading nothing, the test comes out false, and
+          # the merge step runs over a diff nobody read. Assigned, the failure
+          # stops the job under the runner's `bash -e`.
+          changed="$(gh pr diff --name-only "$PR_URL")"
+          if [ -z "$changed" ]; then
+            echo "::error::no changed paths were read for this pull request; refusing rather than merging over an unread diff"
             exit 1
           fi
+          refused=0
+          for prefix in $UNATTENDED_EXCLUDED; do
+            while IFS= read -r path; do
+              case "$path" in
+                "$prefix"*)
+                  echo "::error::$path is under $prefix, which a person reviews (.github/CODEOWNERS); it does not advance unattended"
+                  refused=1
+                  ;;
+              esac
+            done <<< "$changed"
+          done
+          [ "$refused" -eq 0 ]
 
       - name: merge, patch updates only
         if: steps.meta.outputs.update-type == 'version-update:semver-patch'

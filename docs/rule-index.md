@@ -14,7 +14,7 @@ the build today), **gate planned** (an obligation whose check is not built yet),
 (taste, quarantined, never a blocking objection).
 
 
-**59 rules** — 48 gated, 8 gate planned, 3 preference (5% unenforced).
+**60 rules** — 49 gated, 8 gate planned, 3 preference (5% unenforced).
 
 | rule | status | gate | note |
 |---|---|---|---|
@@ -22,6 +22,7 @@ the build today), **gate planned** (an obligation whose check is not built yet),
 | A committed binary states where it came from and on what terms | **gated** | `ci/gates/binary_assets.py` | [note](code/rules/binary-assets-carry-provenance.md) |
 | A component's boundary is stated once | **gated** | `ci/gates/component_boundaries.py` | [note](code/rules/component-boundary-stated-once.md) |
 | A credential is absent from the tree, and absent from the range under review | **gated** | `ci/gates/secret_scan.py` | [note](code/rules/no-credential-in-tree-or-history.md) |
+| A declared out-of-scope path lies outside its declarant's tree | **gated** | `ci/gates/out_of_scope.py` | [note](method/rules/out-of-scope-containment.md) |
 | A declared scanner is invoked where the runner executes, not where a reader looks | **gated** | `ci/gates/security_scan.py` | [note](method/rules/declared-scanners-are-invoked.md) |
 | A function is at most 60 non-comment lines | **gated** | `ci/gates/size_ceilings.py` | [note](code/rules/function-size-ceiling.md) |
 | A gate's reported coverage is an assertion about the run | **gated** | `ci/gates/coverage.py` | [note](method/rules/coverage-is-an-assertion.md) |

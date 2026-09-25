@@ -1,0 +1,17 @@
+# Planted: two steps assign the list, with different members.
+name: twice
+on: pull_request_target
+jobs:
+  auto-merge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: refuse
+        env:
+          UNATTENDED_EXCLUDED: contract/
+        run: |
+          for prefix in $UNATTENDED_EXCLUDED; do echo "$prefix"; done
+      - name: refuse again
+        env:
+          UNATTENDED_EXCLUDED: contract/ conformance/
+        run: |
+          for prefix in $UNATTENDED_EXCLUDED; do echo "$prefix"; done

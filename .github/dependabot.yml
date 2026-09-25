@@ -1,14 +1,53 @@
 # Dependency updates. docs/method/supply-chain.md states the policy; this is the
 # configuration that performs it.
 #
-# One ecosystem is declared, because one is present. Hex and Go modules arrive
-# with proxy/mix.exs and sidecar/go.mod (rebuild-plugboard tasks 2.1 and 2.3);
+# Every ecosystem with a manifest in the tree is declared, and nothing else is:
 # declaring a directory Dependabot cannot find produces a configuration error on
 # every run, and a configuration erroring quietly is indistinguishable from one
-# that is working.
+# that is working. The Go modules carry no requirements yet, so their entry finds
+# nothing to update until one is taken -- declared now so the first requirement
+# is watched from the day it lands rather than from the day somebody remembers.
+#
+# What advances unattended is decided by .github/workflows/dependabot-auto-merge.yml,
+# not here: patch bumps only, and nothing under a path a person reviews. A
+# conformance/ module bump therefore always waits for the owner.
 version: 2
 updates:
   - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+    commit-message:
+      prefix: "deps"
+
+  - package-ecosystem: mix
+    directory: "/proxy"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+    commit-message:
+      prefix: "deps"
+
+  - package-ecosystem: gomod
+    directories:
+      - "/sidecar"
+      - "/terminator"
+      - "/conformance"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+    commit-message:
+      prefix: "deps"
+
+  # requirements-dev.txt: the repository's own Python tooling (make lint-python).
+  - package-ecosystem: pip
     directory: "/"
     schedule:
       interval: weekly

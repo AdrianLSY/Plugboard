@@ -77,16 +77,10 @@
       "/opsx:update reconciles neighbouring artifacts in ANY direction over",
       "glob-expanded spec paths, and forbids only their creation, never their revision."
     ],
-    "paths": [
-      "openspec/changes/rebuild-plugboard/specs"
-    ],
-    "declared_by": [
-      "rebuild-plugboard"
-    ],
-    "baseline_ref": "d56484c",
-    "_baseline_comment": "A FIXED commit, not a moving ref. This read 'HEAD', which the gate resolves per run, so the byte-unchanged assertion four tasks across two changes depend on caught an uncommitted edit and passed a committed one -- proven by appending a sentence to a frozen spec in a copied tree, which failed before the commit and passed after it. RE-BASELINED from fb24a9f to 26d2927: the sixteen specifications were legitimately revised by spec/expectations-terminator-dispatch, which adds fourteen requirements and fifty-three scenarios on expectations, a client-facing terminator accept path and cross-instance dispatch. That revision is not this declaration's subject; the two documentation changes are. So the baseline moves to the commit holding the revision, and the assertion continues to mean exactly what it meant: the documentation work has not touched these files. Moving it was a deliberate act, which is the whole point of pinning -- a moving ref would have let the revision through unnoticed and told nobody. RE-BASELINED AGAIN, from 26d2927 to d56484c, for a different reason: 26d2927 was reachable from nothing. The branch the entry above names, spec/expectations-terminator-dispatch, no longer exists, so that commit survived only as a dangling object in one local store -- no branch or tag contained it, `git fsck --unreachable` reported it, and `git gc --prune` would have deleted it. The consequence was that this gate passed only where it was written: `git clone --no-local` followed by `make check` failed with 'baseline ref 26d2927 does not resolve', so the one command this repository tells a reader to run could not pass for the reader, and no clone depth recovers a commit that is in no history. A pin only its author can resolve is not a pin. The move is not a weakening and does not re-open the frozen set: `git diff 26d2927 d56484c -- openspec/changes/rebuild-plugboard/specs` is empty, so the sixteen specifications are byte-identical at both commits and the assertion continues to mean exactly what it meant. d56484c is on main, so every clone resolves it.",
-    "_expiry_comment": "A declaration cannot outlive its reason. This set exists because the two changes named in declared_by must not edit those specifications; it does NOT mean the specifications are frozen forever, and with a pinned baseline it would read that way. So the gate fails once every declaring change has been archived, demanding the declaration be removed rather than quietly asserting a freeze nobody decided on. A LEGITIMATE revision -- there is one in flight on the branch spec/expectations-terminator-dispatch, 14 requirements and 53 scenarios -- requires re-baselining or retiring this declaration, which is a deliberate visible act rather than a silent pass. That is the whole point of pinning: changing these files takes a decision, not an oversight.",
-    "_declared_by_comment": "Re-declared from restructure-docs-as-vault and harden-vault-harness to rebuild-plugboard when those two archived on 2026-09-12. ci/gates/out_of_scope.py fails once every declaring change is archived -- the step docs/method/follow-ups.md names as what ends the freeze. Retiring the declaration outright is not the cheap option it looks like: the gate requires paths, declared_by and baseline_ref to be present, so removal means retiring the gate, its rule note, its violating input and its roster entries. The sixteen specifications are still not this change's subject, so the assertion continues to mean what it meant."
+    "_emptied_comment": "EMPTIED at rebuild-plugboard task 3.16 (D31). This declared openspec/changes/rebuild-plugboard/specs out of scope for rebuild-plugboard itself, so the change that owns the sixteen specifications was refused every revision to them: the byte-unchanged assertion cannot see which change is editing, and re-pointing declared_by from the two archived documentation changes had changed only whose name a failure printed. The re-baselining history that preceded it -- fb24a9f, 26d2927, d56484c -- is in git and in D31's alternatives. A path added here must lie outside every declarant's tree, and adding one means removing gate_policy.declared_vacuity's out-of-scope entry in the same change; ci/gates/out_of_scope.py fails both omissions.",
+    "paths": [],
+    "declared_by": [],
+    "baseline_ref": null
   },
   "classification": {
     "_comment": [
@@ -582,8 +576,13 @@
         "named work is complete while the set is still empty, the build fails, so a",
         "declaration cannot outlive its reason. Previously this reason lived in",
         "ci/gates/component_boundaries.py's docstring, where nothing could read it.",
-        "Empty of entries as of rebuild-plugboard task 1.1: component-boundaries was the only declarant, and its five directories now exist. The mechanism stays declared because the next gate to land ahead of its subject needs it."
-      ]
+        "Empty of entries as of rebuild-plugboard task 1.1: component-boundaries was the only declarant, and its five directories now exist. The mechanism stays declared because the next gate to land ahead of its subject needs it. rebuild-plugboard task 3.16 was the next: out-of-scope, whose only declaration D31 retired."
+      ],
+      "out-of-scope": {
+        "reason": "rebuild-plugboard task 3.16 emptied the only out-of-scope declaration, which named rebuild-plugboard's own sixteen specifications and so refused their owner every revision (D31). No change in flight declares anything out of its scope. The byte-unchanged requirement in openspec/specs/docs/knowledge-base/spec.md applies where a change declares a set, so the gate still runs with the others and reports this emptiness rather than passing over it.",
+        "ends_with": "a change declaring a path out of its own scope that lies outside its own tree, as D31 permits -- or D31's open question, whether anything replaces the immutability half, being answered with a declaration",
+        "ends_when": "ci/vault.json out_of_scope.paths is non-empty, at which point ci/gates/out_of_scope.py fails until this entry is removed"
+      }
     },
     "script_paired_inputs": {
       "_comment": [
@@ -1365,6 +1364,22 @@
           "members": "the workflows ci/vault.json declares, which is the set ci/gates/runner.py examines"
         },
         "why": "runner.py checks path filters, branch filters and continue-on-error only on DECLARED workflows. An undeclared one is a blocking job whose refusal-defeating clauses nothing reads. Three of five workflows sat in that state -- test.yml, pr.yml and dependabot-auto-merge.yml -- and the gate was green throughout, because a set nobody reconciles is a set nobody checks. This pair is the general answer to rebuild-plugboard task 3.1: the roster, the paired violating input and the obligation are each already discovered or single-sourced; the INVOCATIONS were not, and a workflow file's format is owned by the hosting service so one of the two encodings cannot simply be deleted."
+      },
+      "person-reviewed-paths": {
+        "subject": "which paths a person reviews, against which paths never advance unattended",
+        "computed": {
+          "kind": "codeowners_paths",
+          "path": ".github/CODEOWNERS",
+          "in_tree": true,
+          "members": "every root-anchored path .github/CODEOWNERS requests the owner's review for"
+        },
+        "published": {
+          "kind": "workflow_env_words",
+          "path": ".github/workflows/dependabot-auto-merge.yml",
+          "variable": "UNATTENDED_EXCLUDED",
+          "members": "the path prefixes the auto-merge workflow refuses to advance, read by the step that refuses them"
+        },
+        "why": "rebuild-plugboard task 1.9. The owner reviews and nothing blocks on that review, because a sole maintainer cannot approve their own pull request; what stops an unattended input advancing contract/ or conformance/ is the auto-merge workflow's exclusion. Each list is read by a different party -- the forge requests review from one, the workflow refuses from the other -- so neither can be deleted in favour of the other, and deriving one from the other would let a single removed line drop both. The owner side is held to the tree because the forge ignores a pattern matching nothing as silently as an owner it cannot resolve."
       }
     },
     "retired": {

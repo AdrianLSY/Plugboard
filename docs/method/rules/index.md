@@ -33,6 +33,7 @@ Generated index of the notes in `docs/method/rules/`.
 - [An obligation enforced in two places is enforced the same way in both](one-obligation-one-invocation.md)
 - [A published enumeration and the computed one are reconciled](one-set-one-encoding.md)
 - [An artifact declared out of scope stays byte-unchanged](out-of-scope-byte-unchanged.md)
+- [A declared out-of-scope path lies outside its declarant's tree](out-of-scope-containment.md)
 - [Every note is reachable from an entry point](reachability.md)
 - [Reader settings are tracked; per-person state is not](reader-configuration.md)
 - [Relations are relative markdown links](relative-markdown-links.md)
