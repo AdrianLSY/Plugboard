@@ -10,14 +10,16 @@
 #    is the one artifact no later release can correct, and the suite that is its
 #    authority. CODEOWNERS requests the review and nothing blocks on it -- a sole
 #    maintainer cannot approve their own pull request -- so this refusal is what
-#    stops an unattended advance. The two lists are two encodings on purpose,
-#    each read by a different party, and ci/gates/correspondences.py fails when
-#    either names a path the other omits or CODEOWNERS names one the tree does
-#    not hold (rebuild-plugboard task 1.9).
+#    stops an unattended advance. The step after it disarms an auto-merge an
+#    earlier run armed, so the refusal holds against a later push and not only
+#    within its own run. The two lists are two encodings on purpose, each read
+#    by a different party, and ci/gates/correspondences.py fails when either
+#    names a path the other omits or CODEOWNERS names one the tree does not
+#    hold (rebuild-plugboard task 1.9).
 #
 # `pull_request_target` is required for the token to be able to merge, so this
-# workflow NEVER checks out the pull request's code and never runs it. The diff
-# is read through the API.
+# workflow NEVER checks out the pull request's code and never runs it. The
+# changed paths are read through the API.
 name: dependabot auto-merge
 
 on: pull_request_target
@@ -39,16 +41,53 @@ jobs:
       - name: refuse any unattended advance touching a path a person reviews
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          CHANGED_FILES: ${{ github.event.pull_request.changed_files }}
           UNATTENDED_EXCLUDED: contract/ conformance/
         run: |
-          # An assignment, not a pipe into grep: a failed `gh pr diff` piped into
+          # The structured file list, not the unified diff. `gh pr diff
+          # --name-only` reads each `diff --git` header's b/ side and nothing
+          # else, so a rename OUT of contract/ listed only its destination, a
+          # name git quotes (non-ASCII, a quote, a backslash) kept its leading
+          # `"` and matched no prefix, and a path holding " b/" was cut at the
+          # last one -- each an exit 0 over a reviewed path. The files endpoint
+          # returns every name unquoted, and `previous_filename` is the side of
+          # a rename the diff header drops: moving a file out from under a
+          # reviewed path advances that path as surely as editing it.
+          #
+          # The endpoint stops at 3000 files and says nothing when it does, so a
+          # list that may be cut off is refused rather than read as complete:
+          # when the pull request reports 3000 or more, when 3000 or more come
+          # back (a push after this event can grow it past the cap), or when
+          # fewer distinct names come back than it reports. A count that is not
+          # a number is refused too -- `[ "" -ge 3000 ]` is an error, and an
+          # error inside an `if` reads as false, which would skip the check.
+          case "$CHANGED_FILES" in
+            '' | *[!0-9]*)
+              echo "::error::the event reports no changed-file count ('$CHANGED_FILES'); refusing rather than trusting a list nothing can check for truncation"
+              exit 1
+              ;;
+          esac
+          if [ "$CHANGED_FILES" -ge 3000 ]; then
+            echo "::error::the pull request changes $CHANGED_FILES files and the files endpoint returns at most 3000; refusing rather than merging over a list that may be cut off"
+            exit 1
+          fi
+          # Assignments, not a pipe into grep: a failed `gh api` piped into
           # `grep -q` leaves grep reading nothing, the test comes out false, and
-          # the merge step runs over a diff nobody read. Assigned, the failure
-          # stops the job under the runner's `bash -e`.
-          changed="$(gh pr diff --name-only "$PR_URL")"
-          if [ -z "$changed" ]; then
+          # the merge step runs over a list nobody read. Assigned, the failure
+          # stops the job under the runner's `bash -e`. Two reads because the
+          # count is of `filename` alone: a rename contributes two paths to
+          # the list below and one file to the pull request's count.
+          changed="$(gh api --paginate "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/files" --jq '.[] | .filename, (.previous_filename // empty)')"
+          named="$(gh api --paginate "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/files" --jq '.[].filename')"
+          if [ -z "$changed" ] || [ -z "$named" ]; then
             echo "::error::no changed paths were read for this pull request; refusing rather than merging over an unread diff"
+            exit 1
+          fi
+          # Byte order, so two names a locale collates as equal still count as two.
+          distinct=$(($(LC_ALL=C sort -u <<< "$named" | wc -l)))
+          if [ "$distinct" -ge 3000 ] || [ "$distinct" -lt "$CHANGED_FILES" ]; then
+            echo "::error::$distinct distinct changed files came back and the pull request reports $CHANGED_FILES; refusing rather than merging over a list that may be cut off"
             exit 1
           fi
           refused=0
@@ -63,6 +102,38 @@ jobs:
             done <<< "$changed"
           done
           [ "$refused" -eq 0 ]
+
+      # A refusal fails its own run, which skips the merge step below in THAT
+      # run and undoes nothing an earlier run did. The sequence this closes:
+      # Dependabot opens a patch bump of sidecar/go.mod, the refusal passes, and
+      # the merge step arms auto-merge. Before the required checks go green, an
+      # account with write access pushes a commit to the same branch touching
+      # contract/ or conformance/. The push runs this workflow again and the
+      # refusal goes red -- but GitHub disarms auto-merge on a push only when
+      # the pusher LACKS write access, and this job is not a required check, so
+      # the armed merge completes the moment the required checks pass, with the
+      # reviewed path in it. fetch-metadata reads the first commit, so the update
+      # type still says patch. `failure()` is any earlier step, not only the
+      # refusal: a run that could not read its metadata disarms too, which is
+      # the direction to err in.
+      - name: disarm an auto-merge armed by an earlier run
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          # Read first, then disarm, rather than `gh pr merge --disable-auto ||
+          # true`. Nothing armed is the one outcome to tolerate; swallowing every
+          # error would swallow a failed disarm as well, and leave a red refusal
+          # over a merge still armed -- the state this step exists to end. A
+          # failed read or a failed disarm fails the step, visibly.
+          armed="$(gh pr view "$PR_URL" --json autoMergeRequest --jq '.autoMergeRequest != null')"
+          if [ "$armed" = "true" ]; then
+            gh pr merge --disable-auto "$PR_URL"
+            echo "::warning::auto-merge armed by an earlier run is disarmed; this pull request now waits for a person"
+          else
+            echo "auto-merge is not armed on this pull request; nothing to disarm"
+          fi
 
       - name: merge, patch updates only
         if: steps.meta.outputs.update-type == 'version-update:semver-patch'
