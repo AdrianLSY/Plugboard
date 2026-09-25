@@ -276,7 +276,8 @@
       "D28",
       "D29",
       "D30",
-      "D31"
+      "D31",
+      "D32"
     ],
     "retired": {
       "_comment": [
@@ -469,6 +470,8 @@
       "because a declared roster is a second encoding of what the tree states."
     ],
     "phase": "complete",
+    "budget_seconds": 40,
+    "_budget_comment": "D32. make check's wall-clock ceiling, enforced by ci/run-gates.py: printed on every run, and a run over it fails naming the remedy D32 records. Raising it is a change to D32, not a tuning step.",
     "blocking": [
       "authoring-channels",
       "banned-patterns",

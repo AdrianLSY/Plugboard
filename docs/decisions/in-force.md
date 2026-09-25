@@ -44,6 +44,7 @@ thing to know before reopening anything.
 | `D29` | No gate manifest. The roster is discovered; the INVOCATIONS are reconciled | [note](d29-no-gate-manifest.md) |
 | `D30` | Durable state is held in PostgreSQL | [note](d30-durable-state-postgresql.md) |
 | `D31` | A declared out-of-scope set may not name its own declarant's tree | [note](d31-out-of-scope-containment.md) |
+| `D32` | make check holds every tree property on change, inside a declared budget | [note](d32-make-check-budget.md) |
 
 ## Retired identifiers
 

@@ -39,5 +39,6 @@ Generated index of the notes in `docs/decisions/`.
 - [D29 — No gate manifest. The roster is discovered; the INVOCATIONS are reconciled](d29-no-gate-manifest.md)
 - [D30 — Durable state is held in PostgreSQL](d30-durable-state-postgresql.md)
 - [D31 — A declared out-of-scope set may not name its own declarant's tree](d31-out-of-scope-containment.md)
+- [D32 — make check holds every tree property on change, inside a declared budget](d32-make-check-budget.md)
 - [Decisions in force](in-force.md)
 - [The superseded decision register](superseded-register.md)

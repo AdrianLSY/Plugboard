@@ -540,6 +540,56 @@ otherwise. Whether anything should replace the immutability half — and if so w
 of these specifications must be able to revise them — is left open here rather than answered by
 implication.
 
+### D32 · make check holds every tree property on change, inside a declared budget
+
+**Decided**, settling task 3.17, which asked what the one command is for and for a budget on it.
+
+**What it is for.** `make check` is the command run on every commit and repeated by CI, and it decides
+every property of the tree on every run — the meta-gate's isolation cross-product included. Nothing
+moves to `.github/workflows/scheduled.yml`, so `parity.schedule.invokes` in `ci/vault.json` is
+unchanged and task 3.12's check holds the same commands it held before. Task 3.10's own-input failure
+and task 3.12's on-change meta-check and parity run are untouched.
+
+**The budget.** `gate_policy.budget_seconds` in `ci/vault.json`, 40 seconds, enforced by
+`ci/run-gates.py` in the fast tier's shape: the number is declared rather than written in code, the
+elapsed time is printed on every run including a passing one, and a run over the budget fails naming
+both and the remedy. Raising it is a change to this entry, not a tuning step.
+
+**Why it fits, measured.** On 2026-09-24, at 43 gates, the run took about 120 seconds. Measured again
+on 2026-09-25 before the change: 126 seconds on a ten-core workstation and 105 on CI's `make check`
+step, of which `ci/gates/coverage.py` spent 62 and `ci/gates/meta.py` 49 on the workstation, the other
+41 gates about 14 together. Two causes, neither of them the checks themselves:
+
+| cause | what changed |
+|---|---|
+| `coverage.py`'s subject is every gate's own output, and it produced that output by running every gate a second time — including the meta-gate | It runs last and reads the output `ci/run-gates.py` captured, from a fresh directory named in `GATE_OUTPUTS`. Pointed anywhere but the repository root, or at a gate the capture lacks, it still runs the gate itself, so the gate decides without the runner |
+| The runner, and the meta-gate's scenario and cross-product runs, were sequential over independent processes | Both run their processes concurrently, bounded by the core count, and report in roster order |
+
+After: 13.0 seconds on the same workstation, every gate's verdict unchanged — 58 scenarios proven to
+fail by their own logic, no cross-gate failure.
+
+**What the budget is for, given that.** Concurrency divides the cross-product's cost by the core count
+and does nothing to its growth: every gate added runs against every violating tree, and every tree
+added is run by every per-file gate. The budget is what makes that growth visible before it changes
+what gets written. When a run breaches it, the remedy is named here rather than improvised: move the
+cross-product to the schedule, keep a cheaper isolation property on change — the pairs whose gate or
+violating input the change touches — and add the moved command to `parity.schedule.invokes`, so task
+3.12's check holds it executed there at a command position.
+
+*Alternatives considered:*
+
+**(a) Move the cross-product to the schedule now.** Rejected: it weakens what every change is checked
+against, to save a cost that removing the double run and the serial loop already removed. A property
+checked weekly lets a change that breaks it merge, and the change that finds it is somebody else's.
+
+**(b) Remove the causes and set no budget.** Rejected: that is the state the run was in while it grew
+from seconds at 26 gates to two minutes at 43, with nothing noticing until it interrupted work. The
+growth is structural, so the control has to be.
+
+**(c) Have `coverage.py` inspect each gate's source for its coverage call instead of its output.**
+Rejected in that gate's own docstring and not reopened: a present call proves nothing about what a run
+prints, and a gate once reported "0 citations checked" while exiting zero.
+
 ### Staged delivery, and the task that closes each stage
 
 The work is delivered in stages, each ending in one reviewed pull request at a point where something new

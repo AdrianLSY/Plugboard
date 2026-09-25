@@ -25,16 +25,42 @@ Three properties matter, and each has a reason:
     the whole point of the phase is to watch the count go to zero as the content
     lands.
 
-Exit status is non-zero if and only if a BLOCKING gate failed. `--report-only`
-forces every gate into report-only and always exits zero.
+Exit status is non-zero if and only if a BLOCKING gate failed, or the run
+exceeded its budget. `--report-only` forces every gate into report-only and
+always exits zero.
+
+## The budget, and how the run fits inside it (D32)
+
+`make check` is the command run on every commit, and slow feedback changes what
+gets written, so it carries a ceiling of the fast tier's shape: declared in
+ci/vault.json as gate_policy.budget_seconds rather than written here, the
+elapsed time printed on EVERY run, and a run over it failing with the remedy.
+Raising the number is a change to D32, not a tuning step.
+
+It fits for two reasons, both about not doing work twice or in series:
+
+  * Gates are independent processes, so they run concurrently.
+  * ci/gates/coverage.py's subject is every gate's own output, and it used to
+    produce that output by running every gate a second time -- 63 of the run's
+    120 seconds. It runs LAST, and reads the outputs this runner captured from a
+    fresh directory named in GATE_OUTPUTS. Run on its own it still runs each
+    gate itself, so the gate does not depend on the runner to decide.
 """
 
 from __future__ import annotations
 
 import json
+import os
+import shutil
 import subprocess
 import sys
+import tempfile
+import time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+
+#: The gate that reads every other gate's output. It runs after them.
+READS_OUTPUTS = "coverage"
 
 
 #: A module whose name starts with `_` is a shared library, not a gate. This
@@ -83,25 +109,44 @@ def main(argv: list[str]) -> int:
     ]
 
     mode = "REPORT-ONLY (forced)" if force_report_only else f"phase {policy['phase']}"
+    budget = policy["budget_seconds"]
     print(f"== vault gates | {len(modules)} gate(s) | {mode}\n")
 
-    results = []
-    for module in modules:
+    started = time.monotonic()
+    captured = Path(tempfile.mkdtemp(prefix="gate-outputs-"))
+
+    def run_one(module: str, env: dict | None = None) -> tuple:
         gid = gate_id_for(module)
         is_blocking = (gid in blocking) and not force_report_only
         args = [sys.executable, str(root / "ci" / "gates" / f"{module}.py")]
         if not is_blocking:
             args.append("--report-only")
         proc = subprocess.run(
-            args, capture_output=True, text=True, cwd=str(root / "ci" / "gates")
+            args,
+            capture_output=True,
+            text=True,
+            cwd=str(root / "ci" / "gates"),
+            env=env,
         )
         out = (proc.stdout or "") + (proc.stderr or "")
+        (captured / f"{module}.out").write_text(out, encoding="utf-8")
         failed = "[FAIL]" in out
         warned = "[warn]" in out
         crashed = "Traceback" in out
-        results.append(
-            (gid, is_blocking, proc.returncode, failed, warned, crashed, out)
-        )
+        return (gid, is_blocking, proc.returncode, failed, warned, crashed, out)
+
+    try:
+        first = [m for m in modules if m != READS_OUTPUTS]
+        with ThreadPoolExecutor(max_workers=os.cpu_count() or 4) as pool:
+            by_module = dict(zip(first, pool.map(run_one, first)))
+        if READS_OUTPUTS in modules:
+            by_module[READS_OUTPUTS] = run_one(
+                READS_OUTPUTS, env={**os.environ, "GATE_OUTPUTS": str(captured)}
+            )
+    finally:
+        shutil.rmtree(captured, ignore_errors=True)
+    elapsed = time.monotonic() - started
+    results = [by_module[m] for m in modules]
 
     width = max(len(g) for g, *_ in results)
     print("-- inventory")
@@ -147,11 +192,22 @@ def main(argv: list[str]) -> int:
         )
     if hard:
         print(f"   FAILED         : {', '.join(hard)}")
+    over = elapsed > budget
+    print(f"   elapsed        : {elapsed:.1f}s against a {budget}s budget")
+    if over:
+        print(
+            f"   OVER BUDGET by {elapsed - budget:.1f}s. make check is the command run "
+            f"on every commit, and its latency is a defect class, not a target. D32 "
+            f"names the remedy: move ci/gates/meta.py's isolation cross-product to "
+            f".github/workflows/scheduled.yml with a cheaper isolation property kept "
+            f"on change, or remove the cost that grew. Raising the budget is a "
+            f"change to D32, not a tuning step."
+        )
 
     if force_report_only:
         print("\n   report-only: exiting 0 regardless of findings")
         return 0
-    if unclassified or crashes or hard:
+    if unclassified or crashes or hard or over:
         return 1
     print("\n   all blocking gates pass")
     return 0

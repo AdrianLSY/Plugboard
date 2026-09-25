@@ -36,11 +36,13 @@ roster is a second encoding of what the tree already states, and the two drift.
 
 from __future__ import annotations
 
+import os
 import re
 import shutil
 import subprocess
 import sys
 import tempfile
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from _common import Report, load_manifest, main_guard, repo_root
@@ -50,6 +52,10 @@ RULE_NOTE = "docs/method/rules/gates-are-demonstrated-to-fail.md"
 
 # This module checks the others; it is not its own subject.
 NOT_A_GATE = {"meta", "a module whose name starts with _ (a shared library)"}
+
+# Every run below is its own process, deciding one gate against one tree, so
+# they are independent and run concurrently (D32).
+WORKERS = os.cpu_count() or 4
 
 
 def gate_modules(root: Path) -> dict[str, Path]:
@@ -131,6 +137,7 @@ def run(scan_root: Path, report_only: bool) -> int:
     modules = gate_modules(root)
 
     checked = 0
+    scenarios: list[tuple] = []
     for module, module_path in modules.items():
         gid = gate_id_for(module)
         fixture_dir = broken / gid
@@ -166,30 +173,42 @@ def run(scan_root: Path, report_only: bool) -> int:
                     f"{gid}/GATE.md: does not name its gate's rule note ({note})"
                 )
 
-        for tree in trees:
-            label = f"{gid}/{tree.name}"
+        scenarios.extend((module, module_path, gid, tree) for tree in trees)
 
-            # (3) the gate fails on its own violating input
-            code = run_gate(module_path, tree)
-            if code == 0:
-                report.fail(
-                    f"{label}: gate PASSES on its own violating input -- "
-                    f"mis-wired flag, path or enumeration"
-                )
-                continue
+    # (3) and (4) for every scenario at once. Each is two independent processes,
+    # so they run concurrently and are reported in roster order afterwards (D32).
+    def demonstrate(scenario: tuple) -> tuple[int, int, str]:
+        module, module_path, _gid, tree = scenario
+        code = run_gate(module_path, tree)
+        if code == 0:
+            return code, 0, ""
+        neutered, err = neuter_and_run(root, module, tree)
+        return code, neutered, err
 
-            # (4) and the gate's own logic is what fails
-            neutered, err = neuter_and_run(root, module, tree)
-            if neutered == -1:
-                report.fail(f"{label}: {err}")
-            elif neutered != 0:
-                report.fail(
-                    f"{label}: still fails (exit {neutered}) with Report.fail neutered -- "
-                    f"the failure is not the gate's own logic, so this fixture "
-                    f"demonstrates nothing about the rule it claims"
-                )
-            checked += 1
-            report.examine(f"{gid}/{tree.name}")
+    with ThreadPoolExecutor(max_workers=WORKERS) as pool:
+        outcomes = list(pool.map(demonstrate, scenarios))
+    for (_module, _path, gid, tree), (code, neutered, err) in zip(scenarios, outcomes):
+        label = f"{gid}/{tree.name}"
+
+        # (3) the gate fails on its own violating input
+        if code == 0:
+            report.fail(
+                f"{label}: gate PASSES on its own violating input -- "
+                f"mis-wired flag, path or enumeration"
+            )
+            continue
+
+        # (4) and the gate's own logic is what fails
+        if neutered == -1:
+            report.fail(f"{label}: {err}")
+        elif neutered != 0:
+            report.fail(
+                f"{label}: still fails (exit {neutered}) with Report.fail neutered -- "
+                f"the failure is not the gate's own logic, so this fixture "
+                f"demonstrates nothing about the rule it claims"
+            )
+        checked += 1
+        report.examine(label)
 
     # (5) ISOLATION: a violating input must fail its own gate and no other
     # PER-FILE gate. Whole-tree gates are excluded and the exclusion is declared
@@ -222,20 +241,29 @@ def run(scan_root: Path, report_only: bool) -> int:
                 f"reading from the outside as though it does"
             )
 
+    # The cross-product is the quadratic part: every per-file gate against every
+    # violating tree. It stays on change (D32) and runs concurrently; if it ever
+    # breaks make check's budget, D32 names moving it to the schedule as the
+    # remedy, with a cheaper isolation property kept here.
+    pairs = [
+        (gid, tree, other, other_path)
+        for module in modules
+        for gid in [gate_id_for(module)]
+        for tree in fixture_trees(broken / gid)
+        for other, other_path in modules.items()
+        if other != module and gate_id_for(other) not in whole_tree
+    ]
+    with ThreadPoolExecutor(max_workers=WORKERS) as pool:
+        codes = list(pool.map(lambda p: run_gate(p[3], p[1]), pairs))
     cross = 0
-    for module, _module_path in modules.items():
-        gid = gate_id_for(module)
-        for tree in fixture_trees(broken / gid):
-            for other, other_path in modules.items():
-                if other == module or gate_id_for(other) in whole_tree:
-                    continue
-                if run_gate(other_path, tree) != 0:
-                    cross += 1
-                    report.fail(
-                        f"{gid}/{tree.name}: also fails ci/gates/{other}.py -- a "
-                        f"violating input that trips a second gate makes that "
-                        f"gate's own demonstration ambiguous"
-                    )
+    for (gid, tree, other, _path), code in zip(pairs, codes):
+        if code != 0:
+            cross += 1
+            report.fail(
+                f"{gid}/{tree.name}: also fails ci/gates/{other}.py -- a "
+                f"violating input that trips a second gate makes that "
+                f"gate's own demonstration ambiguous"
+            )
 
     report.coverage(
         covered=sorted(modules),
