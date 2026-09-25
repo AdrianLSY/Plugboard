@@ -1,14 +1,23 @@
 # Planted: conformance/ is reviewed by the owner and omitted here. The trailing
 # comment names it, so a resolver reading the comment as members would heal the
 # omission and publish '#', 'left' and 'out' besides.
+#
+# Accepted and read, in two spellings the resolver once misread: the steps are
+# in compact sequence style -- their '- ' items at the same indent as 'steps:',
+# which YAML allows -- and 'env:' carries a trailing comment. The omission is
+# reported by member only because the refusing step is recognised and its list
+# read; had either spelling been refused, this pair would report a resolver that
+# could not run instead.
 name: dependabot auto-merge
 on: pull_request_target
 jobs:
   auto-merge:
     runs-on: ubuntu-latest
     steps:
-      - name: refuse
-        env:
-          UNATTENDED_EXCLUDED: contract/ codecs/  # conformance/ left out
-        run: |
-          for prefix in $UNATTENDED_EXCLUDED; do echo "$prefix"; done
+    - id: meta
+      run: echo "metadata"
+    - name: refuse
+      env:  # the paths refused unattended
+        UNATTENDED_EXCLUDED: contract/ codecs/  # conformance/ left out
+      run: |
+        for prefix in $UNATTENDED_EXCLUDED; do echo "$prefix"; done

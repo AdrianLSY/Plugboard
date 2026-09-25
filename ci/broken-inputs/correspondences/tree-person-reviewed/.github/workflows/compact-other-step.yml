@@ -1,0 +1,18 @@
+# Planted: compact sequence style -- the steps' '- ' items at the same indent as
+# 'steps:' -- with the list on the fetch-metadata step's env and the loop in the
+# next step, where the variable is empty. A step was recognised only under a
+# less-indented 'steps:', so this shape fell back to the whole file, where the
+# next step's loop satisfied it.
+name: compact other step
+on: pull_request_target
+jobs:
+  auto-merge:
+    runs-on: ubuntu-latest
+    steps:
+    - id: meta
+      env:
+        UNATTENDED_EXCLUDED: contract/
+      run: echo "metadata"
+    - name: refuse
+      run: |
+        for prefix in $UNATTENDED_EXCLUDED; do echo "$prefix"; done

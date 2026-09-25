@@ -1,0 +1,19 @@
+# Planted: the list on a matrix entry -- a list item under 'include:', not a
+# step -- and the loop in the step. A matrix value is not an environment
+# variable, and an env: under a list item whose parent is not 'steps:' cannot
+# say which step's shell sees it. Unrecognised, it fell back to the whole file,
+# where the loop satisfied it; it is refused instead.
+name: matrix item
+on: pull_request_target
+jobs:
+  auto-merge:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - env:
+              UNATTENDED_EXCLUDED: contract/
+    steps:
+      - name: refuse
+        run: |
+          for prefix in $UNATTENDED_EXCLUDED; do echo "$prefix"; done
