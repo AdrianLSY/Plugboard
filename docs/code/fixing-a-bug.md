@@ -9,8 +9,9 @@ authority: rationale
 **Gate:** planned — the absent-artifact check that keeps this procedure honest now runs, and step 1
 is already enforced for the vault's own gates by
 [every gate is demonstrated to fail](../method/rules/gates-are-demonstrated-to-fail.md). What is
-still unenforced is the procedure's own ordering, which needs
-[rebuild-plugboard task 1.10](../../openspec/changes/rebuild-plugboard/tasks.md).
+still unenforced is the procedure's own ordering: nothing checks that the failing case was committed
+and observed failing before the fix. The pull-request checks in [`ci/pr/checks.py`](../../ci/pr/checks.py)
+decide a change's description and the documentation it lands with, not the order of its commits.
 
 Three steps, the first of which is the whole procedure: **the failing case is committed and observed
 failing before the fix exists.** A fix arriving with its test proves only that the test runs.
