@@ -8,9 +8,10 @@ authority: rationale
 
 **Gate:** planned — the absent-artifact check that keeps this procedure honest now runs
 ([`ci/gates/entry_points.py`](../../ci/gates/entry_points.py) for the entry files,
-[entry files route](../method/rules/entry-files-route.md) for the rule), but nothing yet checks that
-step 4 is not skipped; that arrives with
-[rebuild-plugboard task 1.10](../../openspec/changes/rebuild-plugboard/tasks.md).
+[entry files route](../method/rules/entry-files-route.md) for the rule), and step 4 is checked on
+every pull request: [`ci/pr/checks.py`](../../ci/pr/checks.py) fails a change that touches a
+component root and neither touches the spine nor says `docs: n/a` with a reason. What nothing checks
+yet is the order of the steps, which the missing artifacts below still leave a claim.
 
 Five steps, in one order. The order *is* the procedure: a step taken out of turn — code before its
 specification, implementation before the fixture that gates it — is the defect this note prevents,

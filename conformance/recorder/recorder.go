@@ -76,7 +76,7 @@ func NewOrdered() *Ordered { return &Ordered{} }
 // owns its buffers and a recorder that aliased them would report whatever the
 // caller did next.
 func (o *Ordered) Record(method, rawTarget []byte, fields []Field, body []byte) {
-	o.record(method, rawTarget, fields, body, false)
+	o.store(method, rawTarget, fields, body, false)
 }
 
 // RecordChunked stores one exchange whose body arrived in chunked transfer
@@ -85,10 +85,10 @@ func (o *Ordered) Record(method, rawTarget []byte, fields []Field, body []byte) 
 // deliberately defective recorder it is proven against should differ from this
 // one in exactly the two properties it was built to get wrong.
 func (o *Ordered) RecordChunked(method, rawTarget []byte, fields []Field, body []byte) {
-	o.record(method, rawTarget, fields, body, true)
+	o.store(method, rawTarget, fields, body, true)
 }
 
-func (o *Ordered) record(method, rawTarget []byte, fields []Field, body []byte, chunked bool) {
+func (o *Ordered) store(method, rawTarget []byte, fields []Field, body []byte, chunked bool) {
 	sum := sha256.Sum256(body)
 	o.exchanges = append(o.exchanges, Exchange{
 		Method:    append([]byte(nil), method...),
