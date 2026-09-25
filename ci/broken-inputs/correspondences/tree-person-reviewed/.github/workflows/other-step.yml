@@ -1,0 +1,15 @@
+# Planted: the list is on one step's env and the loop is in the next step. A
+# step's env is visible to that step alone, so the loop reads an empty variable.
+name: other step
+on: pull_request_target
+jobs:
+  auto-merge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: fetch metadata
+        env:
+          UNATTENDED_EXCLUDED: contract/
+        run: echo "metadata"
+      - name: refuse
+        run: |
+          for prefix in $UNATTENDED_EXCLUDED; do echo "$prefix"; done

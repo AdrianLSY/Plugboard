@@ -718,7 +718,7 @@
     }
   },
   "correspondences": {
-    "_comment": "The pair rebuild-plugboard task 1.9 declares, planted with one omission of each kind the task names, beside the three ways its two new resolvers refuse to guess.",
+    "_comment": "The pair rebuild-plugboard task 1.9 declares, planted with one omission of each kind the task names, beside the ways its two new resolvers refuse to guess -- each refusal on a workflow of its own, paired with a manifest list so the two sides never share a resolver kind.",
     "declared": {
       "person-reviewed-paths": {
         "subject": "the owner's paths against the unattended exclusion, with conformance/ omitted from the exclusion and codecs/ named by both and present in neither tree",
@@ -773,6 +773,90 @@
         "published": {
           "kind": "manifest_list",
           "path": "fixture_reviewed",
+          "members": "paths refused unattended"
+        }
+      },
+      "anchored-exclusion": {
+        "subject": "an exclusion spelled as CODEOWNERS spells it, whose leading slash no repo-relative changed path begins with",
+        "computed": {
+          "kind": "manifest_list",
+          "path": "fixture_reviewed",
+          "members": "paths the owner reviews"
+        },
+        "published": {
+          "kind": "workflow_env_words",
+          "path": ".github/workflows/anchored.yml",
+          "variable": "UNATTENDED_EXCLUDED",
+          "members": "paths refused unattended"
+        }
+      },
+      "commented-read": {
+        "subject": "an exclusion whose only read is a shell comment",
+        "computed": {
+          "kind": "manifest_list",
+          "path": "fixture_reviewed",
+          "members": "paths the owner reviews"
+        },
+        "published": {
+          "kind": "workflow_env_words",
+          "path": ".github/workflows/commented.yml",
+          "variable": "UNATTENDED_EXCLUDED",
+          "members": "paths refused unattended"
+        }
+      },
+      "echoed-read": {
+        "subject": "an exclusion expanded only by an echo",
+        "computed": {
+          "kind": "manifest_list",
+          "path": "fixture_reviewed",
+          "members": "paths the owner reviews"
+        },
+        "published": {
+          "kind": "workflow_env_words",
+          "path": ".github/workflows/echoed.yml",
+          "variable": "UNATTENDED_EXCLUDED",
+          "members": "paths refused unattended"
+        }
+      },
+      "other-step-read": {
+        "subject": "an exclusion on one step's env, read by a loop in another step",
+        "computed": {
+          "kind": "manifest_list",
+          "path": "fixture_reviewed",
+          "members": "paths the owner reviews"
+        },
+        "published": {
+          "kind": "workflow_env_words",
+          "path": ".github/workflows/other-step.yml",
+          "variable": "UNATTENDED_EXCLUDED",
+          "members": "paths refused unattended"
+        }
+      },
+      "reassigned-exclusion": {
+        "subject": "an exclusion the step's shell replaces before its loop reads it",
+        "computed": {
+          "kind": "manifest_list",
+          "path": "fixture_reviewed",
+          "members": "paths the owner reviews"
+        },
+        "published": {
+          "kind": "workflow_env_words",
+          "path": ".github/workflows/reassigned.yml",
+          "variable": "UNATTENDED_EXCLUDED",
+          "members": "paths refused unattended"
+        }
+      },
+      "folded-exclusion": {
+        "subject": "an exclusion written as a folded block scalar",
+        "computed": {
+          "kind": "manifest_list",
+          "path": "fixture_reviewed",
+          "members": "paths the owner reviews"
+        },
+        "published": {
+          "kind": "workflow_env_words",
+          "path": ".github/workflows/folded.yml",
+          "variable": "UNATTENDED_EXCLUDED",
           "members": "paths refused unattended"
         }
       }

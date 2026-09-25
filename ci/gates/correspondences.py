@@ -62,7 +62,7 @@ import re
 from pathlib import Path
 
 from _common import Report, load_manifest, main_guard, repo_root, rule_notes
-from _workflow import executable_text
+from _workflow import executable_lines
 
 GATE_ID = "correspondences"
 RULE_NOTE = "docs/method/rules/one-set-one-encoding.md"
@@ -76,10 +76,15 @@ def _dig(manifest: dict, dotted: str):
 
 
 def _path_member(pattern: str) -> str:
-    """One spelling for a root-anchored path, whichever file it came from.
+    """A CODEOWNERS pattern, spelled as the member the workflow's list names.
 
-    CODEOWNERS anchors with a leading slash and a shell prefix test does not, so
-    `/contract/` and `contract/` are the same member and must compare equal.
+    CODEOWNERS anchors a root path with a leading slash; the workflow tests each
+    of its words as a prefix of a repo-relative changed path, which never begins
+    with one. So `/contract/` in CODEOWNERS is the member `contract/`, and the
+    slash is dropped HERE, on the CODEOWNERS side only. The workflow's words are
+    compared as written: normalising `/contract/` there too would reconcile an
+    exclusion that matches no changed path and refuses nothing, which is why
+    _workflow_env_words refuses that spelling instead of repairing it.
     """
     return pattern.lstrip("/")
 
@@ -106,26 +111,191 @@ def _codeowners_paths(text: str) -> set[str]:
     return members
 
 
+def _indent(line: str) -> int:
+    return len(line) - len(line.lstrip())
+
+
+def _structural(line: str) -> bool:
+    """A line that carries YAML structure: neither blank nor a comment."""
+    stripped = line.strip()
+    return bool(stripped) and not stripped.startswith("#")
+
+
+def _yaml_parent(lines: list[str], at: int) -> int | None:
+    """The nearest line above `at` indented less than it: the key or list item
+    it sits under, or None at the top level."""
+    depth = _indent(lines[at])
+    for j in range(at - 1, -1, -1):
+        if _structural(lines[j]) and _indent(lines[j]) < depth:
+            return j
+    return None
+
+
+def _single_line_value(lines: list[str], at: int, variable: str) -> str:
+    """The scalar assigned on line `at`, which must be single-line plain or quoted.
+
+    Anything else is refused by name. Split as raw text, a folded block became
+    the one member `>-` and a trailing comment became the members `#` and
+    `reviewed`: each failed closed, and each blamed the wrong thing.
+    """
+
+    def unsupported(spelling: str) -> ValueError:
+        return ValueError(
+            f"{variable} at line {at + 1} is {spelling}; only a single-line plain "
+            f"or quoted scalar is read, so spell it as one line of space-separated "
+            f"paths"
+        )
+
+    raw = lines[at].split(":", 1)[1].strip()
+    if raw.startswith(("|", ">")):
+        raise unsupported(f"a block scalar ({raw!r})")
+    if raw.startswith(("'", '"')):
+        close = raw.find(raw[0], 1)
+        if close < 0:
+            raise unsupported("a quoted scalar that does not close on its line")
+        value, rest = raw[1:close], raw[close + 1 :]
+        if rest.strip() and not re.match(r"\s+#", rest):
+            raise unsupported(
+                f"a quoted scalar followed by more text ({rest.strip()!r})"
+            )
+    else:
+        value = re.sub(r"(?:^|\s+)#.*$", "", raw)  # ' #' opens a YAML comment
+    for k in range(at + 1, len(lines)):
+        if not _structural(lines[k]):
+            continue
+        if _indent(lines[k]) > _indent(lines[at]):
+            raise unsupported(f"a plain scalar continued onto line {k + 1}")
+        break
+    return value
+
+
+def _assignment_scope(lines: list[str], at: int, variable: str) -> tuple[int, int, str]:
+    """(first, end, where): the source lines whose executed text sees line `at`.
+
+    A step's `env:` is visible to that step alone. Read across the whole file, an
+    exclusion left on the fetch-metadata step passed while the refusing step
+    looped over an empty variable and the merge step ran. So a step-level
+    assignment is scoped to its step -- from the enclosing `- ` item to the next
+    item at the same indent -- and a job- or workflow-level one keeps the file.
+    """
+    env = _yaml_parent(lines, at)
+    if env is None or not re.match(r"\s*(?:-\s+)?env\s*:\s*$", lines[env]):
+        held = lines[env].strip() if env is not None else "the top level"
+        raise ValueError(
+            f"{variable} is assigned at line {at + 1} under {held!r}, not an env: "
+            f"block, so no step's shell sees it as a variable"
+        )
+    item = env if lines[env].lstrip().startswith("- ") else _yaml_parent(lines, env)
+    steps = _yaml_parent(lines, item) if item is not None else None
+    if (
+        item is None
+        or not lines[item].lstrip().startswith("- ")
+        or steps is None
+        or not re.match(r"\s*steps\s*:\s*$", lines[steps])
+    ):
+        return 0, len(lines), "anywhere in the file"
+    end = next(
+        (
+            k
+            for k in range(item + 1, len(lines))
+            if _structural(lines[k]) and _indent(lines[k]) <= _indent(lines[item])
+        ),
+        len(lines),
+    )
+    return item, end, f"in the step at line {item + 1} that assigns it"
+
+
+_SEPARATORS = re.compile(r"&&|\|\||;|\|")
+
+
+def _segments(line: str) -> list[str]:
+    """Each command position on a shell line, as _workflow._runs splits them."""
+    return [segment.strip() for segment in _SEPARATORS.split(line)]
+
+
 def _workflow_env_words(text: str, variable: str) -> set[str]:
-    """The words a workflow assigns to `variable`, provided an executed line reads it.
+    """The words a workflow assigns to `variable`, provided the step holding them
+    acts on them.
 
     The read is part of the member set's meaning. A variable declared and never
-    expanded by a `run:` body is a list the workflow publishes and does not act
-    on -- the shape of the reverted security gate that counted scanners named in
-    a step's `name:` while every step ran `echo skipping`.
+    expanded where the shell acts on it is a list the workflow publishes and does
+    not enforce -- the shape of the reverted security gate that counted scanners
+    named in a step's `name:` while every step ran `echo skipping`. So:
+
+      * Only a single-line plain or quoted scalar is read: one layer of matching
+        quotes and a trailing YAML comment are stripped, and a block scalar
+        (`|`, `>`) or a scalar continued onto the next line is refused by name.
+      * A word beginning with `/` is refused, not normalised. The workflow tests
+        each word as a prefix of a repo-relative changed path, so the CODEOWNERS
+        spelling copied across matches nothing and refuses nothing.
+      * A step-level `env:` counts only that step's executed lines; job- and
+        workflow-level `env:` keep the whole file. An assignment under any other
+        key is refused, because no shell sees it as a variable at all.
+      * The one read recognised is `for NAME in ...` at a command position with
+        `$VAR`, `${VAR}` or `${{ env.VAR }}` an unquoted word of its list, because
+        that is where the shell acts on each word. A shell comment is not a read,
+        nor an echo, nor a quoted expansion -- one word, so the loop runs once
+        with the whole list as a single prefix. Anything else is refused rather
+        than guessed at.
+      * A step that reassigns the variable (`VAR=`, `export VAR=`) is refused: its
+        loop acts on that value, not on the list reconciled here.
+
+    What this still cannot decide: a read reached through a script file, a
+    function or another variable, and a reassignment by `read`, `unset` or a
+    sourced file. Stated because the check is a floor, not a proof -- the same
+    limit _workflow.executes() states for a command.
     """
-    assigned = re.findall(rf"^\s+{re.escape(variable)}\s*:\s*(.*?)\s*$", text, re.M)
+    lines = text.splitlines()
+    var = re.escape(variable)
+    assigned = [i for i, line in enumerate(lines) if re.match(rf"\s+{var}\s*:", line)]
     if len(assigned) != 1:
         raise ValueError(
             f"{variable} is assigned {len(assigned)} times; exactly one assignment "
             f"is a member set, and more than one is a question of which step wins"
         )
-    if not re.search(rf"\$\{{?{re.escape(variable)}\b", executable_text(text)):
+    at = assigned[0]
+    words = _single_line_value(lines, at, variable).split()
+    anchored = [w for w in words if w.startswith("/")]
+    if anchored:
         raise ValueError(
-            f"{variable} is assigned and no executed line reads it, so the workflow "
-            f"publishes the list and acts on none of it"
+            f"{variable} names {anchored!r}; the workflow tests each word as a prefix "
+            f"of a repo-relative changed path, which never begins with '/', so a "
+            f"leading slash matches nothing and refuses nothing"
         )
-    return {_path_member(w) for w in assigned[0].strip("'\"").split()}
+
+    first, end, where = _assignment_scope(lines, at, variable)
+    executed = [
+        (i, line)
+        for i, line in executable_lines(text)
+        if first <= i < end and not line.strip().startswith("#")
+    ]
+    reassigns = re.compile(rf"(?:export\s+)?{var}=")
+    for i, line in executed:
+        if any(reassigns.match(segment) for segment in _segments(line)):
+            raise ValueError(
+                f"{variable} is reassigned by the shell at line {i + 1} "
+                f"({line.strip()!r}), so the loop acts on that value and not on "
+                f"the list reconciled here"
+            )
+    expansion = re.compile(
+        rf"(?:^|\s)(?:\${var}|\$\{{{var}\}}|\$\{{\{{\s*env\.{var}\s*\}}\}})(?=\s|$)"
+    )
+    loop = re.compile(r"(?:(?:do|then|else)\s+)*for\s+\w+\s+in\s+(.*)$")
+    word_lists = [
+        m.group(1)
+        for _i, line in executed
+        for segment in _segments(line)
+        if (m := loop.match(segment))
+    ]
+    if not any(expansion.search(listed) for listed in word_lists):
+        raise ValueError(
+            f"{variable} is assigned and no executed line reads it {where} as a "
+            f"'for NAME in ...' word list, the only read this gate recognises: "
+            f"${variable}, ${{{variable}}} or ${{{{ env.{variable} }}}} standing "
+            f"unquoted in that list is where the shell acts on each word, and any "
+            f"other read is refused rather than guessed at"
+        )
+    return set(words)
 
 
 #: Resolver kinds whose `path` names a file in the tree rather than a manifest key.
@@ -232,7 +402,9 @@ def run(scan_root: Path, report_only: bool) -> int:
             # (5) a path two sets agree about is still a rule over nothing if the
             # tree does not hold it.
             if side.get("in_tree"):
-                for absent in sorted(m for m in members if not (scan_root / m).exists()):
+                for absent in sorted(
+                    m for m in members if not (scan_root / m).exists()
+                ):
                     report.fail(
                         f"{name}/{which}: names '{absent}', which is absent from the "
                         f"tree -- {side.get('path', 'the side')} would then govern "
