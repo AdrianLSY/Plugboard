@@ -1,14 +1,14 @@
 package main
 
-// Helpers shared by the framing tests and the reply tests. They sit in their own
-// file because each of those files is split along what it tests, and a helper
-// both use belongs to neither.
+// The helper chunked_test.go and reply_test.go both drive serve through. It sits
+// in its own file because each of those files is split along what it tests, and
+// a helper both use belongs to neither. A helper only one of them calls lives
+// beside its callers instead, as firstLine does in chunked_test.go.
 
 import (
 	"errors"
 	"io"
 	"net"
-	"strings"
 	"testing"
 
 	"plugboard/conformance/recorder"
@@ -44,9 +44,4 @@ func exchange(t *testing.T, request string, answer reply) (string, *recorder.Ord
 		t.Fatalf("closing the client end: %v", err)
 	}
 	return string(response), rec
-}
-
-func firstLine(s string) string {
-	line, _, _ := strings.Cut(s, "\r\n")
-	return line
 }
