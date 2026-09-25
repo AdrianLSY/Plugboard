@@ -23,10 +23,16 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          # Full history. ci/vault.json pins out_of_scope.baseline_ref to a
-          # commit, so the byte-unchanged assertion over the sixteen
-          # specifications needs that commit reachable; a shallow clone fails on
-          # a missing ref rather than on a modified specification.
+          # Full history. ci/gates/secret_scan.py scans the commit range
+          # merge-base(origin/main, HEAD)..HEAD as well as the working tree. A
+          # shallow checkout fetches only the pushed or pull-request ref, so
+          # neither origin/main nor main resolves, the range half is EXCLUDED
+          # rather than failed, and the gate passes on the working tree alone --
+          # green over a credential committed and deleted within the branch.
+          # Dropping this to speed CI up fails nothing; it silently halves a
+          # gate. (The reason this comment used to give is gone:
+          # out_of_scope.baseline_ref has been null since rebuild-plugboard
+          # task 3.16, and nothing is pinned.)
           fetch-depth: 0
 
       - uses: actions/setup-python@v7

@@ -15,16 +15,6 @@ on:
   pull_request:
 
 jobs:
-  python-tooling:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
-        with:
-          python-version: '3.12'
-      - run: python3 -m pip install -r requirements-dev.txt
-      - run: make lint-python
-
   fast:
     runs-on: ubuntu-latest
     # No `services:` block. That absence is the check.
@@ -147,6 +137,27 @@ jobs:
       # The Go half of the same obligation: one violating module per checking
       # command, each proven to be refused by that command. Tasks 3.2 and 3.3.
       - run: python3 ci/go-tooling-check.py
+
+      # The repository's own Python tooling -- black, ruff and basedpyright at
+      # the versions requirements-dev.txt pins. In THIS job, not one of its own,
+      # because `lint` is a required check on main and the separate job these
+      # steps used to run in was not, while .github/dependabot.yml's pip
+      # ecosystem advances those pins UNATTENDED on a patch bump
+      # (.github/workflows/dependabot-auto-merge.yml). A basedpyright patch
+      # release routinely carries a new upstream pyright, and its diagnostics
+      # move with it: under a check nothing requires, a bump that turns
+      # `make lint-python` red merges anyway and leaves it red on every later
+      # pull request. Here the red holds the bump. Last in the job, so the
+      # interpreter setup-python selects is the one only these two steps run
+      # under, and the scripts above keep the runner's own.
+      #
+      # What this does not decide: that the job stays required. That is branch
+      # protection, a server-side setting no file here can read.
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - run: python3 -m pip install -r requirements-dev.txt
+      - run: make lint-python
 
   # The gating tests: written before the code they gate, red on purpose, and held
   # to a recorded baseline so a permanent red does not make every change
