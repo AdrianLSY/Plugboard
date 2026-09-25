@@ -714,12 +714,13 @@ def _committed_edit_case() -> list[str]:
 
 
 def _vacuity_cases() -> list[str]:
-    """The three states of an empty declaration, each in a tree of its own.
+    """The states of an empty declaration, each in a tree of its own.
 
     Declared empty with a reason passes and says so; empty with nothing declared
     fails; and a vacuity still declared over a set that has gained a path fails,
-    so the exemption cannot outlive the emptiness it explains. The real tree
-    exercises only the first on every run, which is why the other two are here.
+    so the exemption cannot outlive the emptiness it explains -- including when
+    every path it gained is one the gate refuses. The real tree exercises only
+    the first on every run, which is why the others are here.
     """
     import contextlib
     import io
@@ -729,6 +730,16 @@ def _vacuity_cases() -> list[str]:
         ("declared empty", [], vacuity, 0, "subject set empty by declaration"),
         ("undeclared empty", [], {}, 1, "records no reason"),
         ("stale vacuity", [SPEC_SET_ROOT], vacuity, 1, "has outlived its reason"),
+        # A set whose every entry is refused is still a declared set. Counted by
+        # accepted paths it read as empty, so the vacuity passed the run early and
+        # the refusal was never reported.
+        (
+            "vacuity over refused entries",
+            [":/" + SPEC_SET_ROOT],
+            vacuity,
+            1,
+            "has outlived its reason",
+        ),
     )
     problems = []
     for label, paths, declared, want, needle in cases:

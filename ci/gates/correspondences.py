@@ -284,35 +284,10 @@ def _segments(line: str) -> list[str]:
     return [segment.strip() for segment in _SEPARATORS.split(line)]
 
 
-# `<<WORD`, `<<-WORD`, `<<'WORD'`: a heredoc. `<<<` is a here-string, whose
-# word is on the same line, and a delimiter starting with a digit is taken for
-# arithmetic (`1 << 2`), not a heredoc.
-_HEREDOC = re.compile(r"(?<!<)<<(?!<)-?\s*(['\"]?)([A-Za-z_]\w*)\1")
-
-# What may stand before a command at its position: a reserved word opening a
-# clause, a brace group or subshell, a function's header (`f()`, `function f`),
-# a case arm's pattern, and an assignment prefixing the command (`IFS= read`).
-_LEAD = (
-    r"(?:(?:then|do|else|elif|if|while|until|!|\{)\s+|\(\s*"
-    r"|(?:function\s+)?[\w.-]+\s*\(\s*\)\s*|function\s+[\w.-]+\s+"
-    r"|[^\s()]+\)\s*|\w+=\S*\s+)*"
-)
-
-
-def _reassignment(var: str) -> re.Pattern[str]:
-    """A command position that gives `var` a new value, matched at a segment start.
-
-    `VAR=` or `VAR+=`; `export` or `readonly` with an assignment; `declare`,
-    `typeset` or `local` with or without one, because inside a function each
-    binds an empty variable over the list; `unset`; and `read`.
-    """
-    words = r"(?:\S+\s+)*?"
-    return re.compile(
-        rf"{_LEAD}(?:{var}\+?="
-        rf"|(?:export|readonly)\s+{words}{var}\+?="
-        rf"|(?:declare|typeset|local)\s+{words}{var}(?:\+?=|\s|$)"
-        rf"|(?:unset|read)\s+{words}{var}(?:\s|$))"
-    )
+# `<<WORD`, `<<-WORD`, `<<'WORD'`, `<<\\WORD`: a heredoc. `<<<` is a here-string,
+# whose word is on the same line, and a delimiter starting with a digit is taken
+# for arithmetic (`1 << 2`), not a heredoc.
+_HEREDOC = re.compile(r"(?<!<)<<(?!<)(-?)\s*\\?(['\"]?)([A-Za-z_]\w*)\2")
 
 
 def _shell_lines(text: str, first: int, end: int) -> list[tuple[int, str, bool]]:
@@ -324,25 +299,36 @@ def _shell_lines(text: str, first: int, end: int) -> list[tuple[int, str, bool]]
     key's inline value, never the key's own line, and a block's lines verbatim,
     so a yielded text that differs from its source line is where a key begins.
 
+    A block line is returned with the block's own indentation removed, which is
+    what YAML hands the shell. That is what lets a heredoc end where bash ends
+    it: a plain `<<` body at a line that IS its delimiter, and a `<<-` body at
+    one that is its delimiter after leading tabs. Comparing stripped lines ended
+    a plain body early at an indented delimiter and counted the next body line
+    as shell.
+
     A heredoc body is data handed to a command, and is marked so that the read
     can skip it. A shell comment is dropped.
     """
     lines = text.splitlines()
     shell: list[tuple[int, str, bool]] = []
-    key, pending = "", []
+    key, base, pending = "", None, []
     for i, line in executable_lines(text):
         if line != lines[i]:
             key = lines[i].lstrip().lstrip("-").split(":", 1)[0].strip()
-            pending = []
-        if key != "run" or not first <= i < end or line.strip().startswith("#"):
+            base, pending = None, []
+        elif base is None and line.strip():
+            base = _indent(line)
+        body = line[base:] if line == lines[i] and base is not None else line
+        if key != "run" or not first <= i < end or body.strip().startswith("#"):
             continue
         if pending:
-            shell.append((i, line, True))
-            if line.strip() == pending[0]:
+            shell.append((i, body, True))
+            dash, word = pending[0]
+            if (body.lstrip("\t") if dash else body).rstrip("\r") == word:
                 pending.pop(0)
             continue
-        shell.append((i, line, False))
-        pending = [m.group(2) for m in _HEREDOC.finditer(line)]
+        shell.append((i, body, False))
+        pending = [(m.group(1), m.group(3)) for m in _HEREDOC.finditer(body)]
     return shell
 
 
@@ -374,16 +360,15 @@ def _workflow_env_words(text: str, variable: str) -> set[str]:
         list as a single prefix -- nor a loop in a heredoc body, which is data,
         nor one in a `with:` value, which no shell runs. Anything else is
         refused rather than guessed at.
-      * A command position that gives the variable a new value is refused,
-        because the loop acts on that value and not on the list reconciled
-        here: `VAR=` or `VAR+=` at the start of a line or a segment, or after a
-        reserved word (`then`, `do`, `else`, `elif`, `if`, `while`, `until`,
-        `!`), a brace group or subshell, a function's header, a case arm's
-        pattern or a prefix assignment; `export` or `readonly` with an
-        assignment; `declare`, `typeset` or `local` with or without one, since
-        inside a function each binds an empty variable over the list; `unset`;
-        and `read`. One inside a heredoc body is refused too, which errs toward
-        refusing.
+      * Outside that read, the variable's name may not appear in scope at all.
+        Every other mention is refused without being classified, because a
+        list of the shell's ways to give a variable a new value never closes:
+        `VAR=` after any reserved word or case pattern, `export`, `readonly`,
+        `declare`, `typeset`, `local`, `unset`, `read`, `readarray`, `mapfile`,
+        `getopts`, `printf -v`, `eval`, `for VAR in`, `VAR[0]=`, and each of
+        those behind `builtin`, `command` or `time`. The regex this replaced
+        named a dozen of them and a review found ten more it let through. A
+        mention in a heredoc body is refused too, which errs toward refusing.
 
     What this still cannot decide. Quoting is not parsed: a line is split at
     every `;`, `&&`, `||` and `|`, quoted or not, so an echo whose quoted
@@ -391,12 +376,12 @@ def _workflow_env_words(text: str, variable: str) -> set[str]:
     a heredoc body that is not there -- which can only hide a read, so it errs
     toward refusing. Control flow is not followed: a loop on its own line in a
     function body counts whether or not the function is called, and a `run:`
-    step whose `shell:` is not a shell is read as one. A read reached through
-    a script file or another variable is not recognised, so its list is
-    refused; a reassignment by `eval`, `printf -v`, `mapfile` or a sourced
-    file is not seen, so its list is accepted. Stated because the check is a
-    floor, not a proof -- the same limit _workflow.executes() states for a
-    command.
+    step whose `shell:` is not a shell is read as one. A read reached through a
+    script file, or a new value given through a sourced file or a name the
+    shell computes (`${!name}`, a nameref built at run time), never mentions
+    the variable in the step, so the first is refused and the second is not
+    seen. Stated because the check is a floor, not a proof -- the same limit
+    _workflow.executes() states for a command.
     """
     lines = text.splitlines()
     var = re.escape(variable)
@@ -418,35 +403,37 @@ def _workflow_env_words(text: str, variable: str) -> set[str]:
 
     first, end, where = _assignment_scope(lines, at, variable)
     shell = _shell_lines(text, first, end)
-    # Heredoc bodies included. An assignment in one is data, so refusing it can
-    # be wrong, but only toward refusing; skipping it would let a mistaken `<<`
-    # (see the docstring on quoting) hide a real reassignment.
-    reassigns = _reassignment(var)
-    for i, line, _in_body in shell:
-        if any(reassigns.match(segment) for segment in _segments(line)):
-            raise ValueError(
-                f"{variable} is reassigned by the shell at line {i + 1} "
-                f"({line.strip()!r}), so the loop acts on that value and not on "
-                f"the list reconciled here"
-            )
     expansion = re.compile(
         rf"(?:^|\s)(?:\${var}|\$\{{{var}\}}|\$\{{\{{\s*env\.{var}\s*\}}\}})(?=\s|$)"
     )
     loop = re.compile(r"(?:(?:do|then|else)\s+)*for\s+\w+\s+in\s+(.*)$")
-    word_lists = [
-        m.group(1)
-        for _i, line, in_body in shell
-        if not in_body
-        for segment in _segments(line)
-        if (m := loop.match(segment))
-    ]
-    if not any(expansion.search(listed) for listed in word_lists):
+    mention = re.compile(rf"(?<!\w){var}(?!\w)")
+    reads, stray = 0, None
+    for i, line, in_body in shell:
+        for segment in _segments(line):
+            m = None if in_body else loop.match(segment)
+            rest = segment
+            if m:
+                reads += len(expansion.findall(m.group(1)))
+                rest = segment[: m.start(1)] + expansion.sub(" ", m.group(1))
+            if stray is None and mention.search(rest):
+                stray = (i, line)
+    if not reads:
         raise ValueError(
             f"{variable} is assigned and no executed line reads it {where} as a "
             f"'for NAME in ...' word list, the only read this gate recognises: "
             f"${variable}, ${{{variable}}} or ${{{{ env.{variable} }}}} standing "
             f"unquoted in that list is where the shell acts on each word, and any "
             f"other read is refused rather than guessed at"
+        )
+    if stray is not None:
+        i, line = stray
+        raise ValueError(
+            f"{variable} is mentioned by the shell at line {i + 1} "
+            f"({line.strip()!r}) outside the one read this gate recognises, so it "
+            f"may be given a new value there and the loop would act on that rather "
+            f"than on the list reconciled here -- refused without classifying the "
+            f"mention, since the shell's ways to reassign a variable do not close"
         )
     return set(words)
 

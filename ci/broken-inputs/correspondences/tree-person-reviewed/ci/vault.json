@@ -957,6 +957,104 @@
           "variable": "UNATTENDED_EXCLUDED",
           "members": "paths refused unattended"
         }
+      },
+      "case-arm": {
+        "subject": "an exclusion a one-line case arm empties before the loop reads it",
+        "computed": {
+          "kind": "manifest_list",
+          "path": "fixture_reviewed",
+          "members": "paths the owner reviews"
+        },
+        "published": {
+          "kind": "workflow_env_words",
+          "path": ".github/workflows/case-arm.yml",
+          "variable": "UNATTENDED_EXCLUDED",
+          "members": "paths refused unattended"
+        }
+      },
+      "readarray": {
+        "subject": "an exclusion readarray replaces before the loop reads it",
+        "computed": {
+          "kind": "manifest_list",
+          "path": "fixture_reviewed",
+          "members": "paths the owner reviews"
+        },
+        "published": {
+          "kind": "workflow_env_words",
+          "path": ".github/workflows/readarray.yml",
+          "variable": "UNATTENDED_EXCLUDED",
+          "members": "paths refused unattended"
+        }
+      },
+      "loop-variable": {
+        "subject": "an exclusion used as another loop's variable, which leaves it holding that loop's last word",
+        "computed": {
+          "kind": "manifest_list",
+          "path": "fixture_reviewed",
+          "members": "paths the owner reviews"
+        },
+        "published": {
+          "kind": "workflow_env_words",
+          "path": ".github/workflows/loop-variable.yml",
+          "variable": "UNATTENDED_EXCLUDED",
+          "members": "paths refused unattended"
+        }
+      },
+      "heredoc-backslash": {
+        "subject": "an exclusion read only inside a heredoc whose delimiter is backslash-quoted",
+        "computed": {
+          "kind": "manifest_list",
+          "path": "fixture_reviewed",
+          "members": "paths the owner reviews"
+        },
+        "published": {
+          "kind": "workflow_env_words",
+          "path": ".github/workflows/heredoc-backslash.yml",
+          "variable": "UNATTENDED_EXCLUDED",
+          "members": "paths refused unattended"
+        }
+      },
+      "heredoc-indented": {
+        "subject": "an exclusion read only inside a plain heredoc that an indented delimiter-like line does not end",
+        "computed": {
+          "kind": "manifest_list",
+          "path": "fixture_reviewed",
+          "members": "paths the owner reviews"
+        },
+        "published": {
+          "kind": "workflow_env_words",
+          "path": ".github/workflows/heredoc-indented.yml",
+          "variable": "UNATTENDED_EXCLUDED",
+          "members": "paths refused unattended"
+        }
+      },
+      "job-scope": {
+        "subject": "an exclusion held in one job's env and read by a loop in another job",
+        "computed": {
+          "kind": "manifest_list",
+          "path": "fixture_reviewed",
+          "members": "paths the owner reviews"
+        },
+        "published": {
+          "kind": "workflow_env_words",
+          "path": ".github/workflows/job-scope.yml",
+          "variable": "UNATTENDED_EXCLUDED",
+          "members": "paths refused unattended"
+        }
+      },
+      "container-env": {
+        "subject": "an exclusion assigned in a container's env, which is not an env: any shell step reads",
+        "computed": {
+          "kind": "manifest_list",
+          "path": "fixture_reviewed",
+          "members": "paths the owner reviews"
+        },
+        "published": {
+          "kind": "workflow_env_words",
+          "path": ".github/workflows/container-env.yml",
+          "variable": "UNATTENDED_EXCLUDED",
+          "members": "paths refused unattended"
+        }
       }
     },
     "retired": {}
