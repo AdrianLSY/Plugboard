@@ -86,6 +86,7 @@ func run(listen, recordDir, readyFile string, answer reply) error {
 		if err != nil {
 			return nil
 		}
+		// Inline, one connection at a time. lingerClose says what that costs.
 		if err := serve(conn, rec, recordDir, answer); err != nil &&
 			!errors.Is(err, io.EOF) {
 			warn(err)
@@ -176,6 +177,15 @@ const (
 // What it does not decide: a peer still sending past the cap is reset when
 // serve's deferred close runs. That is the price of a bound, and a peer sending
 // megabytes after its refusal arrived has stopped listening for one.
+//
+// Nor does it keep one peer from holding up the next. run() serves every
+// connection inline in its accept loop, so a peer that keeps a refused
+// connection open delays the next accept by up to lingerFor -- and a proxy
+// under test that holds its refused connections open adds that much to every
+// exchange queued behind each one. That is the price of a sequential recorder:
+// serving one connection at a time is what numbers the persisted exchanges in
+// the order they were served, and what lets recorder.Ordered, which takes no
+// lock, be written from one goroutine only.
 func lingerClose(conn net.Conn) {
 	// TCP only. The reset this prevents is a TCP stack's answer to a close with
 	// unread octets; net.Pipe, which the unit tests serve over, has no receive
