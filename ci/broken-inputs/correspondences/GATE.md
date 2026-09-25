@@ -19,7 +19,7 @@ The tree carries its own `ci/vault.json`, because this gate's subject *is* the d
 
 ## The person-reviewed paths, in `tree-person-reviewed`
 
-**Eighteen** violations, exit 1. `rebuild-plugboard` task 1.9 holds `.github/CODEOWNERS` against the
+**Twenty-five** violations, exit 1. `rebuild-plugboard` task 1.9 holds `.github/CODEOWNERS` against the
 paths `.github/workflows/dependabot-auto-merge.yml` refuses to advance unattended, and asks for one
 planted omission of each kind:
 
@@ -79,6 +79,22 @@ unquoted word:
     segment.
 18. `redeclared` — the same, spelled `declare UNATTENDED_EXCLUDED=...`.
 
+Cases 16 to 21 are one rule: outside the recognised read, the variable's name may not appear in the
+step's shell at all. It replaced a regex naming the ways to reassign a variable, which a review found
+ten more of, so the three below are spellings that regex accepted.
+
+19. `case-arm` — a one-line case arm, `case x in x) UNATTENDED_EXCLUDED= ;; esac`.
+20. `readarray` — `readarray -t UNATTENDED_EXCLUDED < /dev/null`, which empties the list.
+21. `loop-variable` — `for UNATTENDED_EXCLUDED in docs/`, which leaves it holding that loop's last
+    word.
+22. `heredoc-backslash` — the only loop is in a heredoc opened as `<<\EOS`, whose body the reader
+    took for shell.
+23. `heredoc-indented` — the only loop follows an indented `EOS` inside a plain `<<EOS` body, which
+    bash does not end there; the reader compared stripped lines and did.
+24. `job-scope` — a job-level `env:` read by a loop in another job, whose shell sees an empty
+    variable.
+25. `container-env` — an `env:` under `container:`, which is no step's, job's or workflow's `env:`.
+
 The resolver's docstring states what the read still does not decide. Quoting is not parsed, so an
 `echo` whose quoted argument holds `; for p in $VAR` counts as a read. None of these cases plants
 that, because the gate would accept it.
@@ -88,7 +104,7 @@ that, because the gate would accept it.
 | command | expected |
 |---|---|
 | `python3 ci/gates/correspondences.py --root ci/broken-inputs/correspondences/tree` | exit 1, eight violations |
-| `python3 ci/gates/correspondences.py --root ci/broken-inputs/correspondences/tree-person-reviewed` | exit 1, eighteen violations |
+| `python3 ci/gates/correspondences.py --root ci/broken-inputs/correspondences/tree-person-reviewed` | exit 1, twenty-five violations |
 | `python3 ci/gates/correspondences.py` | exit 0: three live correspondences, one retired |
 
 ## Not violations here

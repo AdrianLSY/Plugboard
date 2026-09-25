@@ -1,0 +1,16 @@
+# Planted: a job-level env is visible to its own job alone. The loop reading
+# it sits in another job, whose shell sees an empty variable.
+name: job scope
+on: pull_request_target
+jobs:
+  holds:
+    runs-on: ubuntu-latest
+    env:
+      UNATTENDED_EXCLUDED: contract/
+    steps:
+      - run: echo "holding the list"
+  refuses:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          for prefix in $UNATTENDED_EXCLUDED; do echo "$prefix"; done
