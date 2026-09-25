@@ -51,6 +51,18 @@ containment must stay silent — and the three states of an empty declaration: d
 (passes, saying so), undeclared (fails), and a vacuity still declared over a set that has gained a
 path (fails, so the exemption cannot outlive the emptiness it explains).
 
+And three declarations, each committed in a repository of its own so the gate takes the history
+route the real run takes:
+
+- a change other than `rebuild-plugboard` declaring `openspec/specs/docs`, an existing path outside
+  its own tree and outside `rebuild-plugboard`'s specifications. This is the declaration D31 permits
+  and the vacuity in `ci/vault.json` names as its ending, so it must pass with containment silent. The
+  sixteen-spec assertion binds only a set that overlaps `rebuild-plugboard`'s specification tree;
+  applied to every set, it failed this one with a message about a change it never named.
+- `./openspec/changes/rebuild-plugboard/specs` declared by `rebuild-plugboard`, and `.` declared by
+  another change. Git resolves both to the declarant's own files, so containment must fire. Declared
+  paths are normalised once where they are read; compared as raw strings, both got past containment.
+
 The meta-check of task 1.3 should treat `--self-test` as this gate's second violating
 input: `--root tree` proves the declaration half, `--self-test` proves the history half,
 and neutering either code path makes one of the two stop failing.
@@ -63,4 +75,4 @@ and neutering either code path makes one of the two stop failing.
 | `python3 ci/gates/out_of_scope.py --root ci/broken-inputs/out-of-scope/tree --report-only` | exit 0, same 2 reported as `[warn]` |
 | `python3 ci/gates/out_of_scope.py --root ci/broken-inputs/out-of-scope/tree-self-declared` | exit 1, 2 violations |
 | `python3 ci/gates/out_of_scope.py` | exit 0 on the current tree — nothing declared, the declared vacuity's reason and ending printed |
-| `python3 ci/gates/out_of_scope.py --self-test` | exit 0, having asserted a planted modification fails, containment stays silent, and the three empty-declaration states behave |
+| `python3 ci/gates/out_of_scope.py --self-test` | exit 0, having asserted a planted modification fails, containment stays silent, the three empty-declaration states behave, a declaration D31 permits passes, and the `./` and `.` respellings fire containment |
