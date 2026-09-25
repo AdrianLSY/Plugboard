@@ -497,8 +497,13 @@ def selfcheck() -> list[str]:
     makes each the evidence for that comparison: a stale stamp reported
     faithfully agrees with its stamp and only git refuses it; a `built` from the
     component's own clock agrees with git about everything git knows and only
-    the stamp refuses it; a duplicated field and an instant anchored at its
+    the stamp refuses it, and so does a version, commit or tree the component
+    worked out for itself; a duplicated field and an instant anchored at its
     start only pass both, and are refused by the count and by the anchor.
+
+    What it does not decide is WHICH comparison refused: each case asserts only
+    that judge() rejected it. The one-comparison shape of each case is what
+    makes a rejection the evidence for that comparison.
     """
     stamp = {
         "component": "sidecar",
@@ -527,6 +532,17 @@ def selfcheck() -> list[str]:
             True,
         ),
         ("a `built` from the component's own clock", clock, stamp, True),
+        # The same shape for every field git CAN answer: the report agrees with
+        # git, so only the stamp comparison refuses it. `built` alone did not pin
+        # that comparison -- one narrowed to `built` passed every case here.
+        *(
+            (f"a {name} worked out for itself, not its stamp's", good, wrong, True)
+            for name, wrong in (
+                ("version", {**stamp, "version": "v0"}),
+                ("commit", {**stamp, "commit": "deadbeef"}),
+                ("tree", {**stamp, "tree": "dirty"}),
+            )
+        ),
         (
             "another component's stamp",
             good,
@@ -567,7 +583,10 @@ def reads_what_it_writes() -> list[str]:
     import stamp as stamp_mod
 
     values = {
-        "version": 'v1-"#{x}\\\t\n',
+        # A quote, `#{`, a backslash, a tab, a carriage return and a newline:
+        # every escape() emits. The `\r` was missing, and a reader that could
+        # not unescape it passed.
+        "version": 'v1-"#{x}\\\t\r\n',
         "commit": "abc",
         "tree": "dirty",
         "built_at": "2026-01-01T00:00:00+00:00",
