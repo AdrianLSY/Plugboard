@@ -45,12 +45,40 @@ It fits for two reasons, both about not doing work twice or in series:
     120 seconds. It runs LAST, and reads the outputs this runner captured from a
     fresh directory named in GATE_OUTPUTS. Run on its own it still runs each
     gate itself, so the gate does not depend on the runner to decide.
+
+## A breach on a busy machine says so before it names the remedy
+
+The budget is wall-clock, and wall-clock cannot tell a slower tree from a busy
+machine. On 2026-09-25 four concurrent runs of one unchanged tree took about 51s
+each and all four failed naming the structural remedy, with every gate verdict
+identical to a solo run's. That remedy moves a property off change, and D32
+rules that out while the cost has another cause, so a breach that names only it
+sends the reader to act on the wrong one.
+
+So every run also prints the 1-minute load average when it started against the
+core count, and the CPU time its gates spent. A breach whose starting load was
+at or above the core count says FIRST that it coincided with load from other
+processes and to re-run make check alone before D32's remedy applies; the
+remedy text is printed unchanged only when the machine was not loaded, and
+behind a caveat when the load or the core count cannot be read. The verdict is still wall-clock
+and a breach still fails either way: the latency a contributor waits for is
+wall-clock, and task 3.17's sleeping-gate verification observes that failure.
+
+What this does NOT decide. The load is sampled once, before the first gate
+starts, so it sees other processes and none of this run's own; load that
+arrives mid-run is not seen, and that breach names the structural remedy. The
+load average is whatever the kernel counts (Linux counts tasks waiting on I/O
+too), not a measure of CPU contention. CPU time is RUSAGE_CHILDREN, which counts
+a descendant only once it and every process between it and here were waited
+for -- every subprocess.run is. It is printed for a reader to set against D32's
+recorded run, and compared with nothing: no ceiling for it is declared.
 """
 
 from __future__ import annotations
 
 import json
 import os
+import resource
 import shutil
 import subprocess
 import sys
@@ -61,6 +89,36 @@ from pathlib import Path
 
 #: The gate that reads every other gate's output. It runs after them.
 READS_OUTPUTS = "coverage"
+
+#: D32's structural remedy, printed unchanged on a breach the machine's load
+#: does not explain. One string, so the idle and unknown-load branches that
+#: print it cannot drift into two wordings of it.
+REMEDY = (
+    "make check is the command run on every commit, and its latency is a defect "
+    "class, not a target. D32 names the remedy: move ci/gates/meta.py's isolation "
+    "cross-product to .github/workflows/scheduled.yml with a cheaper isolation "
+    "property kept on change, or remove the cost that grew. Raising the budget is "
+    "a change to D32, not a tuning step."
+)
+
+
+def load_at_start() -> float | None:
+    """The 1-minute load average, or None where the system will not say.
+
+    os.getloadavg() raises OSError when the load average is unobtainable. An
+    unknown load is reported as unknown rather than guessed at, because a guess
+    of "idle" names the structural remedy for a breach load may have caused.
+    """
+    try:
+        return os.getloadavg()[0]
+    except OSError:
+        return None
+
+
+def children_cpu_seconds() -> float:
+    """User plus system CPU time of every descendant this process has waited for."""
+    usage = resource.getrusage(resource.RUSAGE_CHILDREN)
+    return usage.ru_utime + usage.ru_stime
 
 
 #: A module whose name starts with `_` is a shared library, not a gate. This
@@ -112,6 +170,13 @@ def main(argv: list[str]) -> int:
     budget = policy["budget_seconds"]
     print(f"== vault gates | {len(modules)} gate(s) | {mode}\n")
 
+    # Read before the first gate starts, so the load is other processes' alone.
+    # `loaded` is None when the load or the core count cannot be read: unknown,
+    # which is neither loaded nor idle.
+    cores = os.cpu_count()
+    load = load_at_start()
+    loaded = None if load is None or cores is None else load >= cores
+    cpu_before = children_cpu_seconds()
     started = time.monotonic()
     captured = Path(tempfile.mkdtemp(prefix="gate-outputs-"))
 
@@ -137,7 +202,7 @@ def main(argv: list[str]) -> int:
 
     try:
         first = [m for m in modules if m != READS_OUTPUTS]
-        with ThreadPoolExecutor(max_workers=os.cpu_count() or 4) as pool:
+        with ThreadPoolExecutor(max_workers=cores or 4) as pool:
             by_module = dict(zip(first, pool.map(run_one, first)))
         if READS_OUTPUTS in modules:
             by_module[READS_OUTPUTS] = run_one(
@@ -146,6 +211,7 @@ def main(argv: list[str]) -> int:
     finally:
         shutil.rmtree(captured, ignore_errors=True)
     elapsed = time.monotonic() - started
+    cpu = children_cpu_seconds() - cpu_before
     results = [by_module[m] for m in modules]
 
     width = max(len(g) for g, *_ in results)
@@ -194,15 +260,34 @@ def main(argv: list[str]) -> int:
         print(f"   FAILED         : {', '.join(hard)}")
     over = elapsed > budget
     print(f"   elapsed        : {elapsed:.1f}s against a {budget}s budget")
-    if over:
+    if load is None:
+        print("   load at start  : unknown -- os.getloadavg() could not read it")
+    else:
         print(
-            f"   OVER BUDGET by {elapsed - budget:.1f}s. make check is the command run "
-            f"on every commit, and its latency is a defect class, not a target. D32 "
-            f"names the remedy: move ci/gates/meta.py's isolation cross-product to "
-            f".github/workflows/scheduled.yml with a cheaper isolation property kept "
-            f"on change, or remove the cost that grew. Raising the budget is a "
-            f"change to D32, not a tuning step."
+            f"   load at start  : {load:.2f} (1-minute average) on {cores or '?'} cores"
         )
+    print(
+        f"   gates' CPU     : {cpu:.1f}s user+sys, {cpu / elapsed:.1f} cores busy "
+        f"on average"
+    )
+    if over and loaded:
+        print(
+            f"   OVER BUDGET by {elapsed - budget:.1f}s, and the breach coincided with "
+            f"load from other processes: the 1-minute load average was {load:.2f} on "
+            f"{cores} cores when the run started. Re-run make check alone before "
+            f"D32's remedy applies -- D32 rules out moving a property to the schedule "
+            f"while the cost has another cause. The run still fails: the budget is "
+            f"wall-clock, which is what a contributor waits for."
+        )
+    elif over and loaded is None:
+        print(
+            f"   OVER BUDGET by {elapsed - budget:.1f}s. Whether the machine was "
+            f"loaded at the start is unknown, so this breach cannot be told apart "
+            f"from load from other processes: re-run make check alone before acting "
+            f"on it. If it recurs there: {REMEDY}"
+        )
+    elif over:
+        print(f"   OVER BUDGET by {elapsed - budget:.1f}s. {REMEDY}")
 
     if force_report_only:
         print("\n   report-only: exiting 0 regardless of findings")
