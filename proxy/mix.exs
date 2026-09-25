@@ -30,8 +30,15 @@ defmodule Plugboard.MixProject do
     ]
   end
 
+  # The callback prints this component's provenance line and starts an empty
+  # supervision tree -- not middleware and not an endpoint, which D5 and task
+  # 2.1 forbid. Without it, starting the proxy printed nothing, and the one
+  # caller of `Plugboard.provenance_line/0` was the check that claimed it did.
   def application do
-    [extra_applications: [:logger]]
+    [
+      mod: {Plugboard.Application, []},
+      extra_applications: [:logger]
+    ]
   end
 
   # Quality tooling only. No runtime dependency is added before the code that
