@@ -71,3 +71,5 @@ None. `openspec/specs/` holds only the `docs/code-standards` and `docs/knowledge
 - **Known runtime gap**: Bandit implements neither HTTP/3 nor RFC 8441 extended CONNECT. The second bites without WebTransport — behind an h2-terminating CDN, WebSocket upgrades arrive as extended CONNECT and fail. Tracked in `design.md` as the strongest surviving argument against the runtime choice.
 - **Process**: the development methodology is derived finding-by-finding from how the reference failed, not written from first principles. Documented in `docs/`.
 - **Dependencies**: no dependency, tool, or workflow is inherited from the reference without justification. Auto-merge of dependency updates is gated on `semver-patch`, and no wire-protocol pointer advances without a human.
+
+<!-- Throwaway: demonstrates rebuild-plugboard task 1.10 on a planning-only change. Closed unmerged. -->
