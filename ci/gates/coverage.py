@@ -34,6 +34,11 @@ line the run actually emits.
 The gates declared blocking in ci/vault.json, each invoked against the tree
 this gate was pointed at. A gate-shaped module under a declared scan exclusion
 is a fixture, not a gate, and is not invoked.
+
+Under `make check` the gates have already run once, so this gate reads the
+output ci/run-gates.py captured rather than running each a second time (D32).
+The subject is unchanged -- the line a run emitted -- and anywhere else, or for
+a gate the capture lacks, this gate runs it itself.
 """
 
 from __future__ import annotations
