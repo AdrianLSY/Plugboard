@@ -553,7 +553,11 @@ and task 3.12's on-change meta-check and parity run are untouched.
 **The budget.** `gate_policy.budget_seconds` in `ci/vault.json`, 40 seconds, enforced by
 `ci/run-gates.py` in the fast tier's shape: the number is declared rather than written in code, the
 elapsed time is printed on every run including a passing one, and a run over the budget fails naming
-both and the remedy. Raising it is a change to this entry, not a tuning step.
+both and the remedy. Raising it is a change to this entry, not a tuning step. Because wall-clock
+cannot tell a slower tree from a busy machine, a run also prints the one-minute load average at its
+start against the core count and the CPU time its gates spent, and a breach that started on a machine
+loaded to its core count says so first, sending the reader to re-run `make check` alone before the
+remedy applies, and still fails.
 
 **Why it fits, measured.** On 2026-09-24, at 43 gates, the run took about 120 seconds. Measured again
 on 2026-09-25 before the change: 126 seconds on a ten-core workstation and 105 on CI's `make check`
@@ -579,8 +583,13 @@ violating input the change touches — and add the moved command to `parity.sche
 *Alternatives considered:*
 
 **(a) Move the cross-product to the schedule now.** Rejected: it weakens what every change is checked
-against, to save a cost that removing the double run and the serial loop already removed. A property
-checked weekly lets a change that breaks it merge, and the change that finds it is somebody else's.
+against, to save a cost that removing the double run and the serial loop already removed.
+`.github/workflows/scheduled.yml` runs daily and also on every push and pull request, so the move
+would not take the property out of CI. It would take it out of the local `make check` a commit runs
+and out of `check.yml`'s on-change run, whose `check` job is a required check where
+`scheduled.yml`'s `standing-checks` is not
+([branch protection](../../../docs/code/reviewing.md#pull-requests)): a change that breaks the
+property would be told so on its own pull request, and could merge regardless.
 
 **(b) Remove the causes and set no budget.** Rejected: that is the state the run was in while it grew
 from seconds at 26 gates to two minutes at 43, with nothing noticing until it interrupted work. The
