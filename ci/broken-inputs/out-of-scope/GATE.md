@@ -51,7 +51,7 @@ containment must stay silent — and the three states of an empty declaration: d
 (passes, saying so), undeclared (fails), and a vacuity still declared over a set that has gained a
 path (fails, so the exemption cannot outlive the emptiness it explains).
 
-And three declarations, each committed in a repository of its own so the gate takes the history
+And eight declarations, each committed in a repository of its own so the gate takes the history
 route the real run takes:
 
 - a change other than `rebuild-plugboard` declaring `openspec/specs/docs`, an existing path outside
@@ -59,9 +59,18 @@ route the real run takes:
   and the vacuity in `ci/vault.json` names as its ending, so it must pass with containment silent. The
   sixteen-spec assertion binds only a set that overlaps `rebuild-plugboard`'s specification tree;
   applied to every set, it failed this one with a message about a change it never named.
+- the same change declaring `rebuild-plugboard`'s specifications and `openspec/specs/docs` together.
+  It must also pass. The sixteen are counted under that specification tree alone; counting every
+  `spec.md` in the set failed it for covering seventeen.
 - `./openspec/changes/rebuild-plugboard/specs` declared by `rebuild-plugboard`, and `.` declared by
   another change. Git resolves both to the declarant's own files, so containment must fire. Declared
   paths are normalised once where they are read; compared as raw strings, both got past containment.
+- `:/openspec/changes/rebuild-plugboard/specs` and `:(top)openspec/changes/rebuild-plugboard/specs`
+  declared by `rebuild-plugboard`, plus an absolute spelling and one that climbs out of the root.
+  Normalising cannot make any of these plain, so each must be refused, and the refusal must name the
+  spelling as declared. The two pathspec-magic spellings are the ones that mattered: git resolved
+  them to the declarant's sixteen specifications, while containment and the sixteen-spec count,
+  comparing text, saw nothing. The whole gate passed over a freeze of the declarant's own files.
 
 The meta-check of task 1.3 should treat `--self-test` as this gate's second violating
 input: `--root tree` proves the declaration half, `--self-test` proves the history half,
@@ -75,4 +84,4 @@ and neutering either code path makes one of the two stop failing.
 | `python3 ci/gates/out_of_scope.py --root ci/broken-inputs/out-of-scope/tree --report-only` | exit 0, same 2 reported as `[warn]` |
 | `python3 ci/gates/out_of_scope.py --root ci/broken-inputs/out-of-scope/tree-self-declared` | exit 1, 2 violations |
 | `python3 ci/gates/out_of_scope.py` | exit 0 on the current tree — nothing declared, the declared vacuity's reason and ending printed |
-| `python3 ci/gates/out_of_scope.py --self-test` | exit 0, having asserted a planted modification fails, containment stays silent, the three empty-declaration states behave, a declaration D31 permits passes, and the `./` and `.` respellings fire containment |
+| `python3 ci/gates/out_of_scope.py --self-test` | exit 0, having asserted a planted modification fails, containment stays silent, the three empty-declaration states behave, a declaration D31 permits passes (alone, or with the specifications beside it), the `./` and `.` respellings fire containment, and the `:/`, `:(top)`, absolute and climbing spellings are refused by name |
