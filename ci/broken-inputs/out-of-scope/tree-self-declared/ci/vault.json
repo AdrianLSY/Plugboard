@@ -1,11 +1,12 @@
 {
   "_comment": [
-    "Fixture manifest for ci/gates/out_of_scope.py. A violation of the",
-    "byte-unchanged requirement is a property of the DECLARATION plus history,",
-    "never of a file's bytes, so the violating input is this declaration: it",
-    "names a prefix that matches nothing, and its set covers one of",
-    "rebuild-plugboard's sixteen specification files instead of all sixteen --",
-    "the proxy/http-fidelity file below sits outside the declaration entirely."
+    "Fixture manifest for ci/gates/out_of_scope.py. The violating input is this",
+    "declaration: rebuild-plugboard declaring its own specifications",
+    "(openspec/changes/rebuild-plugboard/specs) out of its own scope, which D31",
+    "refuses as the containment case -- the byte-unchanged assertion cannot see",
+    "which change is editing, so the owner is refused every revision to its own",
+    "files. It also trips the 1/16 coverage shortfall, because this tree carries",
+    "one placeholder spec.md rather than rebuild-plugboard's sixteen."
   ],
   "spine": "docs",
   "note_roots": {
