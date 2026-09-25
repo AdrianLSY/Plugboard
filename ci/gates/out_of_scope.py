@@ -12,11 +12,12 @@ byte-unchanged":
     needs and the one prose loses;
   * a declared set that overlaps `rebuild-plugboard`'s specification tree -- a
     declared path under it, or containing it -- is asserted to cover all
-    sixteen of its specification files, because a set that silently covers part
-    of them is a green gate over an unguarded tree, which is worse than no gate.
-    A set elsewhere is not held to that change's count: D31 permits any change
-    to declare a path outside its own tree, and the per-path presence check
-    already fails a declared path that covers nothing;
+    sixteen of its specification files, counted under that tree alone, because
+    a set that silently covers part of them is a green gate over an unguarded
+    tree, which is worse than no gate. A set elsewhere is not held to that
+    change's count: D31 permits any change to declare a path outside its own
+    tree, and the per-path presence check already fails a declared path that
+    covers nothing;
   * every violation is reported in one run, and a passing run states the
     baseline it compared against and how many files it covered.
 
@@ -33,7 +34,16 @@ included.
 Every declared path is normalised once, where the declaration is read, and every
 check compares that one spelling. `./openspec/changes/rebuild-plugboard/specs`
 and `.` are pathspecs git resolves to the declarant's own files, and compared as
-raw strings both passed the containment check.
+raw strings both passed the containment check. A spelling normalising cannot
+make plain is refused there instead, naming it: a leading `:` (pathspec magic --
+`:/x` and `:(top)x` are x from the repository root), a leading `/`, a climb out
+of the root, a glob character. Each is a set git resolves one way and a text
+comparison reads another, and `:/openspec/changes/rebuild-plugboard/specs`
+declared by rebuild-plugboard passed the whole gate while freezing that change's
+sixteen specifications. What normalising still cannot decide: a spelling that
+differs only in letter case. Git compares it exactly, so against history it
+fails the presence check below; a tree without history, on a case-insensitive
+filesystem, finds it present.
 
 An EMPTY declaration is legitimate only when gate_policy.declared_vacuity says
 why and what ends it, the mechanism ci/gates/component_boundaries.py used before
@@ -145,6 +155,40 @@ def _canonical(path: str) -> str:
     specifications.
     """
     return posixpath.normpath(path).rstrip("/") or "."
+
+
+def _not_plain(raw: object) -> str | None:
+    """Why a declared entry is not a plain repo-relative path, or None if it is.
+
+    Tested on the canonical spelling, because that is the one handed to git:
+    `./:/x` normalises to `:/x`, which git reads as magic. Refused rather than
+    repaired, because each shape below is a set git resolves one way while the
+    containment and coverage checks, which compare text, read another -- and a
+    repair would be a guess at which one the declarant meant.
+    """
+    if not isinstance(raw, str) or not raw.strip():
+        return "it is not a path at all"
+    canonical = _canonical(raw)
+    if canonical.startswith(":"):
+        return (
+            "a leading ':' is git pathspec magic (':/x' and ':(top)x' name x from "
+            "the repository root, ':!x' excludes it), so git matches files the "
+            "containment and coverage checks, comparing text, never see"
+        )
+    if canonical.startswith("/"):
+        return (
+            "a leading '/' is an absolute filesystem path, which git maps to the "
+            "files beneath it when it lies inside the work tree and rejects when it "
+            "does not -- neither is the text the containment check compares"
+        )
+    if canonical == ".." or canonical.startswith("../"):
+        return "it climbs out of the repository root"
+    if any(c in canonical for c in "*?["):
+        return (
+            "a '*', '?' or '[' makes it a glob to git diff, naming a set of paths "
+            "the containment and coverage checks, comparing text, never see"
+        )
+    return None
 
 
 def _files_at_ref(root: Path, ref: str, prefixes: list[str]) -> list[str] | None:
@@ -277,11 +321,19 @@ def run(scan_root: Path, report_only: bool) -> int:
     manifest = load_manifest(scan_root)
 
     declared = manifest.get("out_of_scope", {})
-    # Normalised once, here, so that no later comparison can be sidestepped by
-    # respelling a path. `spelled` keeps what the manifest wrote, for messages.
+    declared_paths = declared.get("paths", [])
+    # Normalised once, here, and every later comparison reads that spelling. A
+    # spelling normalising cannot make plain is refused (_not_plain) and never
+    # reaches git, so no check below compares a path git would resolve to a set
+    # other than the one its text names. `spelled` keeps what the manifest
+    # wrote, for messages.
     spelled: dict[str, str] = {}
-    for raw in declared.get("paths", []):
-        if isinstance(raw, str):
+    refused: list[tuple[object, str]] = []
+    for raw in declared_paths:
+        why = _not_plain(raw)
+        if why is not None:
+            refused.append((raw, why))
+        elif isinstance(raw, str):
             spelled.setdefault(_canonical(raw), raw)
     prefixes = list(spelled)
     named = {
@@ -290,7 +342,9 @@ def run(scan_root: Path, report_only: bool) -> int:
     declared_by = declared.get("declared_by")
     baseline_ref = declared.get("baseline_ref")
 
-    vacuity = _empty_by_declaration(manifest, prefixes, report)
+    # The declared entries, not the accepted ones: a set whose every path was
+    # refused is not empty, and reporting it as empty would name the wrong fault.
+    vacuity = _empty_by_declaration(manifest, declared_paths, report)
     if vacuity is not None:
         report.coverage(
             covered=[],
@@ -307,7 +361,7 @@ def run(scan_root: Path, report_only: bool) -> int:
 
     # A declaration that cannot name its owner or its baseline cannot produce
     # the failure the requirement asks for, so its absence is itself a failure.
-    if not prefixes:
+    if not declared_paths:
         report.fail(
             "ci/vault.json out_of_scope.paths is empty and gate_policy.declared_vacuity "
             "records no reason -- the out-of-scope set is declared in the manifest, not "
@@ -326,6 +380,13 @@ def run(scan_root: Path, report_only: bool) -> int:
     owners = declared_by if isinstance(declared_by, list) else [declared_by]
     owners = [o for o in owners if o]
     owner = ", ".join(owners) or "<undeclared change>"
+
+    for raw, why in refused:
+        report.fail(
+            f"{raw!r}: declared out of scope by {owner}, and it is not a plain "
+            f"repo-relative path -- {why}. Refused rather than read; declare it as "
+            f"the path from the repository root, with no prefix, magic or wildcard"
+        )
 
     # D31. Checked before history, because it is a property of the declaration
     # alone and a fixture tree can therefore carry it.
@@ -369,7 +430,13 @@ def run(scan_root: Path, report_only: bool) -> int:
             )
         else:
             baseline_sha = out.decode().strip()
-            subject_files = _files_at_ref(scan_root, baseline_sha, prefixes) or []
+            # No prefixes means no pathspec, and `git ls-tree` given none lists
+            # the whole tree -- every file would be reported as covered.
+            subject_files = (
+                _files_at_ref(scan_root, baseline_sha, prefixes) or []
+                if prefixes
+                else []
+            )
             for prefix in prefixes:
                 for status, rel in (
                     _changed_paths(scan_root, baseline_sha, prefix) or []
@@ -437,11 +504,15 @@ def run(scan_root: Path, report_only: bool) -> int:
     else:
         listing = md_paths
         source = "filesystem"
-    specs = sorted(
+    in_set = sorted(
         rel
         for rel in listing
         if Path(rel).name == SPEC_FILENAME and _under_any(rel, prefixes) is not None
     )
+    # Counted under SPEC_SET_ROOT alone. The sixteen are that tree's count, and a
+    # set that reaches it and also `openspec/specs/docs` covered all sixteen
+    # while being failed for covering seventeen.
+    specs = [rel for rel in in_set if _under_any(rel, [SPEC_SET_ROOT]) is not None]
     if touches and len(specs) != EXPECTED_SPEC_FILES:
         report.fail(
             f"the declared out-of-scope set covers {len(specs)} '{SPEC_FILENAME}' "
@@ -469,13 +540,15 @@ def run(scan_root: Path, report_only: bool) -> int:
         scan_root=scan_root,
     )
     covered = (
-        f"{len(specs)}/{EXPECTED_SPEC_FILES}"
+        f"{len(specs)}/{EXPECTED_SPEC_FILES} under '{SPEC_SET_ROOT}', "
+        f"{len(in_set)} in the set"
         if touches
-        else f"{len(specs)} (the set does not overlap '{SPEC_SET_ROOT}', so its "
+        else f"{len(in_set)} (the set does not overlap '{SPEC_SET_ROOT}', so its "
         f"{EXPECTED_SPEC_FILES} are not asserted)"
     )
+    unread = f" ({len(refused)} more refused)" if refused else ""
     print(
-        f"  set: {len(prefixes)} declared path(s) | declared_by: {owner}"
+        f"  set: {len(prefixes)} declared path(s){unread} | declared_by: {owner}"
         f" | baseline: {baseline_ref} ({baseline_sha[:12] if baseline_sha else 'unresolved'})"
         f" | {SPEC_FILENAME} covered: {covered}"
     )
@@ -712,9 +785,16 @@ def _declaration_cases() -> list[str]:
     own tree and outside the specification set is the declaration D31 permits and
     ci/vault.json's vacuity names as its ending: it must pass with containment
     silent, where the sixteen-spec assertion once failed it with a message about
-    rebuild-plugboard. And a respelling of a self-containing path -- `./`-prefixed,
-    or `.` for the whole repository -- must still reach the containment check,
-    which compared raw strings and let both through.
+    rebuild-plugboard. So must one that reaches that tree and another spec-bearing
+    path besides: its sixteen are counted under the tree alone, where counting the
+    whole set failed it for seventeen. A respelling of a self-containing path --
+    `./`-prefixed, or `.` for the whole repository -- must still reach the
+    containment check, which compared raw strings and let both through. And a
+    spelling no normalising makes plain -- pathspec magic (`:/`, `:(top)`), an
+    absolute path, a climb out of the root -- must be refused by name before git
+    reads it: `:/` and `:(top)` resolve to the declarant's own specifications
+    while containment and the sixteen-spec count, comparing text, saw nothing,
+    and the gate passed.
     """
     import contextlib
     import io
@@ -725,23 +805,56 @@ def _declaration_cases() -> list[str]:
     }
     files[f"{CHANGES_DIR}/other-change/proposal.md"] = "# proposal\n"
     files["openspec/specs/docs/knowledge-base/spec.md"] = "# spec\n"
+    needles = {
+        "containment": "lies inside or contains",
+        "refusal": "is not a plain repo-relative path",
+    }
+    silent: frozenset[str] = frozenset()
+    contained, refused = frozenset({"containment"}), frozenset({"refusal"})
+    owner = "rebuild-plugboard"
     cases = (
-        ("a declaration D31 permits", "openspec/specs/docs", "other-change", 0, False),
-        ("a './' respelling", f"./{SPEC_SET_ROOT}", "rebuild-plugboard", 1, True),
-        ("the whole repository", ".", "other-change", 1, True),
+        (
+            "a declaration D31 permits",
+            ["openspec/specs/docs"],
+            "other-change",
+            0,
+            silent,
+        ),
+        (
+            "a set reaching the specifications and past them",
+            [SPEC_SET_ROOT, "openspec/specs/docs"],
+            "other-change",
+            0,
+            silent,
+        ),
+        ("a './' respelling", [f"./{SPEC_SET_ROOT}"], owner, 1, contained),
+        ("the whole repository", ["."], "other-change", 1, contained),
+        ("':/' pathspec magic", [f":/{SPEC_SET_ROOT}"], owner, 1, refused),
+        ("':(top)' pathspec magic", [f":(top){SPEC_SET_ROOT}"], owner, 1, refused),
+        ("an absolute path", [f"/{SPEC_SET_ROOT}"], owner, 1, refused),
+        (
+            "a climb out of the root",
+            [f"{SPEC_SET_ROOT}/../../../../.."],
+            owner,
+            1,
+            refused,
+        ),
     )
     problems = []
-    for label, path, declarant, want, contained in cases:
+    for label, paths, declarant, want, fires in cases:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             for rel, body in files.items():
                 (root / rel).parent.mkdir(parents=True, exist_ok=True)
                 (root / rel).write_text(body, encoding="utf-8")
             (root / "ci").mkdir()
-            (root / "ci" / "vault.json").write_text(
+            manifest = json.loads(
                 _SELF_TEST_MANIFEST
-                % {"prefix": path, "owner": declarant, "baseline": "HEAD"},
-                encoding="utf-8",
+                % {"prefix": "", "owner": declarant, "baseline": "HEAD"}
+            )
+            manifest["out_of_scope"]["paths"] = paths
+            (root / "ci" / "vault.json").write_text(
+                json.dumps(manifest), encoding="utf-8"
             )
             if not _commit_all(root):
                 problems.append(f"{label}: could not build the scenario")
@@ -749,12 +862,17 @@ def _declaration_cases() -> list[str]:
             buffer = io.StringIO()
             with contextlib.redirect_stdout(buffer):
                 code = run(root, False)
-            fired = "lies inside or contains" in buffer.getvalue()
-        if code != want or fired != contained:
+            output = buffer.getvalue()
+        fired = frozenset(name for name, needle in needles.items() if needle in output)
+        if code != want or fired != fires:
             problems.append(
-                f"{label} ({path!r} declared by {declarant}): expected exit {want} "
-                f"with containment {'firing' if contained else 'silent'}, got exit "
-                f"{code} with it {'firing' if fired else 'silent'}"
+                f"{label} ({paths!r} declared by {declarant}): expected exit {want} "
+                f"with {sorted(fires) or 'neither check'} firing, got exit {code} "
+                f"with {sorted(fired) or 'neither'}"
+            )
+        elif "refusal" in fires and not all(repr(p) in output for p in paths):
+            problems.append(
+                f"{label}: the refusal does not name the declared spelling {paths!r}"
             )
     return problems
 
@@ -879,10 +997,11 @@ def _self_test() -> int:
             f"path, its line, and {_SELF_TEST_OWNER}; a COMMITTED edit fails "
             f"against a pinned baseline while passing against a moving one; "
             f"containment stays silent for a declaration outside its declarant's "
-            f"tree, and a declaration D31 permits away from '{SPEC_SET_ROOT}' "
-            f"passes, while a './' or '.' respelling of a self-containing path "
-            f"still fires it; and an empty set passes only while a vacuity "
-            f"explains it"
+            f"tree, and a declaration D31 permits away from '{SPEC_SET_ROOT}', or "
+            f"reaching it and past it, passes, while a './' or '.' respelling of a "
+            f"self-containing path still fires it and ':/', ':(top)', absolute and "
+            f"climbing spellings are refused by name; and an empty set passes only "
+            f"while a vacuity explains it"
         )
         return 0
 

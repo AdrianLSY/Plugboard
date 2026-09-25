@@ -19,7 +19,7 @@
   },
   "invocations": [
     {
-      "_why": "GATE.md has instructed since it was written that meta treat --self-test as this gate's second violating input, and nothing ever performed it. The byte-modification and committed-edit cases need git history that no static tree can carry, so the flag IS the fixture for them. Since rebuild-plugboard task 3.16 it also carries D31's negative half and the three empty-declaration states, which the real tree exercises only one of; and three committed declarations: one D31 permits away from rebuild-plugboard's specifications, which must pass, and the './' and '.' respellings of a self-containing path, which must fire containment.",
+      "_why": "GATE.md has instructed since it was written that meta treat --self-test as this gate's second violating input, and nothing ever performed it. The byte-modification and committed-edit cases need git history that no static tree can carry, so the flag IS the fixture for them. Since rebuild-plugboard task 3.16 it also carries D31's negative half and the three empty-declaration states, which the real tree exercises only one of; and eight committed declarations: one D31 permits away from rebuild-plugboard's specifications and one reaching them and past them, both of which must pass; the './' and '.' respellings of a self-containing path, which must fire containment; and ':/', ':(top)', absolute and climbing spellings, which must be refused by name before git resolves them to the declarant's own specifications.",
       "args": [
         "--self-test"
       ],
